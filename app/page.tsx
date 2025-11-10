@@ -585,16 +585,10 @@ export default function HomePage() {
           </div>
         </div>
         <div className="border-t border-secondary-200">
-          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6 flex items-center justify-center">
             <p className="text-[14px] text-text-secondary">
               © {new Date().getFullYear()} HITSapp. All Rights Reserved.
             </p>
-            <div className="flex items-center gap-4 text-[20px] text-primary-600">
-              <Link href="#"><span className="sr-only">Twitter</span>🐦</Link>
-              <Link href="#"><span className="sr-only">Instagram</span>📸</Link>
-              <Link href="#"><span className="sr-only">Facebook</span>📘</Link>
-              <Link href="#"><span className="sr-only">LinkedIn</span>💼</Link>
-            </div>
           </div>
         </div>
       </footer>
