@@ -1,0 +1,278 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { User, Mail, Lock, Phone, AlertCircle, CheckCircle } from "lucide-react";
+import type { UserRole } from "@/types";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+    role: "senior" as UserRole,
+  });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createSupabaseBrowserClient();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Sign up with Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            role: formData.role,
+          },
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        setError("Failed to create user account. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if email confirmation is required
+      // If session is null, try to get it (might be a timing issue)
+      let session = authData.session;
+      
+      if (!session) {
+        // Try to get session after a short delay (in case of timing issues)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        session = retrySession;
+      }
+
+      // If no session, email confirmation likely required
+      if (!session) {
+        setIsLoading(false);
+        router.push("/login?message=Account created! Please check your email to confirm your account, then sign in.");
+        return;
+      }
+
+      // Session exists – just redirect based on metadata role
+      if (formData.role === "senior") {
+        router.replace("/senior/dashboard");
+      } else if (formData.role === "specialist") {
+        router.replace("/specialist/dashboard?welcome=true");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-secondary-100 px-4 py-12">
+      <motion.div
+        initial="initial"
+        animate="animate"
+        variants={fadeIn}
+        className="w-full max-w-2xl"
+      >
+        <motion.div
+          variants={slideUp}
+          className="card bg-white p-8 shadow-large"
+        >
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-primary-500 mb-2">
+              Create Your Account
+            </h1>
+            <p className="text-text-secondary">
+              Join H.I.T.S. to connect with technology specialists
+            </p>
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3"
+            >
+              <AlertCircle className="text-error-500 flex-shrink-0 mt-0.5" size={20} />
+              <p className="text-sm text-error-700">{error}</p>
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className="space-y-6"
+            >
+              <motion.div variants={staggerItem}>
+                <label className="block text-base font-medium text-text-primary mb-2">
+                  I am a...
+                  <span className="text-error-500 ml-1">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <motion.button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "senior" })}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      formData.role === "senior"
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-secondary-300 hover:border-primary-300"
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">👴</div>
+                      <div className="font-medium">Senior User</div>
+                      <div className="text-sm text-text-tertiary mt-1">
+                        Need tech help
+                      </div>
+                    </div>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "specialist" })}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      formData.role === "specialist"
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-secondary-300 hover:border-primary-300"
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">💻</div>
+                      <div className="font-medium">IT Specialist</div>
+                      <div className="text-sm text-text-tertiary mt-1">
+                        Provide tech help
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
+              </motion.div>
+
+              <motion.div variants={staggerItem} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  name="fullName"
+                  label="Full Name"
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  required
+                  autoComplete="name"
+                />
+                <Input
+                  name="phone"
+                  type="tel"
+                  label="Phone Number (Optional)"
+                  placeholder="(555) 123-4567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                />
+              </motion.div>
+
+              <motion.div variants={staggerItem}>
+                <Input
+                  name="email"
+                  type="email"
+                  label="Email Address"
+                  placeholder="your.email@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="email"
+                />
+              </motion.div>
+
+              <motion.div variants={staggerItem} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  name="password"
+                  type="password"
+                  label="Password"
+                  placeholder="At least 8 characters"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+                <Input
+                  name="confirmPassword"
+                  type="password"
+                  label="Confirm Password"
+                  placeholder="Re-enter password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+              </motion.div>
+
+              <motion.div variants={staggerItem}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  isLoading={isLoading}
+                >
+                  Create Account
+                </Button>
+              </motion.div>
+            </motion.div>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-text-secondary">
+              Already have an account?{" "}
+              <Link href="/login" className="link font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
