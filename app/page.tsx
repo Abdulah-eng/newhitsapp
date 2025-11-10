@@ -11,7 +11,7 @@ const fadeUp = (delay = 0) => ({
   visible: {
     opacity: 1,
     y: 0,
-    transition: { delay, duration: 0.6, ease: "easeOut" },
+    transition: { delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
   },
 });
 
@@ -20,7 +20,7 @@ const fadeIn = (delay = 0) => ({
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { delay, duration: 0.6, ease: "easeOut" },
+    transition: { delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
   },
 });
 
@@ -39,7 +39,7 @@ const loopFloat = {
   transition: {
     duration: 6,
     repeat: Infinity,
-    ease: "easeInOut",
+    ease: [0.42, 0, 0.58, 1] as const,
   },
 };
 
@@ -208,7 +208,7 @@ export default function HomePage() {
             {/* Dummy video/image */}
             <motion.div
               whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
               className="aspect-video rounded-xl overflow-hidden shadow-large border border-secondary-200 bg-secondary-100"
             >
               <video
@@ -221,7 +221,7 @@ export default function HomePage() {
             <motion.div
               className="absolute -bottom-6 -left-6 hidden md:block"
               animate={{ y: [0, -6, 0], rotate: [0, 1.5, -1.5, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 7, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
             >
               <img
                 src="https://placehold.co/180x180/jpg?text=Friendly+Support"
@@ -232,7 +232,7 @@ export default function HomePage() {
             <motion.div
               className="absolute top-6 -right-8 hidden lg:block"
               animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
             >
               <div className="rounded-2xl bg-white px-5 py-4 shadow-soft border border-secondary-200">
                 <p className="text-xs uppercase tracking-[0.35em] text-primary-500">Live now</p>
@@ -475,7 +475,7 @@ export default function HomePage() {
                 <motion.div
                   className="absolute top-4 right-4 text-primary-200"
                   animate={{ rotate: [0, 4, -4, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 6, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                 >
                   ❝
                 </motion.div>

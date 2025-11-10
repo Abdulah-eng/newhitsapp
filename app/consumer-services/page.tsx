@@ -10,7 +10,7 @@ const fadeVariants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.12, duration: 0.6, ease: "easeOut" },
+    transition: { delay: i * 0.12, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
   }),
 };
 
@@ -99,7 +99,7 @@ export default function ConsumerServicesPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
             className="relative"
           >
             <div className="rounded-3xl bg-gradient-to-br from-primary-500 via-primary-400 to-accent-400 p-[1px] shadow-large">

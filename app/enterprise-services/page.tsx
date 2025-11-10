@@ -8,7 +8,7 @@ import MarketingHeader from "@/components/MarketingHeader";
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
   animate: { opacity: 1, y: 0 },
-  transition: { delay, duration: 0.6, ease: "easeOut" },
+  transition: { delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
 });
 
 const partnerLogos = ["SeniorLiving", "CareBridge", "HealthFirst", "BankSecure", "CityLibraries"];
