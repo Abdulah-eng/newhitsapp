@@ -41,7 +41,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="max-w-4xl mx-auto">
       <motion.div
         initial="initial"
         animate="animate"

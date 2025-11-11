@@ -140,27 +140,44 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="bg-white shadow-sm border-b border-secondary-200">
-          <div className="px-4 py-4 flex items-center justify-between">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-secondary-100"
-            >
-              {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <div className="flex-1" />
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-text-secondary hidden sm:block">
-                Welcome, {user.user_metadata?.full_name || "Admin"}
-              </span>
+        {/* Top Bar with Dashboard Header */}
+        <div className="bg-white border-b border-secondary-200">
+          <div className="max-w-7xl mx-auto px-14 md:px-18">
+            <div className="flex items-center justify-between py-8 md:py-10">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden inline-flex items-center justify-center w-12 h-12 rounded-md border border-secondary-300 text-text-primary"
+              >
+                {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+              <div className="hidden lg:block flex-1" />
+              <div className="flex items-center gap-5 ml-auto">
+                {user && (
+                  <>
+                    <span className="text-[18px] font-semibold text-primary-900 hidden lg:block">
+                      {user.user_metadata?.full_name || "Admin"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={signOut}
+                      className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 px-4"
+                    >
+                      <LogOut size={18} className="mr-2" />
+                      <span className="hidden sm:inline">Logout</span>
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </header>
+        </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-secondary-100">
+          <div className="max-w-7xl mx-auto px-14 md:px-18 py-8">
+            {children}
+          </div>
         </main>
       </div>
 

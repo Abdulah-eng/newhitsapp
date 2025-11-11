@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import Button from "@/components/ui/Button";
+import DashboardHeader from "@/components/DashboardHeader";
 
 export default function SpecialistLayout({
   children,
@@ -83,22 +83,12 @@ export default function SpecialistLayout({
         </div>
       ) : (
         <>
-          <nav className="bg-white shadow-soft border-b border-secondary-200">
-            <div className="container mx-auto px-4 py-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold text-primary-500">H.I.T.S.</h1>
-                <div className="flex items-center gap-4">
-                  <span className="text-text-secondary">
-                    Welcome, {user.user_metadata?.full_name || "User"}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={signOut}>
-                    Sign Out
-                  </Button>
-                </div>
-              </div>
+          <DashboardHeader />
+          <main className="min-h-screen bg-secondary-100">
+            <div className="max-w-7xl mx-auto px-14 md:px-18 py-8">
+              {children}
             </div>
-          </nav>
-          <main>{children}</main>
+          </main>
         </>
       )}
     </div>
