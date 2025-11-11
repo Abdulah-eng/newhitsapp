@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/useAuth";
 import Button from "@/components/ui/Button";
-import AIChatbot from "@/components/features/AIChatbot";
 
 export default function PublicLayout({
   children,
@@ -56,7 +55,6 @@ export default function PublicLayout({
         </div>
       </nav>
       <main>{children}</main>
-      <AIChatbot />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -21,56 +21,171 @@ function PaymentPageContent() {
   const [payment, setPayment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [amount, setAmount] = useState(0);
+  const [appointmentId, setAppointmentId] = useState<string>("");
 
   useEffect(() => {
-    if (!authLoading && user?.id && params.id) {
-      fetchAppointmentData();
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (id) {
+      setAppointmentId(id);
     }
-  }, [user, authLoading, params.id]);
+  }, [params.id]);
 
-  const fetchAppointmentData = async () => {
-    const { data: apt, error } = await supabase
+  const fetchAppointmentData = useCallback(async () => {
+    if (!appointmentId) {
+      console.error("No appointment ID provided");
+      router.push("/senior/my-appointments");
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Fetch appointment
+    const { data: apt, error: aptError } = await supabase
       .from("appointments")
-      .select("*, specialist:specialist_id(id, user_id, hourly_rate), specialist_profile:specialist_id(id, hourly_rate)")
-      .eq("id", params.id)
+      .select("*")
+      .eq("id", appointmentId)
       .single();
 
-    if (error || !apt) {
+    if (aptError || !apt) {
+      console.error("Error fetching appointment:", aptError);
       router.push("/senior/my-appointments");
+      setIsLoading(false);
       return;
     }
 
+    // Verify this appointment belongs to the current user
     if (apt.senior_id !== user?.id) {
+      console.error("Appointment does not belong to current user");
       router.push("/senior/my-appointments");
+      setIsLoading(false);
       return;
     }
 
-    setAppointment(apt);
-    setSpecialist(apt.specialist || apt.specialist_profile);
+    // Check if appointment is confirmed - payment can only be made for confirmed appointments
+    if (apt.status !== "confirmed") {
+      console.log("Appointment is not confirmed, redirecting to appointment detail");
+      router.replace(`/senior/my-appointments/${appointmentId}`);
+      setIsLoading(false);
+      return;
+    }
+
+    // Fetch specialist user details
+    const { data: specialistUser, error: specialistUserError } = await supabase
+      .from("users")
+      .select("id, full_name")
+      .eq("id", apt.specialist_id)
+      .single();
+
+    if (specialistUserError) {
+      console.error("Error fetching specialist user:", specialistUserError);
+    }
+
+    // Fetch specialist profile for hourly rate
+    const { data: specialistProfile, error: profileError } = await supabase
+      .from("specialist_profiles")
+      .select("id, hourly_rate")
+      .eq("user_id", apt.specialist_id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching specialist profile:", profileError);
+    }
+
+    // Combine data
+    const appointmentWithSpecialist = {
+      ...apt,
+      specialist: {
+        user: {
+          full_name: specialistUser?.full_name || "Specialist",
+          id: specialistUser?.id || apt.specialist_id
+        }
+      }
+    };
+
+    setAppointment(appointmentWithSpecialist);
+    setSpecialist({
+      user: {
+        full_name: specialistUser?.full_name || "Specialist",
+        id: specialistUser?.id || apt.specialist_id
+      },
+      hourly_rate: specialistProfile?.hourly_rate || 0
+    });
 
     // Calculate amount
-    const hourlyRate = apt.specialist_profile?.hourly_rate || apt.specialist?.hourly_rate || 0;
+    const hourlyRate = specialistProfile?.hourly_rate || 0;
     const durationHours = apt.duration_minutes / 60;
-    setAmount(hourlyRate * durationHours);
+    const calculatedAmount = hourlyRate * durationHours;
+    setAmount(calculatedAmount);
 
     // Check for existing payment
-    const { data: existingPayment } = await supabase
+    const { data: existingPayment, error: paymentError } = await supabase
       .from("payments")
       .select("*")
-      .eq("appointment_id", params.id)
+      .eq("appointment_id", appointmentId)
       .eq("status", "completed")
-      .single();
+      .maybeSingle();
+
+    if (paymentError) {
+      console.error("Error checking for existing payment:", paymentError);
+    }
 
     if (existingPayment) {
       setPayment(existingPayment);
     }
 
     setIsLoading(false);
-  };
+  }, [appointmentId, user?.id, router, supabase]);
+
+  useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
+    // If no user, redirect to login
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    
+    // Wait a bit for role to be fetched if it's undefined
+    if (user.role === undefined) {
+      const timer = setTimeout(() => {
+        // If role is still undefined or not senior after timeout, redirect
+        if (!user || user.role !== "senior") {
+          if (user?.role === "specialist") {
+            router.replace("/specialist/dashboard");
+          } else if (user?.role === "admin") {
+            router.replace("/admin/dashboard");
+          } else {
+            router.replace("/");
+          }
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    
+    // If role is defined and not senior, redirect appropriately
+    if (user.role !== "senior") {
+      if (user.role === "specialist") {
+        router.replace("/specialist/dashboard");
+      } else if (user.role === "admin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/");
+      }
+      return;
+    }
+    
+    // User is senior, fetch appointment data if we have appointmentId
+    if (user.id && appointmentId) {
+      fetchAppointmentData();
+    }
+  }, [user, authLoading, appointmentId, router, fetchAppointmentData]);
 
   const handlePaymentSuccess = () => {
+    if (!appointmentId) return;
+    
     setTimeout(() => {
-      router.push(`/senior/my-appointments/${params.id}?payment=success`);
+      router.replace(`/senior/my-appointments/${appointmentId}?payment=success`);
     }, 2000);
   };
 
@@ -95,7 +210,7 @@ function PaymentPageContent() {
           variants={fadeIn}
         >
           <Link
-            href={`/senior/my-appointments/${params.id}`}
+            href={`/senior/my-appointments/${appointmentId}`}
             className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
           >
             <ArrowLeft size={20} className="mr-2" />
@@ -110,7 +225,7 @@ function PaymentPageContent() {
             <p className="text-text-secondary mb-6">
               This appointment has already been paid for.
             </p>
-            <Link href={`/senior/my-appointments/${params.id}`}>
+            <Link href={`/senior/my-appointments/${appointmentId}`}>
               <Button variant="primary">View Appointment</Button>
             </Link>
           </motion.div>
@@ -127,7 +242,7 @@ function PaymentPageContent() {
         variants={fadeIn}
       >
         <Link
-          href={`/senior/my-appointments/${params.id}`}
+          href={`/senior/my-appointments/${appointmentId}`}
           className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
         >
           <ArrowLeft size={20} className="mr-2" />
@@ -212,7 +327,7 @@ function PaymentPageContent() {
                 </h2>
               </div>
               <PaymentForm
-                appointmentId={params.id as string}
+                appointmentId={appointmentId}
                 amount={amount}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}

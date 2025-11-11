@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useConversations } from "@/lib/hooks/useConversations";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
-import { MessageSquare, Search, User } from "lucide-react";
+import { MessageSquare, Search, User, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 function MessagesPageContent() {
@@ -17,13 +17,40 @@ function MessagesPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
+    // If no user, redirect to login
+    if (!user) {
       router.push("/login");
       return;
     }
-    if (user?.role !== "senior") {
-      router.push("/");
-      return;
+    
+    // Wait a bit for role to be fetched if it's undefined
+    if (user.role === undefined) {
+      const timer = setTimeout(() => {
+        if (user.role !== "senior") {
+          if (user.role === "specialist") {
+            router.replace("/specialist/dashboard");
+          } else if (user.role === "admin") {
+            router.replace("/admin/dashboard");
+          } else {
+            router.replace("/");
+          }
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    
+    // If role is defined and not senior, redirect appropriately
+    if (user.role !== "senior") {
+      if (user.role === "specialist") {
+        router.replace("/specialist/dashboard");
+      } else if (user.role === "admin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/");
+      }
     }
   }, [user, authLoading, router]);
 
@@ -46,6 +73,14 @@ function MessagesPageContent() {
         animate="animate"
         variants={fadeIn}
       >
+        <Link
+          href="/senior/dashboard"
+          className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to Dashboard
+        </Link>
+
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
             Messages

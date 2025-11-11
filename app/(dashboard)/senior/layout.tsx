@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Button from "@/components/ui/Button";
-import AIChatbot from "@/components/features/AIChatbot";
 
 export default function SeniorLayout({
   children,
@@ -77,7 +76,6 @@ export default function SeniorLayout({
             </div>
           </nav>
           <main>{children}</main>
-          <AIChatbot />
         </>
       )}
     </div>

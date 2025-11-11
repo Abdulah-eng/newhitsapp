@@ -54,14 +54,45 @@ function BookAppointmentPageContent() {
   const preselectedSpecialistId = searchParams.get("specialist");
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
+    // If no user, redirect to login
+    if (!user) {
       router.push("/login");
       return;
     }
-    if (user?.role !== "senior") {
-      router.push("/");
+    
+    // Wait a bit for role to be fetched if it's undefined
+    if (user.role === undefined) {
+      const timer = setTimeout(() => {
+        // If role is still undefined or not senior after timeout, redirect
+        if (!user || user.role !== "senior") {
+          if (user?.role === "specialist") {
+            router.replace("/specialist/dashboard");
+          } else if (user?.role === "admin") {
+            router.replace("/admin/dashboard");
+          } else {
+            router.replace("/");
+          }
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    
+    // If role is defined and not senior, redirect appropriately
+    if (user.role !== "senior") {
+      if (user.role === "specialist") {
+        router.replace("/specialist/dashboard");
+      } else if (user.role === "admin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/");
+      }
       return;
     }
+    
+    // User is senior, fetch specialists
     fetchSpecialists();
   }, [user, authLoading, router]);
 

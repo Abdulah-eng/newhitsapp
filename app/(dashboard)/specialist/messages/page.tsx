@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useConversations } from "@/lib/hooks/useConversations";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
-import { MessageSquare, Search, User } from "lucide-react";
+import { MessageSquare, Search, User, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 function SpecialistMessagesPageContent() {
@@ -46,6 +46,14 @@ function SpecialistMessagesPageContent() {
         animate="animate"
         variants={fadeIn}
       >
+        <Link
+          href="/specialist/dashboard"
+          className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to Dashboard
+        </Link>
+
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
             Messages

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Message } from "@/types";
 
@@ -16,14 +16,30 @@ export function useMessages(options: UseMessagesOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchMessages = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
+      // Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setError("User not authenticated");
+        setIsLoading(false);
+        return;
+      }
+
       let query = supabase
         .from("messages")
         .select("*")
@@ -33,72 +49,136 @@ export function useMessages(options: UseMessagesOptions = {}) {
         query = query.eq("appointment_id", appointmentId);
       } else if (otherUserId) {
         // Fetch conversation between current user and other user
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          query = query.or(
-            `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`
-          );
-        }
+        query = query.or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`
+        );
+      } else {
+        // If no filters, don't fetch anything
+        setMessages([]);
+        setIsLoading(false);
+        return;
       }
 
       const { data, error: fetchError } = await query;
 
       if (fetchError) {
+        console.error("Error fetching messages:", fetchError);
         setError(fetchError.message);
+        setMessages([]);
+        setIsLoading(false);
         return;
       }
 
+      console.log("Fetched messages:", data?.length || 0, data);
       setMessages((data as Message[]) || []);
-    } catch (err) {
-      setError("Failed to fetch messages");
-      console.error(err);
+    } catch (err: any) {
+      console.error("Exception fetching messages:", err);
+      setError(err.message || "Failed to fetch messages");
+      setMessages([]);
     } finally {
       setIsLoading(false);
     }
   }, [appointmentId, otherUserId, enabled, supabase]);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchMessages();
 
-    if (!enabled) return;
-
     // Set up real-time subscription
-    const channel = supabase
-      .channel(`messages:${appointmentId || otherUserId || "all"}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: appointmentId
-            ? `appointment_id=eq.${appointmentId}`
-            : otherUserId
-            ? `or(sender_id=eq.${otherUserId},receiver_id=eq.${otherUserId})`
-            : undefined,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setMessages((prev) => [...prev, payload.new as Message]);
-          } else if (payload.eventType === "UPDATE") {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === payload.new.id ? (payload.new as Message) : msg
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            setMessages((prev) =>
-              prev.filter((msg) => msg.id !== payload.old.id)
-            );
+    let isMounted = true;
+
+    const setupSubscription = async () => {
+      // Get current user for proper filtering
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !isMounted) {
+        return;
+      }
+
+      let filter: string | undefined;
+
+      if (appointmentId) {
+        filter = `appointment_id=eq.${appointmentId}`;
+      } else if (otherUserId) {
+        // Filter for messages between current user and other user
+        // This ensures we only get messages in this specific conversation
+        filter = `or(and(sender_id=eq.${user.id},receiver_id=eq.${otherUserId}),and(sender_id=eq.${otherUserId},receiver_id=eq.${user.id}))`;
+      } else {
+        return; // No valid filter, don't subscribe
+      }
+
+      const channelName = `messages:${appointmentId || otherUserId || "all"}-${user.id}`;
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "messages",
+            filter: filter,
+          },
+          (payload) => {
+            if (!isMounted) return;
+            
+            console.log("Real-time message event:", payload.eventType, payload.new || payload.old);
+            
+            if (payload.eventType === "INSERT") {
+              const newMessage = payload.new as Message;
+              // Check if message already exists to avoid duplicates
+              setMessages((prev) => {
+                const exists = prev.some((msg) => msg.id === newMessage.id);
+                if (exists) {
+                  console.log("Message already exists, skipping:", newMessage.id);
+                  return prev;
+                }
+                console.log("Adding new message via real-time:", newMessage);
+                // Sort messages by created_at to maintain order
+                const updated = [...prev, newMessage].sort(
+                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
+                return updated;
+              });
+            } else if (payload.eventType === "UPDATE") {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === payload.new.id ? (payload.new as Message) : msg
+                )
+              );
+            } else if (payload.eventType === "DELETE") {
+              setMessages((prev) =>
+                prev.filter((msg) => msg.id !== payload.old.id)
+              );
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log("Subscription status:", status);
+          if (status === "SUBSCRIBED") {
+            console.log("✅ Successfully subscribed to real-time messages");
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("❌ Error subscribing to real-time messages");
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    setupSubscription();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channelRef.current) {
+        console.log("Cleaning up real-time subscription");
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [fetchMessages, appointmentId, otherUserId, enabled, supabase]);
 
@@ -117,6 +197,20 @@ export function useMessages(options: UseMessagesOptions = {}) {
         return null;
       }
 
+      // Optimistically add message to local state for immediate UI feedback
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id,
+        receiver_id: receiverId,
+        appointment_id: appointmentId || undefined,
+        content,
+        attachments: attachments || [],
+        created_at: new Date().toISOString(),
+        read_at: undefined,
+      };
+
+      setMessages((prev) => [...prev, tempMessage]);
+
       const { data, error: sendError } = await supabase
         .from("messages")
         .insert({
@@ -130,11 +224,19 @@ export function useMessages(options: UseMessagesOptions = {}) {
         .single();
 
       if (sendError) {
+        // Remove temp message on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
         setError(sendError.message);
         return null;
       }
 
-      return data as Message;
+      // Replace temp message with real message from database
+      const realMessage = data as Message;
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === tempMessage.id ? realMessage : msg))
+      );
+
+      return realMessage;
     },
     [appointmentId, supabase]
   );

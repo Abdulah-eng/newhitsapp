@@ -4,9 +4,25 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export default function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  
+  const getDashboardLink = () => {
+    if (!user) return "/login";
+    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com") {
+      return "/admin/dashboard";
+    }
+    if (user.role === "senior") {
+      return "/senior/dashboard";
+    }
+    if (user.role === "specialist") {
+      return "/specialist/dashboard";
+    }
+    return "/login";
+  };
 
   return (
     <header className="z-40 bg-white">
@@ -53,9 +69,15 @@ export default function MarketingHeader() {
                 Member Support
               </Button>
             </a>
-            <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-              Sign in
-            </Link>
+            {user ? (
+              <Link href={getDashboardLink()} className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+                Sign in
+              </Link>
+            )}
           </div>
 
           {/* Mobile Toggle */}
@@ -102,11 +124,19 @@ export default function MarketingHeader() {
                   Member Support
                 </Button>
               </a>
-              <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
-                  Sign in
-                </Button>
-              </Link>
+              {user ? (
+                <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
+                  <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
+                  <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                    Sign in
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

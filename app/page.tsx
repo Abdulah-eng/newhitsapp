@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const fadeUp = (delay = 0) => ({
   hidden: { opacity: 0, y: 28 },
@@ -45,6 +46,21 @@ const loopFloat = {
 
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  
+  const getDashboardLink = () => {
+    if (!user) return "/login";
+    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com") {
+      return "/admin/dashboard";
+    }
+    if (user.role === "senior") {
+      return "/senior/dashboard";
+    }
+    if (user.role === "specialist") {
+      return "/specialist/dashboard";
+    }
+    return "/login";
+  };
 
   return (
     <main className="min-h-screen bg-secondary-100 text-text-primary">
@@ -83,9 +99,15 @@ export default function HomePage() {
                   Member Support
                 </Button>
               </a>
-              <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-                Sign in
-              </Link>
+              {user ? (
+                <Link href={getDashboardLink()} className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+                  Dashboard
+                </Link>
+              ) : (
+                <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+                  Sign in
+                </Link>
+              )}
             </div>
 
             {/* Mobile Toggle */}
@@ -122,11 +144,19 @@ export default function HomePage() {
                     Member Support
                   </Button>
                 </a>
-                <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                  <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
-                    Sign in
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
+                    <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
+                    <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                      Sign in
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

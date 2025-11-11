@@ -25,7 +25,7 @@ export async function matchSpecialistWithAI(
   userPreferences?: MatchingRequest["preferences"]
 ): Promise<MatchingResult[]> {
   try {
-    const model = getGeminiModel("gemini-pro");
+    const model = getGeminiModel("models/gemini-2.5-flash");
 
     // Prepare specialist data for AI
     const specialistData = specialists.map((spec) => ({
@@ -152,7 +152,7 @@ export async function improveIssueDescription(
   originalDescription: string
 ): Promise<string> {
   try {
-    const model = getGeminiModel("gemini-pro");
+    const model = getGeminiModel("models/gemini-2.5-flash");
 
     const prompt = `You are helping a senior citizen describe their technology problem more clearly.
 
@@ -164,6 +164,12 @@ Rewrite this description to be:
 3. Easy for an IT specialist to understand
 4. Keep the same meaning and intent
 5. Use simple, clear language
+6. Fix all spelling errors and typos
+7. Add proper punctuation and capitalization
+8. Correct grammar mistakes
+9. Make it more professional while keeping the user's voice
+
+IMPORTANT: You must actually improve the text. If there are spelling errors, fix them. If there's no punctuation, add it. If the grammar is poor, correct it. Do not just return the original text unchanged.
 
 Return ONLY the improved description, no additional text or explanations.`;
 
@@ -183,7 +189,7 @@ export async function generateRecommendations(
   issueDescription: string
 ): Promise<string[]> {
   try {
-    const model = getGeminiModel("gemini-pro");
+    const model = getGeminiModel("models/gemini-2.5-flash");
 
     const prompt = `Based on this technology issue: "${issueDescription}"
 

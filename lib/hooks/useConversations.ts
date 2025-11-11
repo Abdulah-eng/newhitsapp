@@ -49,25 +49,54 @@ export function useConversations() {
     }
 
     // Fetch all messages where user is sender or receiver
-    const { data: messages, error } = await supabase
+    const { data: messages, error: messagesError } = await supabase
       .from("messages")
-      .select("*, sender:sender_id(id, full_name, avatar_url), receiver:receiver_id(id, full_name, avatar_url)")
+      .select("*")
       .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching conversations:", error);
+    if (messagesError) {
+      console.error("Error fetching conversations:", messagesError);
       setIsLoading(false);
       return;
     }
 
+    if (!messages || messages.length === 0) {
+      setConversations([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Get unique user IDs (senders and receivers)
+    const userIds = new Set<string>();
+    messages.forEach((msg: any) => {
+      if (msg.sender_id) userIds.add(msg.sender_id);
+      if (msg.receiver_id) userIds.add(msg.receiver_id);
+    });
+
+    // Fetch user details
+    const { data: usersData, error: usersError } = await supabase
+      .from("users")
+      .select("id, full_name, avatar_url")
+      .in("id", Array.from(userIds));
+
+    if (usersError) {
+      console.error("Error fetching user details:", usersError);
+    }
+
+    // Create a map of user IDs to user data
+    const usersMap = new Map<string, any>();
+    usersData?.forEach((u: any) => {
+      usersMap.set(u.id, u);
+    });
+
     // Group messages by conversation
     const conversationMap = new Map<string, Conversation>();
 
-    messages?.forEach((msg: any) => {
-      const otherUser =
-        msg.sender_id === user.id ? msg.receiver : msg.sender;
-      const conversationKey = otherUser.id;
+    messages.forEach((msg: any) => {
+      const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      const otherUser = usersMap.get(otherUserId) || { id: otherUserId, full_name: "Unknown", avatar_url: null };
+      const conversationKey = otherUserId;
 
       if (!conversationMap.has(conversationKey)) {
         conversationMap.set(conversationKey, {

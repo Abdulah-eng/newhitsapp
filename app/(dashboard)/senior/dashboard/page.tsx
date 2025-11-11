@@ -24,15 +24,36 @@ export default function SeniorDashboard() {
     if (!loading && user && user.role === "senior" && user.id) {
       // Fetch appointments
       const fetchData = async () => {
-        const { data: apps } = await supabase
+        const { data: appsData, error: appsError } = await supabase
           .from("appointments")
-          .select("*, specialist:specialist_id(full_name)")
+          .select("*")
           .eq("senior_id", user.id)
           .in("status", ["pending", "confirmed"])
           .order("scheduled_at", { ascending: true })
           .limit(3);
 
-        setAppointments(apps || []);
+        if (appsError) {
+          console.error("Error fetching appointments:", appsError);
+          setAppointments([]);
+        } else if (appsData && appsData.length > 0) {
+          // Fetch specialist details
+          const specialistIds = [...new Set(appsData.map(apt => apt.specialist_id))];
+          const { data: specialistsData } = await supabase
+            .from("users")
+            .select("id, full_name")
+            .in("id", specialistIds);
+
+          const appsWithSpecialist = appsData.map(apt => ({
+            ...apt,
+            specialist: {
+              full_name: specialistsData?.find(s => s.id === apt.specialist_id)?.full_name || "Specialist"
+            }
+          }));
+
+          setAppointments(appsWithSpecialist || []);
+        } else {
+          setAppointments([]);
+        }
 
         const { count } = await supabase
           .from("messages")

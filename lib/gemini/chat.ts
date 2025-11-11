@@ -13,7 +13,7 @@ export async function chatWithAI(
   conversationHistory: ChatMessage[] = []
 ): Promise<string> {
   try {
-    const model = getGeminiModel("gemini-pro");
+    const model = getGeminiModel("models/gemini-2.5-flash");
 
     // Build conversation context
     const systemPrompt = `You are a helpful AI assistant for H.I.T.S. (Hire I.T. Specialists), a platform connecting seniors with IT specialists.

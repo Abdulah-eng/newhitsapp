@@ -17,6 +17,7 @@ function SpecialistAppointmentDetailPageContent() {
   const { user, loading: authLoading } = useAuth();
   const supabase = createSupabaseBrowserClient();
   const [appointment, setAppointment] = useState<any>(null);
+  const [payment, setPayment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notes, setNotes] = useState("");
@@ -28,29 +29,83 @@ function SpecialistAppointmentDetailPageContent() {
   }, [user, authLoading, params.id]);
 
   const fetchAppointment = async () => {
-    const { data, error } = await supabase
+    setIsLoading(true);
+    
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) {
+      router.push("/specialist/appointments");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Fetch appointment
+    const { data: appointmentData, error: appointmentError } = await supabase
       .from("appointments")
-      .select("*, senior:senior_id(full_name, user_id), specialist:specialist_id(full_name)")
-      .eq("id", params.id)
+      .select("*")
+      .eq("id", appointmentId)
       .single();
 
-    if (error) {
-      console.error("Error fetching appointment:", error);
+    if (appointmentError) {
+      console.error("Error fetching appointment:", appointmentError);
       router.push("/specialist/appointments");
+      setIsLoading(false);
       return;
     }
 
-    if (data.specialist_id !== user?.id) {
+    if (appointmentData.specialist_id !== user?.id) {
       router.push("/specialist/appointments");
+      setIsLoading(false);
       return;
     }
 
-    setAppointment(data);
-    setNotes(data.notes || "");
+    // Fetch senior user details
+    const { data: seniorData, error: seniorError } = await supabase
+      .from("users")
+      .select("id, full_name")
+      .eq("id", appointmentData.senior_id)
+      .single();
+
+    if (seniorError) {
+      console.error("Error fetching senior details:", seniorError);
+    }
+
+    // Fetch payment status
+    const { data: paymentData, error: paymentError } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("appointment_id", appointmentId)
+      .eq("status", "completed")
+      .maybeSingle();
+
+    if (paymentError) {
+      console.error("Error fetching payment:", paymentError);
+    }
+
+    // Combine appointment with senior data
+    const appointmentWithSenior = {
+      ...appointmentData,
+      senior: {
+        full_name: seniorData?.full_name || "Unknown",
+        user_id: seniorData?.id || appointmentData.senior_id
+      },
+      specialist: {
+        full_name: user?.user_metadata?.full_name || "You"
+      }
+    };
+
+    setAppointment(appointmentWithSenior);
+    setPayment(paymentData || null);
+    setNotes(appointmentData.notes || "");
     setIsLoading(false);
   };
 
   const updateStatus = async (newStatus: string) => {
+    // If starting appointment, verify payment is completed
+    if (newStatus === "in-progress" && !payment) {
+      alert("Cannot start appointment. Payment has not been completed yet.");
+      return;
+    }
+
     const updateData: any = {
       status: newStatus,
     };
@@ -61,10 +116,13 @@ function SpecialistAppointmentDetailPageContent() {
       updateData.cancelled_at = new Date().toISOString();
     }
 
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) return;
+    
     const { error } = await supabase
       .from("appointments")
       .update(updateData)
-      .eq("id", params.id);
+      .eq("id", appointmentId);
 
     if (error) {
       alert("Failed to update appointment. Please try again.");
@@ -76,15 +134,23 @@ function SpecialistAppointmentDetailPageContent() {
 
   const saveNotes = async () => {
     setIsSaving(true);
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) {
+      setIsSaving(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("appointments")
       .update({ notes })
-      .eq("id", params.id);
+      .eq("id", appointmentId);
 
     if (error) {
       alert("Failed to save notes. Please try again.");
     } else {
       alert("Notes saved successfully!");
+      // Refresh appointment data to show updated notes
+      fetchAppointment();
     }
     setIsSaving(false);
   };
@@ -173,12 +239,21 @@ function SpecialistAppointmentDetailPageContent() {
                 </>
               )}
               {appointment.status === "confirmed" && (
-                <Button
-                  variant="primary"
-                  onClick={() => updateStatus("in-progress")}
-                >
-                  Start Appointment
-                </Button>
+                <>
+                  {payment ? (
+                    <Button
+                      variant="primary"
+                      onClick={() => updateStatus("in-progress")}
+                    >
+                      Start Appointment
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-warning-50 border border-warning-200 rounded-lg">
+                      <Clock size={18} className="text-warning-600" />
+                      <span className="text-sm font-medium text-warning-700">Waiting for Payment</span>
+                    </div>
+                  )}
+                </>
               )}
               {appointment.status === "in-progress" && (
                 <Button
@@ -273,12 +348,14 @@ function SpecialistAppointmentDetailPageContent() {
             </div>
 
             <div className="flex gap-4 pt-6 border-t">
-              <Link href={`/specialist/messages?senior=${appointment.senior?.user_id}`}>
-                <Button variant="primary">
-                  <MessageSquare size={18} className="mr-2" />
-                  Message Client
-                </Button>
-              </Link>
+              {appointment.senior?.user_id && (
+                <Link href={`/specialist/messages/${appointment.senior.user_id}`}>
+                  <Button variant="primary">
+                    <MessageSquare size={18} className="mr-2" />
+                    Message Client
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </motion.div>

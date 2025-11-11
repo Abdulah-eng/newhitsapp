@@ -6,7 +6,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
-import { Save, Plus, X, Clock } from "lucide-react";
+import { Save, Plus, X, Clock, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 interface AvailabilitySlot {
   id?: string;
@@ -96,40 +97,63 @@ export default function CalendarPage() {
     setIsSaving(true);
     setMessage(null);
 
-    // Delete all existing slots for this specialist
-    await supabase
-      .from("specialist_availability")
-      .delete()
-      .eq("specialist_id", user.id);
-
-    // Insert new slots
-    const slotsToInsert = availability
-      .filter((slot) => slot.is_available)
-      .map((slot) => ({
-        specialist_id: user.id,
-        day_of_week: slot.day_of_week,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        is_available: true,
-      }));
-
-    if (slotsToInsert.length > 0) {
-      const { error } = await supabase
+    try {
+      // Delete all existing slots for this specialist
+      const { error: deleteError } = await supabase
         .from("specialist_availability")
-        .insert(slotsToInsert);
+        .delete()
+        .eq("specialist_id", user.id);
 
-      if (error) {
-        setMessage({ type: "error", text: "Failed to save availability. Please try again." });
-      } else {
-        setMessage({ type: "success", text: "Availability saved successfully!" });
-        fetchAvailability();
+      if (deleteError) {
+        console.error("Error deleting availability:", deleteError);
+        setMessage({ 
+          type: "error", 
+          text: `Failed to delete existing availability: ${deleteError.message}. Please check your permissions.` 
+        });
+        setIsSaving(false);
+        setTimeout(() => setMessage(null), 5000);
+        return;
       }
-    } else {
-      setMessage({ type: "success", text: "Availability cleared successfully!" });
-    }
 
-    setIsSaving(false);
-    setTimeout(() => setMessage(null), 5000);
+      // Insert new slots
+      const slotsToInsert = availability
+        .filter((slot) => slot.is_available)
+        .map((slot) => ({
+          specialist_id: user.id,
+          day_of_week: slot.day_of_week,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          is_available: true,
+        }));
+
+      if (slotsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from("specialist_availability")
+          .insert(slotsToInsert);
+
+        if (insertError) {
+          console.error("Error inserting availability:", insertError);
+          setMessage({ 
+            type: "error", 
+            text: `Failed to save availability: ${insertError.message}. Please check your permissions.` 
+          });
+        } else {
+          setMessage({ type: "success", text: "Availability saved successfully!" });
+          fetchAvailability();
+        }
+      } else {
+        setMessage({ type: "success", text: "Availability cleared successfully!" });
+      }
+    } catch (error: any) {
+      console.error("Unexpected error saving availability:", error);
+      setMessage({ 
+        type: "error", 
+        text: `An unexpected error occurred: ${error.message || "Please try again."}` 
+      });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -147,6 +171,14 @@ export default function CalendarPage() {
         animate="animate"
         variants={fadeIn}
       >
+        <Link
+          href="/specialist/dashboard"
+          className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to Dashboard
+        </Link>
+
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
             Manage Availability

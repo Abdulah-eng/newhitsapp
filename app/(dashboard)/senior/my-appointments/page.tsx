@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, User, Search, Filter } from "lucide-react";
+import { Calendar, Clock, MapPin, Search, ArrowLeft } from "lucide-react";
 
 interface Appointment {
   id: string;
@@ -23,43 +24,112 @@ interface Appointment {
 }
 
 export default function MyAppointmentsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debugMessage, setDebugMessage] = useState<string>("");
 
   useEffect(() => {
-    if (!authLoading && user?.id) {
-      fetchAppointments();
-    }
-  }, [user, authLoading]);
-
-  useEffect(() => {
-    filterAppointments();
-  }, [appointments, statusFilter, searchQuery]);
-
-  const fetchAppointments = async () => {
-    if (!user?.id) return;
-
-    const { data, error } = await supabase
-      .from("appointments")
-      .select("*, specialist:specialist_id(full_name)")
-      .eq("senior_id", user.id)
-      .order("scheduled_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching appointments:", error);
+    if (loading) {
+      setDebugMessage("Waiting for authentication...");
       return;
     }
 
-    setAppointments((data as Appointment[]) || []);
-    setIsLoading(false);
-  };
+    if (!user) {
+      setDebugMessage("No user found");
+      setIsLoading(false);
+      return;
+    }
 
-  const filterAppointments = () => {
+    if (user.role !== "senior") {
+      setDebugMessage(`User role is ${user.role}, expected senior`);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!user.id) {
+      setDebugMessage("User ID is missing");
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setDebugMessage(`Fetching appointments for user: ${user.id}...`);
+      
+      // Fetch appointments
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("senior_id", user.id)
+        .order("scheduled_at", { ascending: false });
+
+      if (appointmentsError) {
+        console.error("Error fetching appointments:", appointmentsError);
+        setDebugMessage(`Error: ${appointmentsError.message}`);
+        setAppointments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!appointmentsData || appointmentsData.length === 0) {
+        setDebugMessage(`No appointments found (fetched ${appointmentsData?.length || 0} appointments)`);
+        setAppointments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setDebugMessage(`Found ${appointmentsData.length} appointments, fetching specialist details...`);
+
+      // Fetch specialist user details for each appointment
+      const specialistIds = [...new Set(appointmentsData.map(apt => apt.specialist_id))];
+      const { data: specialistsData, error: specialistsError } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .in("id", specialistIds);
+
+      if (specialistsError) {
+        console.error("Error fetching specialist details:", specialistsError);
+        setDebugMessage(`Error fetching specialist details: ${specialistsError.message}`);
+      } else {
+        setDebugMessage(`Fetched ${specialistsData?.length || 0} specialist details`);
+      }
+
+      // Combine appointments with specialist data
+      const appointmentsWithSpecialist = appointmentsData.map(apt => {
+        const specialist = specialistsData?.find(s => s.id === apt.specialist_id);
+        return {
+          ...apt,
+          specialist: {
+            full_name: specialist?.full_name || "Unknown"
+          }
+        };
+      });
+
+      console.log("Combined appointments:", appointmentsWithSpecialist);
+      setDebugMessage(`Successfully loaded ${appointmentsWithSpecialist.length} appointments`);
+      setAppointments(appointmentsWithSpecialist as Appointment[]);
+      // Also set filtered appointments immediately
+      setFilteredAppointments(appointmentsWithSpecialist as Appointment[]);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [user, loading, router, supabase]);
+
+  useEffect(() => {
+    console.log("Filtering appointments:", {
+      appointmentsCount: appointments.length,
+      statusFilter,
+      searchQuery,
+      appointments: appointments
+    });
+
     let filtered = [...appointments];
 
     if (statusFilter !== "all") {
@@ -70,12 +140,62 @@ export default function MyAppointmentsPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (apt) =>
-          apt.specialist.full_name.toLowerCase().includes(query) ||
-          apt.issue_description.toLowerCase().includes(query)
+          (apt.specialist?.full_name || "").toLowerCase().includes(query) ||
+          (apt.issue_description || "").toLowerCase().includes(query)
       );
     }
 
+    console.log("Filtered appointments:", {
+      filteredCount: filtered.length,
+      filtered: filtered
+    });
+
     setFilteredAppointments(filtered);
+  }, [appointments, statusFilter, searchQuery]);
+
+  const handleCancel = async (appointmentId: string) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+      })
+      .eq("id", appointmentId);
+
+    if (error) {
+      alert("Failed to cancel appointment. Please try again.");
+      return;
+    }
+
+    // Re-fetch appointments
+    if (user?.id) {
+      const { data: appointmentsData, error: appointmentsError } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("senior_id", user.id)
+        .order("scheduled_at", { ascending: false });
+
+      if (!appointmentsError && appointmentsData) {
+        const specialistIds = [...new Set(appointmentsData.map(apt => apt.specialist_id))];
+        const { data: specialistsData } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .in("id", specialistIds);
+
+        const appointmentsWithSpecialist = appointmentsData.map(apt => ({
+          ...apt,
+          specialist: {
+            full_name: specialistsData?.find(s => s.id === apt.specialist_id)?.full_name || "Unknown"
+          }
+        }));
+
+        setAppointments(appointmentsWithSpecialist as Appointment[]);
+      }
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -95,7 +215,7 @@ export default function MyAppointmentsPage() {
     }
   };
 
-  if (authLoading || isLoading) {
+  if (loading || !user || user.role !== "senior") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
@@ -110,6 +230,14 @@ export default function MyAppointmentsPage() {
         animate="animate"
         variants={fadeIn}
       >
+        <Link
+          href="/senior/dashboard"
+          className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to Dashboard
+        </Link>
+
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
             My Appointments
@@ -148,7 +276,12 @@ export default function MyAppointmentsPage() {
         </motion.div>
 
         {/* Appointments List */}
-        {filteredAppointments.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+            <p className="ml-4 text-text-secondary">Loading appointments...</p>
+          </div>
+        ) : filteredAppointments.length === 0 ? (
           <motion.div variants={slideUp} className="card bg-white p-12 text-center">
             <Calendar className="w-16 h-16 text-text-tertiary mx-auto mb-4" />
             <p className="text-xl text-text-secondary mb-4">
@@ -244,18 +377,7 @@ export default function MyAppointmentsPage() {
                       <Button
                         variant="ghost"
                         className="w-full md:w-auto text-error-500 hover:text-error-600"
-                        onClick={async () => {
-                          if (confirm("Are you sure you want to cancel this appointment?")) {
-                            await supabase
-                              .from("appointments")
-                              .update({
-                                status: "cancelled",
-                                cancelled_at: new Date().toISOString(),
-                              })
-                              .eq("id", appointment.id);
-                            fetchAppointments();
-                          }
-                        }}
+                        onClick={() => handleCancel(appointment.id)}
                       >
                         Cancel
                       </Button>
@@ -270,4 +392,3 @@ export default function MyAppointmentsPage() {
     </div>
   );
 }
-

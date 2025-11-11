@@ -46,10 +46,16 @@ function LoginForm() {
 
       if (data.user) {
         const role = (data.user.user_metadata?.role as string) || "senior";
-        if (role === "senior") router.replace("/senior/dashboard");
-        else if (role === "specialist") router.replace("/specialist/dashboard");
-        else if (role === "admin") router.replace("/admin/dashboard");
-        else router.replace("/");
+        // Check for admin email specifically
+        if (email.toLowerCase() === "admin@hitsapp.com" || role === "admin") {
+          router.replace("/admin/dashboard");
+        } else if (role === "senior") {
+          router.replace("/senior/dashboard");
+        } else if (role === "specialist") {
+          router.replace("/specialist/dashboard");
+        } else {
+          router.replace("/");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

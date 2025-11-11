@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { DollarSign, Calendar, User, Search, Download, CheckCircle, X, Clock } from "lucide-react";
+import { DollarSign, Calendar, User, Search, Download, CheckCircle, X, Clock, ArrowLeft } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -118,6 +118,14 @@ export default function PaymentsPage() {
         animate="animate"
         variants={fadeIn}
       >
+        <Link
+          href="/senior/dashboard"
+          className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to Dashboard
+        </Link>
+
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
             Payment History
