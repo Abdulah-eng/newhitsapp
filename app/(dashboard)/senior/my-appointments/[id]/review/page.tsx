@@ -231,12 +231,19 @@ function ReviewPageContent() {
             </div>
           </div>
 
-          <ReviewForm
-            appointmentId={Array.isArray(params.id) ? params.id[0] : params.id}
-            specialistId={appointment?.specialist_id}
-            onSubmit={handleSubmit}
-            onCancel={() => router.push(`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}`)}
-          />
+          {(() => {
+            const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+            if (!appointmentId) return null;
+            
+            return (
+              <ReviewForm
+                appointmentId={appointmentId}
+                specialistId={appointment?.specialist_id}
+                onSubmit={handleSubmit}
+                onCancel={() => router.push(`/senior/my-appointments/${appointmentId}`)}
+              />
+            );
+          })()}
         </motion.div>
       </motion.div>
     </div>

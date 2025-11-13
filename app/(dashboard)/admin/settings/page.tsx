@@ -36,18 +36,18 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (settings) {
       setLocalSettings({
-        platformName: localSettings.platform_name || "HITSapp",
-        platformEmail: localSettings.support_email || "support@hitsapp.com",
-        platformPhone: localSettings.support_phone || "+1 (555) 123-4567",
-        defaultHourlyRate: localSettings.base_hourly_rate || 90,
+        platformName: settings.platform_name || "HITSapp",
+        platformEmail: settings.support_email || "support@hitsapp.com",
+        platformPhone: settings.support_phone || "+1 (555) 123-4567",
+        defaultHourlyRate: settings.base_hourly_rate || 90,
         minHourlyRate: 20,
         maxHourlyRate: 200,
         platformFee: 15,
         currency: "USD",
         timezone: "America/New_York",
-        maintenanceMode: !localSettings.allow_registrations || false,
-        allowNewRegistrations: localSettings.allow_registrations || true,
-        requireEmailVerification: localSettings.require_email_verification || true,
+        maintenanceMode: !settings.allow_registrations || false,
+        allowNewRegistrations: settings.allow_registrations || true,
+        requireEmailVerification: settings.require_email_verification || true,
         enableNotifications: true,
         maxAppointmentDuration: 240,
         minAppointmentDuration: 30,
@@ -168,7 +168,7 @@ export default function AdminSettingsPage() {
               </label>
               <select
                 value={localSettings.timezone}
-                onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                onChange={(e) => setLocalSettings({ ...localSettings, timezone: e.target.value })}
                 className="input"
               >
                 <option value="America/New_York">Eastern Time (ET)</option>
@@ -206,7 +206,7 @@ export default function AdminSettingsPage() {
                 <Input
                   type="number"
                   value={localSettings.minHourlyRate}
-                  onChange={(e) => setSettings({ ...settings, minHourlyRate: Number(e.target.value) })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, minHourlyRate: Number(e.target.value) })}
                   min="0"
                 />
               </div>
@@ -217,7 +217,7 @@ export default function AdminSettingsPage() {
                 <Input
                   type="number"
                   value={localSettings.maxHourlyRate}
-                  onChange={(e) => setSettings({ ...settings, maxHourlyRate: Number(e.target.value) })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, maxHourlyRate: Number(e.target.value) })}
                   min="0"
                 />
               </div>
@@ -229,7 +229,7 @@ export default function AdminSettingsPage() {
               <Input
                 type="number"
                 value={localSettings.platformFee}
-                onChange={(e) => setSettings({ ...settings, platformFee: Number(e.target.value) })}
+                onChange={(e) => setLocalSettings({ ...localSettings, platformFee: Number(e.target.value) })}
                 min="0"
                 max="100"
               />
@@ -243,7 +243,7 @@ export default function AdminSettingsPage() {
               </label>
               <select
                 value={localSettings.currency}
-                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                onChange={(e) => setLocalSettings({ ...localSettings, currency: e.target.value })}
                 className="input"
               >
                 <option value="USD">USD ($)</option>
@@ -270,7 +270,7 @@ export default function AdminSettingsPage() {
                 <Input
                   type="number"
                   value={localSettings.minAppointmentDuration}
-                  onChange={(e) => setSettings({ ...settings, minAppointmentDuration: Number(e.target.value) })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, minAppointmentDuration: Number(e.target.value) })}
                   min="15"
                 />
               </div>
@@ -281,7 +281,7 @@ export default function AdminSettingsPage() {
                 <Input
                   type="number"
                   value={localSettings.maxAppointmentDuration}
-                  onChange={(e) => setSettings({ ...settings, maxAppointmentDuration: Number(e.target.value) })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, maxAppointmentDuration: Number(e.target.value) })}
                   min="30"
                 />
               </div>
@@ -307,7 +307,7 @@ export default function AdminSettingsPage() {
                 <input
                   type="checkbox"
                   checked={localSettings.maintenanceMode}
-                  onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, maintenanceMode: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-secondary-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-secondary-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
@@ -324,7 +324,7 @@ export default function AdminSettingsPage() {
                 <input
                   type="checkbox"
                   checked={localSettings.allowNewRegistrations}
-                  onChange={(e) => setSettings({ ...settings, allowNewRegistrations: e.target.checked })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, allowNewRegistrations: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-secondary-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-secondary-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
@@ -341,7 +341,7 @@ export default function AdminSettingsPage() {
                 <input
                   type="checkbox"
                   checked={localSettings.requireEmailVerification}
-                  onChange={(e) => setSettings({ ...settings, requireEmailVerification: e.target.checked })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, requireEmailVerification: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-secondary-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-secondary-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
@@ -368,7 +368,7 @@ export default function AdminSettingsPage() {
                 <input
                   type="checkbox"
                   checked={localSettings.enableNotifications}
-                  onChange={(e) => setSettings({ ...settings, enableNotifications: e.target.checked })}
+                  onChange={(e) => setLocalSettings({ ...localSettings, enableNotifications: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-secondary-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-secondary-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>

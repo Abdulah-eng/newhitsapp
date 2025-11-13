@@ -243,10 +243,10 @@ export function useMembership(userId: string | undefined) {
       // Log membership creation
       await logActivity(
         "membership_created",
-        `Membership created: ${plan?.name || planType} plan`,
+        `Membership created: ${plan?.name || "Unknown"} plan`,
         {
           membership_id: data.id,
-          plan_type: plan?.plan_type || planType,
+          plan_type: plan?.plan_type || "unknown",
           monthly_price: plan?.monthly_price || 0,
         }
       );

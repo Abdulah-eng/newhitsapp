@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     // Extract IP address and user agent
     const ipAddress = request.headers.get("x-forwarded-for") || 
                       request.headers.get("x-real-ip") || 
-                      request.ip || 
                       null;
     const userAgent = request.headers.get("user-agent") || null;
 

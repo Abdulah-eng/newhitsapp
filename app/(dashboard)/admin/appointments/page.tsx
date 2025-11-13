@@ -9,6 +9,12 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+interface UserData {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 interface Appointment {
   id: string;
   scheduled_at: string;
@@ -98,7 +104,7 @@ export default function AdminAppointmentsPage() {
       const specialistIds = [...new Set(appointmentsData.map((apt) => apt.specialist_id).filter(Boolean))];
       const allUserIds = [...new Set([...seniorIds, ...specialistIds])];
 
-      let usersData = [];
+      let usersData: UserData[] = [];
       if (allUserIds.length > 0) {
         const { data, error: usersError } = await supabase
           .from("users")

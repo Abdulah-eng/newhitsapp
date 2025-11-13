@@ -3,6 +3,7 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/utils/auth";
 import { stripe } from "@/lib/stripe/client";
 import { logMembershipCreated } from "@/lib/utils/activityLogger";
+import Stripe from "stripe";
 
 /**
  * Manually sync membership from Stripe subscription
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Retrieve subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(subscriptionId);
     
     if (subscription.status !== "active") {
       return NextResponse.json(
@@ -53,8 +54,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = subscription.metadata.user_id;
-    const membershipPlanId = subscription.metadata.membership_plan_id;
+    const userId = subscription.metadata?.user_id;
+    const membershipPlanId = subscription.metadata?.membership_plan_id;
 
     if (!userId || !membershipPlanId || userId !== user.id) {
       return NextResponse.json(
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
         stripe_customer_id: typeof subscription.customer === "string" 
           ? subscription.customer 
           : subscription.customer?.id || "",
-        next_billing_date: subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString().split("T")[0]
+        next_billing_date: (subscription as any).current_period_end
+          ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
           : null,
         started_at: new Date().toISOString(),
       })
