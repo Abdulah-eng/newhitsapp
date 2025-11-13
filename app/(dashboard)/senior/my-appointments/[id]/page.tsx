@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, User, ArrowLeft, CheckCircle, X, MessageSquare, DollarSign, Star } from "lucide-react";
+import { Calendar, Clock, MapPin, User, ArrowLeft, CheckCircle, X, MessageSquare, DollarSign, Star, AlertCircle } from "lucide-react";
 
 function AppointmentDetailPageContent() {
   const params = useParams();
@@ -20,6 +20,8 @@ function AppointmentDetailPageContent() {
   const [payment, setPayment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const paymentSuccess = searchParams.get("payment") === "success";
   const success = searchParams.get("success");
 
   useEffect(() => {
@@ -27,6 +29,95 @@ function AppointmentDetailPageContent() {
       fetchAppointment();
     }
   }, [user, authLoading, params.id]);
+
+  // Check for payment success and poll for payment status
+  useEffect(() => {
+    if (paymentSuccess && appointment && !payment && !isCheckingPayment) {
+      checkPaymentStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentSuccess, appointment?.id, payment]);
+
+  const checkPaymentStatus = async () => {
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) {
+      return;
+    }
+    
+    setIsCheckingPayment(true);
+
+    let attempts = 0;
+    const maxAttempts = 10;
+    const pollInterval = 2000; // 2 seconds
+
+    const poll = async () => {
+      attempts++;
+      
+      try {
+        // Check payment status via API
+        const response = await fetch(`/api/appointments/${appointmentId}/payment-status`);
+        const data = await response.json();
+        
+        console.log(`[Payment Poll] Attempt ${attempts}:`, data);
+        
+        // Check if payment is completed
+        if (data.payment && data.payment.status === "completed") {
+          console.log(`[Payment Poll] Payment found! Refreshing appointment data...`);
+          // Payment found, refresh appointment data
+          await fetchAppointment();
+          setIsCheckingPayment(false);
+          
+          // Remove query parameter
+          router.replace(`/senior/my-appointments/${appointmentId}`);
+          return;
+        }
+        
+        // Also check if there's any payment (might be processing)
+        if (data.hasAnyPayment && data.allPayments && data.allPayments.length > 0) {
+          console.log(`[Payment Poll] Found payment(s) but not completed yet:`, data.allPayments);
+        }
+        
+        // If max attempts reached, try manual sync before giving up
+        if (attempts >= maxAttempts) {
+          console.log("Max polling attempts reached, trying manual sync...");
+          try {
+            const syncResponse = await fetch(`/api/appointments/${appointmentId}/sync-payment`, {
+              method: "POST",
+            });
+            const syncData = await syncResponse.json();
+            
+            if (syncData.success && syncData.payment) {
+              console.log("[Payment Poll] Manual sync successful!");
+              await fetchAppointment();
+              setIsCheckingPayment(false);
+              router.replace(`/senior/my-appointments/${appointmentId}`);
+              return;
+            }
+          } catch (syncError) {
+            console.error("[Payment Poll] Manual sync failed:", syncError);
+          }
+          
+          console.log("Max polling attempts reached, refreshing appointment data");
+          await fetchAppointment();
+          setIsCheckingPayment(false);
+          router.replace(`/senior/my-appointments/${appointmentId}`);
+          return;
+        }
+        
+        // Continue polling
+        setTimeout(poll, pollInterval);
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+        setIsCheckingPayment(false);
+        // Refresh appointment data on error
+        await fetchAppointment();
+        router.replace(`/senior/my-appointments/${appointmentId}`);
+      }
+    };
+
+    // Start polling after initial delay
+    setTimeout(poll, pollInterval);
+  };
 
   const fetchAppointment = async () => {
     setIsLoading(true);
@@ -92,6 +183,28 @@ function AppointmentDetailPageContent() {
       console.error("Error fetching payment:", paymentError);
     }
 
+    // Check for existing review
+    const { data: reviewData, error: reviewError } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("appointment_id", appointmentId)
+      .maybeSingle();
+
+    if (reviewError) {
+      console.error("Error fetching review:", reviewError);
+    }
+
+    // Check for existing dispute
+    const { data: disputeData, error: disputeError } = await supabase
+      .from("disputes")
+      .select("*")
+      .eq("appointment_id", appointmentId)
+      .maybeSingle();
+
+    if (disputeError) {
+      console.error("Error fetching dispute:", disputeError);
+    }
+
     // Combine appointment with specialist data
     const appointmentWithSpecialist = {
       ...appointmentData,
@@ -102,7 +215,9 @@ function AppointmentDetailPageContent() {
       },
       senior: {
         full_name: user?.user_metadata?.full_name || "You"
-      }
+      },
+      hasReview: !!reviewData,
+      hasDispute: !!disputeData
     };
 
     setAppointment(appointmentWithSpecialist);
@@ -137,13 +252,6 @@ function AppointmentDetailPageContent() {
     setIsCancelling(false);
   };
 
-  // Re-fetch appointment when payment success param is present
-  useEffect(() => {
-    const paymentSuccess = searchParams.get("payment");
-    if (paymentSuccess === "success") {
-      fetchAppointment();
-    }
-  }, [searchParams]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -318,9 +426,16 @@ function AppointmentDetailPageContent() {
             <div className="flex gap-4 pt-6 border-t flex-wrap">
               {appointment.status !== "cancelled" && (
                 <>
-                  {/* Pay Now button - only show if appointment is confirmed AND payment not completed */}
-                  {appointment.status === "confirmed" && !payment && (
-                    <Link href={`/senior/my-appointments/${appointment.id}/payment`}>
+                  {/* Show loading state when checking payment */}
+                  {isCheckingPayment && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 border border-primary-200 rounded-lg">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+                      <span className="text-sm font-medium text-primary-700">Verifying payment...</span>
+                    </div>
+                  )}
+                  {/* Pay Now button - only show if appointment is confirmed AND payment not completed AND not checking payment */}
+                  {appointment.status === "confirmed" && !payment && !isCheckingPayment && (
+                    <Link href={`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}/payment`}>
                       <Button variant="primary">
                         <DollarSign size={18} className="mr-2" />
                         Pay Now
@@ -334,11 +449,23 @@ function AppointmentDetailPageContent() {
                       <span className="text-sm font-medium text-success-700">Payment Completed</span>
                     </div>
                   )}
-                  {appointment.status === "completed" && (
-                    <Link href={`/senior/my-appointments/${appointment.id}/review`}>
-                      <Button variant="accent">
-                        <Star size={18} className="mr-2" />
-                        Write Review
+                  {appointment.status === "completed" && !appointment.hasReview && (
+                    <Button 
+                      variant="accent"
+                      onClick={() => {
+                        const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+                        router.push(`/senior/my-appointments/${appointmentId}/review`);
+                      }}
+                    >
+                      <Star size={18} className="mr-2" />
+                      Write Review
+                    </Button>
+                  )}
+                  {(appointment.status === "cancelled" || appointment.status === "completed") && !appointment.hasDispute && (
+                    <Link href={`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}/dispute`}>
+                      <Button variant="outline" className="text-error-500 border-error-500 hover:bg-error-50">
+                        <AlertCircle size={18} className="mr-2" />
+                        Report Issue
                       </Button>
                     </Link>
                   )}

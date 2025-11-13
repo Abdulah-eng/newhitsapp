@@ -17,6 +17,9 @@ interface Appointment {
   issue_description: string;
   location_type: string;
   address?: string;
+  full_address?: string;
+  travel_distance_miles?: number;
+  travel_fee?: number;
   created_at: string;
   senior: {
     full_name: string;
@@ -41,6 +44,12 @@ export default function AdminAppointmentsPage() {
   }, []);
 
   useEffect(() => {
+    // Initialize filteredAppointments when appointments are loaded
+    if (appointments.length === 0) {
+      setFilteredAppointments([]);
+      return;
+    }
+
     let filtered = [...appointments];
 
     if (statusFilter !== "all") {
@@ -68,7 +77,7 @@ export default function AdminAppointmentsPage() {
       // Fetch all appointments
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from("appointments")
-        .select("*")
+        .select("*, travel_distance_miles, travel_fee, full_address")
         .order("created_at", { ascending: false });
 
       if (appointmentsError) {
@@ -79,28 +88,34 @@ export default function AdminAppointmentsPage() {
 
       if (!appointmentsData || appointmentsData.length === 0) {
         setAppointments([]);
+        setFilteredAppointments([]);
         setIsLoading(false);
         return;
       }
 
       // Fetch user details for seniors and specialists
-      const seniorIds = [...new Set(appointmentsData.map((apt) => apt.senior_id))];
-      const specialistIds = [...new Set(appointmentsData.map((apt) => apt.specialist_id))];
+      const seniorIds = [...new Set(appointmentsData.map((apt) => apt.senior_id).filter(Boolean))];
+      const specialistIds = [...new Set(appointmentsData.map((apt) => apt.specialist_id).filter(Boolean))];
       const allUserIds = [...new Set([...seniorIds, ...specialistIds])];
 
-      const { data: usersData, error: usersError } = await supabase
-        .from("users")
-        .select("id, full_name, email")
-        .in("id", allUserIds);
+      let usersData = [];
+      if (allUserIds.length > 0) {
+        const { data, error: usersError } = await supabase
+          .from("users")
+          .select("id, full_name, email")
+          .in("id", allUserIds);
 
-      if (usersError) {
-        console.error("Error fetching users:", usersError);
+        if (usersError) {
+          console.error("Error fetching users:", usersError);
+        } else {
+          usersData = data || [];
+        }
       }
 
       // Combine appointments with user data
       const appointmentsWithUsers = appointmentsData.map((apt) => {
-        const senior = usersData?.find((u) => u.id === apt.senior_id);
-        const specialist = usersData?.find((u) => u.id === apt.specialist_id);
+        const senior = apt.senior_id ? usersData.find((u) => u.id === apt.senior_id) : null;
+        const specialist = apt.specialist_id ? usersData.find((u) => u.id === apt.specialist_id) : null;
         return {
           ...apt,
           senior: {
@@ -115,8 +130,14 @@ export default function AdminAppointmentsPage() {
       });
 
       setAppointments(appointmentsWithUsers as Appointment[]);
+
+      // Immediately set filtered appointments to match all appointments
+      // The useEffect will handle filtering based on statusFilter and searchQuery
+      setFilteredAppointments(appointmentsWithUsers as Appointment[]);
     } catch (error) {
       console.error("Error fetching appointments:", error);
+      setAppointments([]);
+      setFilteredAppointments([]);
     } finally {
       setIsLoading(false);
     }
@@ -329,8 +350,16 @@ export default function AdminAppointmentsPage() {
                         <div>
                           <p className="text-sm text-text-secondary">Location</p>
                           <p className="font-semibold text-text-primary">
-                            {appointment.location_type === "remote" ? "Remote (Video Call)" : appointment.address || "N/A"}
+                            {appointment.location_type === "remote"
+                              ? "Remote (Video Call)"
+                              : appointment.full_address || appointment.address || "Address not provided"}
                           </p>
+                          {appointment.location_type === "in-person" && appointment.travel_distance_miles && (
+                            <p className="text-xs text-text-tertiary mt-1">
+                              Distance: {appointment.travel_distance_miles.toFixed(1)} miles
+                              {appointment.travel_fee && appointment.travel_fee > 0 && ` • Travel fee: $${appointment.travel_fee.toFixed(2)}`}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

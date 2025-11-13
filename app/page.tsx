@@ -66,10 +66,10 @@ export default function HomePage() {
     <main className="min-h-screen bg-secondary-100 text-text-primary">
       {/* Header (matched spacing/scale) */}
       <header className="z-40 bg-white">
-        <div className="max-w-7xl mx-auto px-14 md:px-18">
-          <div className="flex items-center justify-between py-8 md:py-10">
+        <div className="w-full px-6 md:px-10">
+          <div className="flex items-center justify-between gap-8 py-6 md:py-8">
             {/* Brand */}
-            <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
                 <span className="text-primary-600 font-extrabold text-xl">H</span>
               </div>
@@ -77,35 +77,37 @@ export default function HomePage() {
                 <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITSapp</p>
                 <p className="text-sm text-text-secondary">Hire IT Specialists</p>
               </div>
-            </div>
+            </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-7 text-[18px] font-semibold text-primary-900">
+            <nav className="hidden lg:flex flex-1 flex-nowrap items-center justify-center gap-6 text-[17px] font-semibold text-primary-900 whitespace-nowrap">
               <Link href="/about" className="hover:text-primary-600 transition-colors">About</Link>
-              <Link href="/consumer-services" className="hover:text-primary-600 transition-colors">Consumers</Link>
-              <Link href="/enterprise-services" className="hover:text-primary-600 transition-colors">Enterprises</Link>
-              <Link href="/howto-offerings" className="hover:text-primary-600 transition-colors">Resources</Link>
-              <Link href="/plans" className="hover:text-primary-600 transition-colors">Plans</Link>
+              <Link href="/for-seniors-families" className="hover:text-primary-600 transition-colors">For Seniors & Families</Link>
+              <Link href="/for-partners" className="hover:text-primary-600 transition-colors">For Partners</Link>
+              <Link href="/resources" className="hover:text-primary-600 transition-colors">Resources</Link>
+              <Link href="/plans" className="hover:text-primary-600 transition-colors">Pricing & Plans</Link>
+              <Link href="/contact" className="hover:text-primary-600 transition-colors">Contact / Support</Link>
             </nav>
 
-            {/* Desktop CTAs */}
-            <div className="hidden lg:flex items-center gap-5">
-              <a href="https://candoo.screenconnect.com" target="_blank" rel="noopener noreferrer">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="px-7 h-13 text-[16px] bg-accent-400 text-white hover:bg-accent-500"
-                >
-                  Member Support
-                </Button>
-              </a>
+            {/* Desktop CTA */}
+            <div className="hidden lg:flex items-center gap-3">
               {user ? (
-                <Link href={getDashboardLink()} className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-                  Dashboard
+                <Link href={getDashboardLink()}>
+                  <Button
+                    size="lg"
+                    className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                  >
+                    Dashboard
+                  </Button>
                 </Link>
               ) : (
-                <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-                  Sign in
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                  >
+                    Sign in
+                  </Button>
                 </Link>
               )}
             </div>
@@ -124,35 +126,25 @@ export default function HomePage() {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="lg:hidden bg-white">
-            <div className="max-w-7xl mx-auto px-12 md:px-16 py-6">
+            <div className="max-w-6xl mx-auto px-6 md:px-10 py-6">
               <nav className="grid gap-3 text-[18px] font-semibold text-primary-900">
                 <Link onClick={() => setMobileOpen(false)} href="/about" className="py-2 hover:text-primary-600">About</Link>
-                <Link onClick={() => setMobileOpen(false)} href="/consumer-services" className="py-2 hover:text-primary-600">Consumers</Link>
-                <Link onClick={() => setMobileOpen(false)} href="/enterprise-services" className="py-2 hover:text-primary-600">Enterprises</Link>
-                <Link onClick={() => setMobileOpen(false)} href="/howto-offerings" className="py-2 hover:text-primary-600">Resources</Link>
-                <Link onClick={() => setMobileOpen(false)} href="/plans" className="py-2 hover:text-primary-600">Plans</Link>
+                <Link onClick={() => setMobileOpen(false)} href="/for-seniors-families" className="py-2 hover:text-primary-600">For Seniors & Families</Link>
+                <Link onClick={() => setMobileOpen(false)} href="/for-partners" className="py-2 hover:text-primary-600">For Partners</Link>
+                <Link onClick={() => setMobileOpen(false)} href="/resources" className="py-2 hover:text-primary-600">Resources</Link>
+                <Link onClick={() => setMobileOpen(false)} href="/plans" className="py-2 hover:text-primary-600">Pricing & Plans</Link>
+                <Link onClick={() => setMobileOpen(false)} href="/contact" className="py-2 hover:text-primary-600">Contact / Support</Link>
               </nav>
               <div className="mt-4 flex items-center gap-3">
-                <a
-                  onClick={() => setMobileOpen(false)}
-                  href="https://candoo.screenconnect.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1"
-                >
-                  <Button className="w-full h-12 text-[16px] bg-accent-400 text-white hover:bg-accent-500" variant="secondary">
-                    Member Support
-                  </Button>
-                </a>
                 {user ? (
                   <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
-                    <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                    <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                       Dashboard
                     </Button>
                   </Link>
                 ) : (
                   <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                    <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                    <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                       Sign in
                     </Button>
                   </Link>
@@ -179,123 +171,294 @@ export default function HomePage() {
           {...loopFloat}
           transition={{ ...loopFloat.transition, duration: 8 }}
         />
-        <div className="relative max-w-7xl mx-auto px-12 md:px-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pt-0 md:pt-0 pb-12 md:pb-16">
-          <motion.div variants={staggerChildren}>
+        <div className="relative max-w-7xl mx-auto px-12 md:px-16 py-6 md:py-8 text-center">
+          <motion.div variants={staggerChildren} className="max-w-4xl mx-auto">
             <motion.h1
               variants={fadeUp(0)}
               className="text-[42px] md:text-[56px] font-extrabold leading-tight text-primary-700"
             >
-              We make technology easy.
+              Trusted tech help for seniors, disabled adults, and families.
             </motion.h1>
             <motion.p
-              variants={fadeUp(0.1)}
-              className="mt-5 text-[18px] leading-8 text-text-secondary max-w-2xl"
+              variants={fadeUp(0.05)}
+              className="mt-4 text-base md:text-lg text-primary-600 italic max-w-2xl mx-auto"
             >
-              Friendly support and training tailored for older adults so you can feel comfortable
-              with your phone, computer, tablet, and more — safely, affordably, and from home.
+              We hit the mark with care, connection, and technology.
+            </motion.p>
+            <motion.p
+              variants={fadeUp(0.1)}
+              className="mt-6 text-[18px] md:text-[20px] leading-8 text-text-secondary max-w-3xl mx-auto"
+            >
+              HITS – Hire I.T. Specialist connects older adults, disabled adults, and caregivers with patient, vetted tech professionals for in-home and remote support. We focus on clear communication, fair pricing, and strong security so technology feels safe, not overwhelming.
             </motion.p>
             <motion.div
               variants={fadeUp(0.2)}
-              className="mt-8 flex flex-wrap gap-3"
+              className="mt-10 flex flex-wrap justify-center gap-4"
             >
-              <Link href="/register">
+              <Link href="/senior/book-appointment">
                 <motion.div whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(44,95,141,0.18)" }} whileTap={{ scale: 0.98 }}>
-                  <Button size="lg" className="h-12 px-6 text-[15px] bg-primary-500 hover:bg-primary-600">Consumers</Button>
+                  <Button size="lg" className="h-12 px-8 text-[16px] bg-primary-500 hover:bg-primary-600">Book a Visit</Button>
                 </motion.div>
               </Link>
-              <Link href="/register?role=specialist">
+              <Link href="/for-seniors-families">
                 <motion.div whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(74,155,142,0.2)" }} whileTap={{ scale: 0.98 }}>
                   <Button
                     size="lg"
                     variant="secondary"
-                    className="h-12 px-6 text-[15px] bg-secondary-200 text-primary-700 hover:bg-secondary-300"
+                    className="h-12 px-8 text-[16px] bg-secondary-200 text-primary-700 hover:bg-secondary-300"
                   >
-                    Enterprises
+                    Learn How HITS Works
                   </Button>
                 </motion.div>
               </Link>
-              <Link href="#contact">
-                <motion.div whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    size="lg"
-                    variant="ghost"
-                    className="h-12 px-6 text-[15px] text-primary-600 hover:text-primary-500"
-                  >
-                    Contact us
-                  </Button>
-                </motion.div>
-              </Link>
-            </motion.div>
-            <motion.div
-              variants={fadeUp(0.3)}
-              className="mt-4 text-[14px] text-text-secondary flex items-center gap-3"
-            >
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-primary-500 animate-pulse" />
-              Trusted, remote support by vetted HITSapp specialists—tailored for seniors and caregivers.
-            </motion.div>
-          </motion.div>
-          <motion.div variants={fadeIn(0.2)} className="relative">
-            {/* Dummy video/image */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
-              className="aspect-video rounded-xl overflow-hidden shadow-large border border-secondary-200 bg-secondary-100"
-            >
-              <video
-                className="w-full h-full object-cover"
-                src="https://www.w3schools.com/html/mov_bbb.mp4"
-                poster="https://placehold.co/1200x675/png?text=Tech+Concierge+Demo"
-                controls
-              />
-            </motion.div>
-            <motion.div
-              className="absolute -bottom-6 -left-6 hidden md:block"
-              animate={{ y: [0, -6, 0], rotate: [0, 1.5, -1.5, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
-            >
-              <img
-                src="https://placehold.co/180x180/jpg?text=Friendly+Support"
-                alt="Friendly Support"
-                className="rounded-lg shadow-medium border border-secondary-200"
-              />
-            </motion.div>
-            <motion.div
-              className="absolute top-6 -right-8 hidden lg:block"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
-            >
-              <div className="rounded-2xl bg-white px-5 py-4 shadow-soft border border-secondary-200">
-                <p className="text-xs uppercase tracking-[0.35em] text-primary-500">Live now</p>
-                <p className="mt-2 text-sm font-semibold text-primary-700">
-                  Getting started with telehealth
-                </p>
-              </div>
             </motion.div>
           </motion.div>
         </div>
       </motion.section>
 
-      {/* Safety strip */}
-      {/* Security CTA (large center heading + subcopy) */}
+      {/* How HITS Works Section */}
       <motion.section
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.4 }}
+        viewport={{ once: true, amount: 0.3 }}
+        className="bg-secondary-100"
+      >
+        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center">
+            How HITSapp Works
+          </motion.h2>
+          <motion.div
+            variants={staggerChildren}
+            className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            {[
+              {
+                step: "1",
+                title: "Tell us what you need",
+                description: "You tell us what you need help with (phone, tablet, computer, TV, Wi-Fi, scams, apps, and more).",
+              },
+              {
+                step: "2",
+                title: "Get matched",
+                description: "We match you with a background checked, patient I.T. specialist.",
+              },
+              {
+                step: "3",
+                title: "Choose time & see cost",
+                description: "You choose a time that works for you and see your visit cost upfront.",
+              },
+              {
+                step: "4",
+                title: "Get one-on-one help",
+                description: "You receive one-on-one help in your home or remotely, plus a clear receipt after each visit.",
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.step}
+                variants={fadeUp(0.1 + idx * 0.1)}
+                className="bg-white rounded-2xl border border-secondary-200 p-6 shadow-soft text-center"
+              >
+                <div className="w-16 h-16 rounded-full bg-primary-500 text-white flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  {item.step}
+                </div>
+                <h3 className="text-lg font-semibold text-primary-700 mb-3">{item.title}</h3>
+                <p className="text-base text-text-secondary leading-6">{item.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Problems We Solve Section */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
         className="bg-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20 text-center">
-          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[56px] font-extrabold leading-tight text-primary-600">
-            Your safety and security is our<br className="hidden md:block" /> top priority.
+        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
+            Problems HITSapp Solves
           </motion.h2>
-          <motion.p variants={fadeUp(0.12)} className="mt-8 text-[20px] md:text-[24px] text-text-primary">
-            Give us a call at{" "}
-            <span className="font-extrabold tracking-wide text-primary-600">646‑758‑6606</span>{" "}
-            or email{" "}
-            <a className="font-extrabold text-accent-400 underline" href="mailto:support@hitsapp.com">
-              support@hitsapp.com
-            </a>{" "}
-            to get started.
+          <motion.p variants={fadeUp(0.05)} className="text-center text-text-secondary text-lg max-w-3xl mx-auto mb-12">
+            Stop missing out on technology. Use HITSapp to get the help you need, when you need it.
           </motion.p>
+          <motion.div
+            variants={staggerChildren}
+            className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {[
+              {
+                title: "Device Setup",
+                description: "Phones, tablets, computers, smart TVs",
+                img: "/images/first.webp",
+              },
+              {
+                title: "Wi-Fi & Network",
+                description: "Router and printer issues",
+                img: "/images/second.png",
+              },
+              {
+                title: "Account Recovery",
+                description: "Email and online accounts, password resets",
+                img: "/images/third.jpg",
+              },
+              {
+                title: "Video Calls",
+                description: "Connect with family, friends, and doctors",
+                img: "/images/fourth.jpg",
+              },
+              {
+                title: "Telehealth",
+                description: "Online appointments and portals",
+                img: "/images/fifth.jpg",
+              },
+              {
+                title: "Safety & Security",
+                description: "Scam and fraud safety checks",
+                img: "/images/sixth.jpg",
+              },
+              {
+                title: "File Organization",
+                description: "Organizing photos and files",
+                img: "/images/first.webp",
+              },
+              {
+                title: "App Training",
+                description: "Basic training on everyday apps and websites",
+                img: "/images/second.png",
+              },
+            ].map((problem, idx) => (
+              <motion.div
+                key={problem.title}
+                variants={fadeUp(0.05 + idx * 0.05)}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 250, damping: 18 }}
+                className="flex flex-col rounded-2xl border border-secondary-200 bg-white shadow-soft overflow-hidden"
+              >
+                <div className="relative w-full h-48 overflow-hidden">
+                  <img 
+                    src={problem.img} 
+                    alt={problem.title} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-900/60 to-transparent" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-primary-700 mb-2">{problem.title}</h3>
+                  <p className="text-base text-text-secondary leading-6">{problem.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Who HITS Is For Section */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        className="bg-secondary-100"
+      >
+        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
+            Who HITSapp Is For
+          </motion.h2>
+          <motion.p variants={fadeUp(0.05)} className="text-center text-text-secondary text-lg max-w-3xl mx-auto mb-12">
+            HITSapp serves everyone who needs patient, respectful tech support.
+          </motion.p>
+          <motion.div
+            variants={staggerChildren}
+            className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {[
+              {
+                title: "Seniors",
+                description: "Patient, one-on-one help tailored to your pace",
+                img: "/images/third.jpg",
+              },
+              {
+                title: "Disabled Adults",
+                description: "Accessible, paced support that respects your needs",
+                img: "/images/fourth.jpg",
+              },
+              {
+                title: "Caregivers",
+                description: "Peace of mind knowing your loved ones have tech support",
+                img: "/images/fifth.jpg",
+              },
+              {
+                title: "Families",
+                description: "A trusted \"tech person\" you can call anytime",
+                img: "/images/sixth.jpg",
+              },
+              {
+                title: "Communities & Partners",
+                description: "Support for organizations serving seniors and disabled adults",
+                img: "/images/first.webp",
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.title}
+                variants={fadeUp(0.1 + idx * 0.1)}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 250, damping: 18 }}
+                className="flex flex-col rounded-2xl border border-secondary-200 bg-white shadow-soft overflow-hidden"
+              >
+                <div className="relative w-full h-56 overflow-hidden">
+                  <img 
+                    src={item.img} 
+                    alt={item.title} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-900/70 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg">{item.title}</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-base text-text-secondary leading-6">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Trust & Safety Callout Section */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        className="bg-primary-700 text-white"
+      >
+        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-center mb-8">
+            Trust & Safety
+          </motion.h2>
+          <motion.div
+            variants={staggerChildren}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {[
+              "Background checked specialists",
+              "Simple, transparent pricing",
+              "No high-pressure sales or unnecessary upsells",
+              "Secure payment processing",
+            ].map((item, idx) => (
+              <motion.div
+                key={item}
+                variants={fadeUp(0.1 + idx * 0.1)}
+                className="bg-white/10 rounded-xl border border-white/20 p-6 backdrop-blur-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-block h-2 w-2 rounded-full bg-white flex-shrink-0" />
+                  <p className="text-base text-white/90 leading-6">{item}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </motion.section>
 
@@ -309,11 +472,11 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[40px] md:text-[48px] font-extrabold text-primary-600 text-center">
-            What We Do
+            What HITSapp Does
           </motion.h2>
           <motion.div
             variants={staggerChildren}
-            className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-10 items-start"
+            className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 items-start"
           >
             {[
               {
@@ -322,7 +485,7 @@ export default function HomePage() {
                     Remote Lessons &<br />Support
                   </>
                 ),
-                img: "https://placehold.co/520x320/png?text=Remote+Lessons+%26+Support",
+                img: "/images/first.webp",
                 alt: "Remote Lessons & Support",
               },
               {
@@ -331,7 +494,7 @@ export default function HomePage() {
                     Library of On‑Demand How To<br />Guides & Videos
                   </>
                 ),
-                img: "https://placehold.co/520x320/png?text=On-Demand+Guides+%26+Videos",
+                img: "/images/second.png",
                 alt: "On-Demand Guides & Videos",
               },
               {
@@ -340,8 +503,35 @@ export default function HomePage() {
                     Group Lessons
                   </>
                 ),
-                img: "https://placehold.co/520x320/png?text=Group+Lessons",
+                img: "/images/third.jpg",
                 alt: "Group Lessons",
+              },
+              {
+                title: (
+                  <>
+                    In-Home Tech Support
+                  </>
+                ),
+                img: "/images/fourth.jpg",
+                alt: "In-Home Tech Support",
+              },
+              {
+                title: (
+                  <>
+                    Device Setup &<br />Configuration
+                  </>
+                ),
+                img: "/images/fifth.jpg",
+                alt: "Device Setup & Configuration",
+              },
+              {
+                title: (
+                  <>
+                    Security &<br />Safety Training
+                  </>
+                ),
+                img: "/images/sixth.jpg",
+                alt: "Security & Safety Training",
               },
             ].map((item, idx) => (
               <motion.div
@@ -394,17 +584,17 @@ export default function HomePage() {
             {[
               {
                 title: "Myself",
-                img: "https://placehold.co/640x420/jpg?text=Myself",
+                img: "/images/first.webp",
                 description: "Get the help you need right now.",
               },
               {
                 title: "My loved ones",
-                img: "https://placehold.co/640x420/jpg?text=My+Loved+Ones",
+                img: "/images/second.png",
                 description: "Give the help your loved ones need.",
               },
               {
                 title: "My residents, clients & members",
-                img: "https://placehold.co/640x420/jpg?text=Residents+%26+Clients",
+                img: "/images/third.jpg",
                 description:
                   "Learn how HITSapp supports senior communities, health plans, and social service organizations.",
               },
@@ -416,10 +606,14 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 220, damping: 20 }}
                 className="flex flex-col rounded-2xl overflow-hidden border border-secondary-200 shadow-soft bg-white"
               >
-                <div className="relative w-full overflow-hidden rounded-xl">
-                  <img src={card.img} alt={card.title} className="w-full h-auto object-cover" />
-                  <div className="absolute inset-0 bg-primary-900/30 flex items-center justify-center">
-                    <span className="text-white text-[26px] md:text-[30px] font-extrabold text-center drop-shadow-lg">
+                <div className="relative w-full h-64 md:h-80 overflow-hidden">
+                  <img 
+                    src={card.img} 
+                    alt={card.title} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-primary-900/40 flex items-center justify-center">
+                    <span className="text-white text-[28px] md:text-[32px] font-extrabold text-center drop-shadow-lg px-4">
                       {card.title}
                     </span>
                   </div>

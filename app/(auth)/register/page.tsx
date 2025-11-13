@@ -20,6 +20,7 @@ export default function RegisterPage() {
     confirmPassword: "",
     phone: "",
     role: "senior" as UserRole,
+    isDisabledAdult: false,
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -93,10 +94,67 @@ export default function RegisterPage() {
         return;
       }
 
-      // Session exists – just redirect based on metadata role
+      // Create role-specific profile
       if (formData.role === "senior") {
+        // Create senior profile
+        const { error: profileError } = await supabase
+          .from("senior_profiles")
+          .insert({
+            user_id: authData.user.id,
+            is_disabled_adult: formData.isDisabledAdult,
+          });
+
+        if (profileError) {
+          console.error("Error creating senior profile:", profileError);
+          // Continue anyway - profile can be created later
+        }
+
+        // Log registration
+        try {
+          await fetch("/api/activity/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "user_registered",
+              description: `User registered: ${formData.email} (senior)`,
+              metadata: { email: formData.email, role: "senior", is_disabled_adult: formData.isDisabledAdult },
+            }),
+          });
+        } catch (err) {
+          // Don't block registration if logging fails
+          console.error("Error logging registration:", err);
+        }
+
         router.replace("/senior/dashboard");
       } else if (formData.role === "specialist") {
+        // Create specialist profile
+        const { error: profileError } = await supabase
+          .from("specialist_profiles")
+          .insert({
+            user_id: authData.user.id,
+          });
+
+        if (profileError) {
+          console.error("Error creating specialist profile:", profileError);
+          // Continue anyway - profile can be created later
+        }
+
+        // Log registration
+        try {
+          await fetch("/api/activity/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "user_registered",
+              description: `User registered: ${formData.email} (specialist)`,
+              metadata: { email: formData.email, role: "specialist" },
+            }),
+          });
+        } catch (err) {
+          // Don't block registration if logging fails
+          console.error("Error logging registration:", err);
+        }
+
         router.replace("/specialist/dashboard?welcome=true");
       }
     } catch (err) {
@@ -247,6 +305,25 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                 />
               </motion.div>
+
+              {formData.role === "senior" && (
+                <motion.div variants={staggerItem}>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isDisabledAdult}
+                      onChange={(e) => setFormData({ ...formData, isDisabledAdult: e.target.checked })}
+                      className="w-5 h-5 text-primary-500 border-secondary-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-base text-text-primary">
+                      I am a disabled adult or have accessibility needs
+                    </span>
+                  </label>
+                  <p className="text-sm text-text-secondary mt-1 ml-8">
+                    This helps us provide the best support for your needs
+                  </p>
+                </motion.div>
+              )}
 
               <motion.div variants={staggerItem}>
                 <Button

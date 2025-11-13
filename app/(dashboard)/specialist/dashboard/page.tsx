@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Calendar, DollarSign, Star, Users } from "lucide-react";
+import { Calendar, DollarSign, Star, Users, MapPin } from "lucide-react";
 
 export default function SpecialistDashboard() {
   // Always call all hooks first, before any conditional logic
@@ -17,6 +17,7 @@ export default function SpecialistDashboard() {
   const supabase = createSupabaseBrowserClient();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [earnings, setEarnings] = useState({ thisMonth: 0, total: 0, travelReimbursement: 0 });
 
   useEffect(() => {
     // Don't redirect here - the layout handles authentication
@@ -62,6 +63,41 @@ export default function SpecialistDashboard() {
           .single();
 
         setProfile(prof);
+
+        // Calculate earnings from completed appointments
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const { data: completedApps } = await supabase
+          .from("appointments")
+          .select("duration_minutes, specialist_pay_rate, specialist_travel_reimbursement, completed_at")
+          .eq("specialist_id", user.id)
+          .eq("status", "completed");
+
+        if (completedApps) {
+          let thisMonthEarnings = 0;
+          let totalEarnings = 0;
+          let totalTravelReimbursement = 0;
+
+          completedApps.forEach((apt) => {
+            const hours = (apt.duration_minutes || 0) / 60;
+            const pay = hours * (apt.specialist_pay_rate || 30);
+            const travel = apt.specialist_travel_reimbursement || 0;
+            
+            totalEarnings += pay;
+            totalTravelReimbursement += travel;
+
+            if (apt.completed_at && new Date(apt.completed_at) >= startOfMonth) {
+              thisMonthEarnings += pay + travel;
+            }
+          });
+
+          setEarnings({
+            thisMonth: thisMonthEarnings,
+            total: totalEarnings + totalTravelReimbursement,
+            travelReimbursement: totalTravelReimbursement,
+          });
+        }
       };
 
       fetchData();
@@ -136,8 +172,34 @@ export default function SpecialistDashboard() {
               <h3 className="text-text-secondary">Earnings</h3>
               <DollarSign className="text-success-500" size={24} />
             </div>
-            <p className="text-3xl font-bold text-success-500">$0</p>
+            <p className="text-3xl font-bold text-success-500">
+              ${earnings.thisMonth.toFixed(2)}
+            </p>
             <p className="text-sm text-text-tertiary mt-1">This month</p>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <motion.div variants={slideUp} className="card bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-text-secondary">Total Earnings</h3>
+              <DollarSign className="text-primary-500" size={24} />
+            </div>
+            <p className="text-3xl font-bold text-primary-500">
+              ${earnings.total.toFixed(2)}
+            </p>
+            <p className="text-sm text-text-tertiary mt-1">All time</p>
+          </motion.div>
+
+          <motion.div variants={slideUp} className="card bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-text-secondary">Travel Reimbursement</h3>
+              <MapPin className="text-accent-400" size={24} />
+            </div>
+            <p className="text-3xl font-bold text-accent-400">
+              ${earnings.travelReimbursement.toFixed(2)}
+            </p>
+            <p className="text-sm text-text-tertiary mt-1">Total reimbursed</p>
           </motion.div>
         </div>
 
@@ -206,6 +268,11 @@ export default function SpecialistDashboard() {
               <Link href="/specialist/calendar">
                 <Button variant="primary" size="lg" className="w-full">
                   Manage Calendar
+                </Button>
+              </Link>
+              <Link href="/specialist/earnings">
+                <Button variant="secondary" size="lg" className="w-full">
+                  View Earnings
                 </Button>
               </Link>
               <Link href="/specialist/appointments">

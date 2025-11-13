@@ -20,9 +20,14 @@ interface DashboardStats {
   totalUsers: number;
   totalSpecialists: number;
   totalSeniors: number;
+  disabledAdults: number;
+  activeMemberships: number;
   pendingVerifications: number;
   totalAppointments: number;
+  appointmentsToday: number;
   totalRevenue: number;
+  netRevenue: number;
+  openDisputes: number;
   recentTransactions: any[];
   pendingSpecialists: any[];
 }
@@ -32,9 +37,14 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalSpecialists: 0,
     totalSeniors: 0,
+    disabledAdults: 0,
+    activeMemberships: 0,
     pendingVerifications: 0,
     totalAppointments: 0,
+    appointmentsToday: 0,
     totalRevenue: 0,
+    netRevenue: 0,
+    openDisputes: 0,
     recentTransactions: [],
     pendingSpecialists: [],
   });
@@ -47,13 +57,35 @@ export default function AdminDashboard() {
         setLoading(true);
         console.log("Admin Dashboard: Fetching data...");
 
-        // Fetch user counts
-        const [usersRes, specialistsRes, seniorsRes, appointmentsRes, paymentsRes, pendingCountRes] = await Promise.all([
+        // Fetch user counts and metrics
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayISO = today.toISOString();
+        const tomorrowISO = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+        const [
+          usersRes,
+          specialistsRes,
+          seniorsRes,
+          disabledAdultsRes,
+          membershipsRes,
+          appointmentsRes,
+          appointmentsTodayRes,
+          paymentsRes,
+          disputesRes,
+          pendingCountRes,
+        ] = await Promise.all([
           supabase.from("users").select("id", { count: "exact", head: true }),
           supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "specialist"),
           supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "senior"),
+          supabase.from("senior_profiles").select("id", { count: "exact", head: true }).eq("is_disabled_adult", true),
+          supabase.from("user_memberships").select("id", { count: "exact", head: true }).eq("status", "active"),
           supabase.from("appointments").select("id", { count: "exact", head: true }),
-          supabase.from("payments").select("amount").eq("status", "completed"),
+          supabase.from("appointments").select("id", { count: "exact", head: true })
+            .gte("scheduled_at", todayISO)
+            .lt("scheduled_at", tomorrowISO),
+          supabase.from("payments").select("amount, base_amount, travel_fee, membership_discount").eq("status", "completed"),
+          supabase.from("disputes").select("id", { count: "exact", head: true }).eq("status", "open"),
           supabase.from("specialist_profiles").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
         ]);
 
@@ -189,28 +221,42 @@ export default function AdminDashboard() {
         // Use count from query, fallback to data length
         const pendingVerifications = pendingCountRes.count ?? pendingData?.length ?? 0;
 
-        // Calculate total revenue
+        // Calculate total revenue and net revenue
         let totalRevenue = 0;
+        let netRevenue = 0;
         if (paymentsRes.data) {
-          totalRevenue = paymentsRes.data.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+          paymentsRes.data.forEach((payment: any) => {
+            totalRevenue += parseFloat(payment.amount || 0);
+            netRevenue += parseFloat(payment.base_amount || payment.amount || 0);
+          });
         }
 
         console.log("Dashboard stats:", {
           totalUsers,
           totalSpecialists,
           totalSeniors,
+          disabledAdults: disabledAdultsRes.count,
+          activeMemberships: membershipsRes.count,
           pendingVerifications,
           totalAppointments,
+          appointmentsToday: appointmentsTodayRes.count,
           totalRevenue,
+          netRevenue,
+          openDisputes: disputesRes.count,
         });
 
         setStats({
           totalUsers,
           totalSpecialists,
           totalSeniors,
+          disabledAdults: disabledAdultsRes.count || 0,
+          activeMemberships: membershipsRes.count || 0,
           pendingVerifications,
           totalAppointments,
+          appointmentsToday: appointmentsTodayRes.count || 0,
           totalRevenue,
+          netRevenue,
+          openDisputes: disputesRes.count || 0,
           recentTransactions: transactions || [],
           pendingSpecialists: pendingData || [],
         });
@@ -247,6 +293,20 @@ export default function AdminDashboard() {
       bgColor: "bg-success-50",
     },
     {
+      title: "Disabled Adults",
+      value: stats.disabledAdults,
+      icon: Users,
+      color: "text-primary-600",
+      bgColor: "bg-primary-100",
+    },
+    {
+      title: "Active Memberships",
+      value: stats.activeMemberships,
+      icon: TrendingUp,
+      color: "text-accent-600",
+      bgColor: "bg-accent-100",
+    },
+    {
       title: "Pending Verifications",
       value: stats.pendingVerifications,
       icon: Clock,
@@ -262,11 +322,33 @@ export default function AdminDashboard() {
       bgColor: "bg-primary-50",
     },
     {
+      title: "Appointments Today",
+      value: stats.appointmentsToday,
+      icon: Calendar,
+      color: "text-accent-500",
+      bgColor: "bg-accent-50",
+    },
+    {
       title: "Total Revenue",
       value: `$${stats.totalRevenue.toFixed(2)}`,
       icon: DollarSign,
       color: "text-success-500",
       bgColor: "bg-success-50",
+    },
+    {
+      title: "Net Revenue",
+      value: `$${stats.netRevenue.toFixed(2)}`,
+      icon: DollarSign,
+      color: "text-success-600",
+      bgColor: "bg-success-100",
+    },
+    {
+      title: "Open Disputes",
+      value: stats.openDisputes,
+      icon: AlertCircle,
+      color: "text-error-500",
+      bgColor: "bg-error-50",
+      link: "/admin/disputes",
     },
   ];
 

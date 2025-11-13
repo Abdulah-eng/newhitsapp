@@ -8,7 +8,8 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, Search, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, MapPin, Search, ArrowLeft, Users } from "lucide-react";
+import { useMembership } from "@/lib/hooks/useMembership";
 
 interface Appointment {
   id: string;
@@ -18,6 +19,9 @@ interface Appointment {
   issue_description: string;
   location_type: string;
   address?: string;
+  senior_id: string;
+  senior_name?: string;
+  is_family_member?: boolean;
   specialist: {
     full_name: string;
   };
@@ -25,6 +29,7 @@ interface Appointment {
 
 export default function MyAppointmentsPage() {
   const { user, loading } = useAuth();
+  const { membership } = useMembership(user?.id);
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -32,59 +37,57 @@ export default function MyAppointmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [debugMessage, setDebugMessage] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"mine" | "family">("mine");
+  const isFamilyPlan = membership?.membership_plan?.plan_type === "family_care_plus";
 
   useEffect(() => {
     if (loading) {
-      setDebugMessage("Waiting for authentication...");
       return;
     }
 
     if (!user) {
-      setDebugMessage("No user found");
       setIsLoading(false);
       return;
     }
 
     if (user.role !== "senior") {
-      setDebugMessage(`User role is ${user.role}, expected senior`);
       setIsLoading(false);
       return;
     }
 
     if (!user.id) {
-      setDebugMessage("User ID is missing");
       setIsLoading(false);
       return;
     }
 
     const fetchData = async () => {
       setIsLoading(true);
-      setDebugMessage(`Fetching appointments for user: ${user.id}...`);
       
+      // Determine which user IDs to fetch appointments for
+      let userIdsToFetch = [user.id];
+      if (isFamilyPlan && viewMode === "family" && membership?.covered_user_ids) {
+        userIdsToFetch = [user.id, ...membership.covered_user_ids];
+      }
+
       // Fetch appointments
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from("appointments")
         .select("*")
-        .eq("senior_id", user.id)
+        .in("senior_id", userIdsToFetch)
         .order("scheduled_at", { ascending: false });
 
       if (appointmentsError) {
         console.error("Error fetching appointments:", appointmentsError);
-        setDebugMessage(`Error: ${appointmentsError.message}`);
         setAppointments([]);
         setIsLoading(false);
         return;
       }
 
       if (!appointmentsData || appointmentsData.length === 0) {
-        setDebugMessage(`No appointments found (fetched ${appointmentsData?.length || 0} appointments)`);
         setAppointments([]);
         setIsLoading(false);
         return;
       }
-
-      setDebugMessage(`Found ${appointmentsData.length} appointments, fetching specialist details...`);
 
       // Fetch specialist user details for each appointment
       const specialistIds = [...new Set(appointmentsData.map(apt => apt.specialist_id))];
@@ -95,24 +98,38 @@ export default function MyAppointmentsPage() {
 
       if (specialistsError) {
         console.error("Error fetching specialist details:", specialistsError);
-        setDebugMessage(`Error fetching specialist details: ${specialistsError.message}`);
-      } else {
-        setDebugMessage(`Fetched ${specialistsData?.length || 0} specialist details`);
       }
 
-      // Combine appointments with specialist data
+      // Fetch senior names if in family view
+      let seniorsMap: Record<string, string> = {};
+      if (isFamilyPlan && viewMode === "family" && userIdsToFetch.length > 1) {
+        const { data: seniorsData } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .in("id", userIdsToFetch);
+        
+        if (seniorsData) {
+          seniorsMap = seniorsData.reduce((acc, s) => {
+            acc[s.id] = s.full_name;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      // Combine appointments with specialist data and senior names
       const appointmentsWithSpecialist = appointmentsData.map(apt => {
         const specialist = specialistsData?.find(s => s.id === apt.specialist_id);
+        const seniorName = seniorsMap[apt.senior_id] || user?.user_metadata?.full_name || "You";
         return {
           ...apt,
           specialist: {
             full_name: specialist?.full_name || "Unknown"
-          }
+          },
+          senior_name: seniorName,
+          is_family_member: apt.senior_id !== user.id,
         };
       });
 
-      console.log("Combined appointments:", appointmentsWithSpecialist);
-      setDebugMessage(`Successfully loaded ${appointmentsWithSpecialist.length} appointments`);
       setAppointments(appointmentsWithSpecialist as Appointment[]);
       // Also set filtered appointments immediately
       setFilteredAppointments(appointmentsWithSpecialist as Appointment[]);
@@ -120,16 +137,9 @@ export default function MyAppointmentsPage() {
     };
 
     fetchData();
-  }, [user, loading, router, supabase]);
+  }, [user, loading, router, supabase, viewMode, isFamilyPlan, membership]);
 
   useEffect(() => {
-    console.log("Filtering appointments:", {
-      appointmentsCount: appointments.length,
-      statusFilter,
-      searchQuery,
-      appointments: appointments
-    });
-
     let filtered = [...appointments];
 
     if (statusFilter !== "all") {
@@ -247,6 +257,35 @@ export default function MyAppointmentsPage() {
           </p>
         </motion.div>
 
+        {/* Family View Toggle */}
+        {isFamilyPlan && (
+          <motion.div variants={slideUp} className="mb-4">
+            <div className="flex items-center gap-3 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+              <Users className="text-primary-500" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-primary-700">Family Care+ View</p>
+                <p className="text-xs text-primary-600">Switch between your appointments and family view</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === "mine" ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("mine")}
+                >
+                  My Appointments
+                </Button>
+                <Button
+                  variant={viewMode === "family" ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("family")}
+                >
+                  Family View
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Filters */}
         <motion.div variants={slideUp} className="card bg-white p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -313,6 +352,14 @@ export default function MyAppointmentsPage() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div>
+                        {appointment.is_family_member && appointment.senior_name && (
+                          <div className="mb-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
+                              <Users size={12} />
+                              {appointment.senior_name}
+                            </span>
+                          </div>
+                        )}
                         <h3 className="text-xl font-bold text-text-primary mb-1">
                           {appointment.specialist.full_name}
                         </h3>

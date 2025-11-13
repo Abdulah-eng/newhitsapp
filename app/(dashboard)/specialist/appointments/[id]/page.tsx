@@ -9,7 +9,8 @@ import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, User, ArrowLeft, CheckCircle, X, MessageSquare, Save } from "lucide-react";
+import { Calendar, Clock, MapPin, User, ArrowLeft, CheckCircle, X, MessageSquare, Save, ExternalLink } from "lucide-react";
+import { getDirectionsUrl } from "@/lib/utils/travel";
 
 function SpecialistAppointmentDetailPageContent() {
   const params = useParams();
@@ -119,6 +120,8 @@ function SpecialistAppointmentDetailPageContent() {
     const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!appointmentId) return;
     
+    const oldStatus = appointment?.status || "unknown";
+    
     const { error } = await supabase
       .from("appointments")
       .update(updateData)
@@ -127,6 +130,26 @@ function SpecialistAppointmentDetailPageContent() {
     if (error) {
       alert("Failed to update appointment. Please try again.");
       return;
+    }
+
+    // Log appointment status change
+    try {
+      await fetch("/api/activity/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: newStatus === "cancelled" ? "appointment_cancelled" : "appointment_updated",
+          description: `Appointment status changed: ${oldStatus} → ${newStatus}`,
+          metadata: {
+            appointment_id: appointmentId,
+            old_status: oldStatus,
+            new_status: newStatus,
+          },
+        }),
+      });
+    } catch (err) {
+      // Don't block update if logging fails
+      console.error("Error logging appointment update:", err);
     }
 
     fetchAppointment();
@@ -313,8 +336,36 @@ function SpecialistAppointmentDetailPageContent() {
                 <p className="text-lg font-semibold text-text-primary">
                   {appointment.location_type === "remote"
                     ? "Remote (Video Call)"
-                    : appointment.address || "Address not provided"}
+                    : appointment.full_address || appointment.address || "Address not provided"}
                 </p>
+                {appointment.location_type === "in-person" && appointment.travel_distance_miles !== null && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm text-text-secondary">
+                      <strong>Distance:</strong> {appointment.travel_distance_miles.toFixed(1)} miles from Hope Mills, NC
+                    </p>
+                    {appointment.travel_fee > 0 && (
+                      <p className="text-sm text-text-secondary">
+                        <strong>Travel Fee:</strong> ${appointment.travel_fee.toFixed(2)}
+                      </p>
+                    )}
+                    {appointment.specialist_travel_reimbursement > 0 && (
+                      <p className="text-sm text-primary-600">
+                        <strong>Your Reimbursement:</strong> ${appointment.specialist_travel_reimbursement.toFixed(2)}
+                      </p>
+                    )}
+                    {appointment.full_address && (
+                      <a
+                        href={getDirectionsUrl(appointment.address || "", appointment.city || "", appointment.state || "", appointment.zip_code || "")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-500 mt-2"
+                      >
+                        <ExternalLink size={14} />
+                        View in Maps
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

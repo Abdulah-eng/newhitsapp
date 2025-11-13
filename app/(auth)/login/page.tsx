@@ -46,6 +46,23 @@ function LoginForm() {
 
       if (data.user) {
         const role = (data.user.user_metadata?.role as string) || "senior";
+        
+        // Log login
+        try {
+          await fetch("/api/activity/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "user_logged_in",
+              description: `User logged in: ${email}`,
+              metadata: { email, role },
+            }),
+          });
+        } catch (err) {
+          // Don't block login if logging fails
+          console.error("Error logging login:", err);
+        }
+
         // Check for admin email specifically
         if (email.toLowerCase() === "admin@hitsapp.com" || role === "admin") {
           router.replace("/admin/dashboard");

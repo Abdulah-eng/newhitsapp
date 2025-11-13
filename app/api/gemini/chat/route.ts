@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for automated responses first
+    // Check for automated responses first (for common questions)
     const automatedResponse = await generateAutomatedResponse(message);
     if (automatedResponse) {
       return NextResponse.json({
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Use AI chat
+    // Use AI chat (which handles emergency detection internally)
     const response = await chatWithAI(message, conversationHistory);
 
     return NextResponse.json({

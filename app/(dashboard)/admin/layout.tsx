@@ -16,7 +16,8 @@ import {
   Activity,
   LogOut,
   Menu,
-  X
+  X,
+  MessageSquare
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -71,6 +72,7 @@ export default function AdminLayout({
     { href: "/admin/appointments", label: "Appointments", icon: Calendar },
     { href: "/admin/payments", label: "Payments", icon: DollarSign },
     { href: "/admin/disputes", label: "Disputes", icon: FileText },
+    { href: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare },
     { href: "/admin/security", label: "Security", icon: Shield },
     { href: "/admin/logs", label: "Activity Logs", icon: Activity },
     { href: "/admin/settings", label: "Settings", icon: Settings },

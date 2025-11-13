@@ -41,12 +41,14 @@ export default function AdminDisputesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [rawDisputesData, setRawDisputesData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDisputes();
   }, []);
 
   useEffect(() => {
+    console.log("Filter effect running. Disputes:", disputes.length, "Status:", statusFilter, "Type:", typeFilter, "Query:", searchQuery);
     let filtered = [...disputes];
 
     if (statusFilter !== "all") {
@@ -70,48 +72,48 @@ export default function AdminDisputesPage() {
       );
     }
 
+    console.log("Filtered result:", filtered.length, "disputes");
     setFilteredDisputes(filtered);
   }, [disputes, statusFilter, typeFilter, searchQuery]);
 
   const fetchDisputes = async () => {
     setIsLoading(true);
     try {
-      // Fetch low-rated reviews (1-2 stars) as potential disputes
-      const { data: reviewsData, error: reviewsError } = await supabase
-        .from("reviews")
+      // Fetch disputes from the disputes table
+      const { data: disputesData, error: disputesError } = await supabase
+        .from("disputes")
         .select("*")
-        .lte("rating", 2)
         .order("created_at", { ascending: false });
 
-      // Fetch cancelled appointments with cancellation reasons
-      const { data: cancelledAppointments, error: appointmentsError } = await supabase
-        .from("appointments")
-        .select("*")
-        .eq("status", "cancelled")
-        .not("cancellation_reason", "is", null)
-        .order("cancelled_at", { ascending: false });
+      if (disputesError) {
+        console.error("Error fetching disputes:", disputesError);
+        setDisputes([]);
+        setRawDisputesData([]);
+        setIsLoading(false);
+        return;
+      }
 
-      if (reviewsError) {
-        console.error("Error fetching reviews:", reviewsError);
+      if (!disputesData || disputesData.length === 0) {
+        console.log("No disputes found");
+        setDisputes([]);
+        setRawDisputesData([]);
+        setIsLoading(false);
+        return;
       }
-      if (appointmentsError) {
-        console.error("Error fetching appointments:", appointmentsError);
-      }
+
+      console.log(`Found ${disputesData.length} disputes`);
 
       // Combine user IDs
       const userIds = new Set<string>();
-      if (reviewsData) {
-        reviewsData.forEach((r) => {
-          userIds.add(r.senior_id);
-          userIds.add(r.specialist_id);
-        });
-      }
-      if (cancelledAppointments) {
-        cancelledAppointments.forEach((a) => {
-          userIds.add(a.senior_id);
-          userIds.add(a.specialist_id);
-        });
-      }
+      const appointmentIds = new Set<string>();
+      const reviewIds = new Set<string>();
+      
+      disputesData.forEach((d) => {
+        if (d.senior_id) userIds.add(d.senior_id);
+        if (d.specialist_id) userIds.add(d.specialist_id);
+        if (d.appointment_id) appointmentIds.add(d.appointment_id);
+        if (d.review_id) reviewIds.add(d.review_id);
+      });
 
       // Fetch user details
       const { data: usersData, error: usersError } = await supabase
@@ -123,82 +125,200 @@ export default function AdminDisputesPage() {
         console.error("Error fetching users:", usersError);
       }
 
-      // Create disputes from reviews
-      const reviewDisputes: Dispute[] =
-        reviewsData?.map((review) => {
-          const senior = usersData?.find((u) => u.id === review.senior_id);
-          const specialist = usersData?.find((u) => u.id === review.specialist_id);
-          return {
-            id: `review-${review.id}`,
-            type: "review" as const,
-            status: "open" as const, // You can add a resolved field to reviews table later
-            created_at: review.created_at,
-            senior: {
-              full_name: senior?.full_name || "Unknown",
-              email: senior?.email || "N/A",
-            },
-            specialist: {
-              full_name: specialist?.full_name || "Unknown",
-              email: specialist?.email || "N/A",
-            },
-            review: {
-              rating: review.rating,
-              comment: review.comment || "",
-            },
-          };
-        }) || [];
+      // Fetch appointment details if needed
+      let appointmentsData: any[] = [];
+      if (appointmentIds.size > 0) {
+        const { data: aptData, error: aptError } = await supabase
+          .from("appointments")
+          .select("id, scheduled_at, cancellation_reason")
+          .in("id", Array.from(appointmentIds));
+        
+        if (aptError) {
+          console.error("Error fetching appointments:", aptError);
+        } else {
+          appointmentsData = aptData || [];
+        }
+      }
 
-      // Create disputes from cancelled appointments
-      const appointmentDisputes: Dispute[] =
-        cancelledAppointments?.map((appointment) => {
-          const senior = usersData?.find((u) => u.id === appointment.senior_id);
-          const specialist = usersData?.find((u) => u.id === appointment.specialist_id);
-          return {
-            id: `appointment-${appointment.id}`,
-            type: "cancellation" as const,
-            status: "open" as const,
-            created_at: appointment.cancelled_at || appointment.created_at,
-            senior: {
-              full_name: senior?.full_name || "Unknown",
-              email: senior?.email || "N/A",
-            },
-            specialist: {
-              full_name: specialist?.full_name || "Unknown",
-              email: specialist?.email || "N/A",
-            },
-            appointment: {
-              id: appointment.id,
-              scheduled_at: appointment.scheduled_at,
-              cancellation_reason: appointment.cancellation_reason || "",
-            },
-          };
-        }) || [];
+      // Fetch review details if needed
+      let reviewsData: any[] = [];
+      if (reviewIds.size > 0) {
+        const { data: revData, error: revError } = await supabase
+          .from("reviews")
+          .select("id, rating, comment")
+          .in("id", Array.from(reviewIds));
+        
+        if (revError) {
+          console.error("Error fetching reviews:", revError);
+        } else {
+          reviewsData = revData || [];
+        }
+      }
 
-      // Combine and sort by date
-      const allDisputes = [...reviewDisputes, ...appointmentDisputes].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      // Map disputes to the Dispute interface
+      const mappedDisputes: Dispute[] = disputesData.map((dispute) => {
+        const senior = usersData?.find((u) => u.id === dispute.senior_id);
+        const specialist = usersData?.find((u) => u.id === dispute.specialist_id);
+        const appointment = appointmentsData.find((a) => a.id === dispute.appointment_id);
+        const review = reviewsData.find((r) => r.id === dispute.review_id);
+        
+        // Map dispute type to match interface
+        let mappedType: "review" | "cancellation" = "cancellation";
+        if (dispute.type === "review") {
+          mappedType = "review";
+        } else if (dispute.type === "cancellation" || dispute.type === "payment" || dispute.type === "service" || dispute.type === "other") {
+          mappedType = "cancellation";
+        }
+        
+        return {
+          id: dispute.id,
+          type: mappedType,
+          status: dispute.status,
+          created_at: dispute.created_at,
+          senior: {
+            full_name: senior?.full_name || "Unknown",
+            email: senior?.email || "N/A",
+          },
+          specialist: {
+            full_name: specialist?.full_name || "Unknown",
+            email: specialist?.email || "N/A",
+          },
+          review: review ? {
+            rating: review.rating,
+            comment: review.comment || "",
+          } : undefined,
+          appointment: appointment ? {
+            id: appointment.id,
+            scheduled_at: appointment.scheduled_at,
+            cancellation_reason: appointment.cancellation_reason || dispute.reason || "",
+          } : undefined,
+        };
+      });
 
-      setDisputes(allDisputes);
+      console.log(`Mapped ${mappedDisputes.length} disputes`);
+      console.log("Mapped disputes:", mappedDisputes);
+      setDisputes(mappedDisputes);
+      setRawDisputesData(disputesData || []);
+      
+      // Immediately update filtered disputes
+      let filtered = [...mappedDisputes];
+      if (statusFilter !== "all") {
+        filtered = filtered.filter((d) => d.status === statusFilter);
+      }
+      if (typeFilter !== "all") {
+        filtered = filtered.filter((d) => d.type === typeFilter);
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (d) =>
+            d.senior?.full_name?.toLowerCase().includes(query) ||
+            d.specialist?.full_name?.toLowerCase().includes(query) ||
+            d.senior?.email?.toLowerCase().includes(query) ||
+            d.specialist?.email?.toLowerCase().includes(query) ||
+            d.review?.comment?.toLowerCase().includes(query) ||
+            d.appointment?.cancellation_reason?.toLowerCase().includes(query)
+        );
+      }
+      console.log(`Filtered disputes: ${filtered.length}`);
+      setFilteredDisputes(filtered);
     } catch (error) {
       console.error("Error fetching disputes:", error);
+      setDisputes([]);
+      setRawDisputesData([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResolve = async (disputeId: string) => {
-    // Mark dispute as resolved
-    setDisputes((prev) =>
-      prev.map((d) => (d.id === disputeId ? { ...d, status: "resolved" as const } : d))
-    );
+  const handleResolve = async (disputeId: string, resolution?: string) => {
+    try {
+      // Update dispute in database
+      const { error } = await supabase
+        .from("disputes")
+        .update({
+          status: "resolved",
+          resolution: resolution || "Resolved by admin",
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", disputeId);
+
+      if (error) {
+        console.error("Error resolving dispute:", error);
+        alert("Failed to resolve dispute. Please try again.");
+        return;
+      }
+
+      // Update local state
+      setDisputes((prev) =>
+        prev.map((d) => (d.id === disputeId ? { ...d, status: "resolved" as const } : d))
+      );
+
+      // Log dispute resolution
+      try {
+        await fetch("/api/activity/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "dispute_resolved",
+            description: `Dispute resolved: ${disputeId}`,
+            metadata: {
+              dispute_id: disputeId,
+              resolution: resolution || "Resolved by admin",
+            },
+          }),
+        });
+      } catch (err) {
+        console.error("Error logging dispute resolution:", err);
+      }
+    } catch (err) {
+      console.error("Error resolving dispute:", err);
+      alert("Failed to resolve dispute. Please try again.");
+    }
   };
 
   const handleDismiss = async (disputeId: string) => {
-    // Mark dispute as dismissed
-    setDisputes((prev) =>
-      prev.map((d) => (d.id === disputeId ? { ...d, status: "dismissed" as const } : d))
-    );
+    try {
+      // Update dispute in database
+      const { error } = await supabase
+        .from("disputes")
+        .update({
+          status: "dismissed",
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", disputeId);
+
+      if (error) {
+        console.error("Error dismissing dispute:", error);
+        alert("Failed to dismiss dispute. Please try again.");
+        return;
+      }
+
+      // Update local state
+      setDisputes((prev) =>
+        prev.map((d) => (d.id === disputeId ? { ...d, status: "dismissed" as const } : d))
+      );
+
+      // Log dispute dismissal
+      try {
+        await fetch("/api/activity/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "dispute_dismissed",
+            description: `Dispute dismissed: ${disputeId}`,
+            metadata: {
+              dispute_id: disputeId,
+            },
+          }),
+        });
+      } catch (err) {
+        console.error("Error logging dispute dismissal:", err);
+      }
+    } catch (err) {
+      console.error("Error dismissing dispute:", err);
+      alert("Failed to dismiss dispute. Please try again.");
+    }
   };
 
   const getStatusCounts = () => {
@@ -303,6 +423,12 @@ export default function AdminDisputesPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
             <p className="ml-4 text-text-secondary">Loading disputes...</p>
           </div>
+        ) : disputes.length === 0 ? (
+          <motion.div variants={slideUp} className="card bg-white p-12 text-center">
+            <FileText size={48} className="mx-auto mb-4 text-text-secondary opacity-50" />
+            <p className="text-xl text-text-secondary mb-4">No disputes found</p>
+            <p className="text-text-tertiary">No disputes have been reported yet</p>
+          </motion.div>
         ) : filteredDisputes.length === 0 ? (
           <motion.div variants={slideUp} className="card bg-white p-12 text-center">
             <FileText size={48} className="mx-auto mb-4 text-text-secondary opacity-50" />
@@ -314,13 +440,20 @@ export default function AdminDisputesPage() {
             </p>
           </motion.div>
         ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="space-y-4"
-          >
-            {filteredDisputes.map((dispute) => (
+          <>
+            {/* Debug info - remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-2 bg-yellow-100 text-xs">
+                Debug: Total disputes: {disputes.length}, Filtered: {filteredDisputes.length}
+              </div>
+            )}
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className="space-y-4"
+            >
+              {filteredDisputes.map((dispute) => (
               <motion.div
                 key={dispute.id}
                 variants={staggerItem}
@@ -414,6 +547,22 @@ export default function AdminDisputesPage() {
                         <p className="text-sm text-error-800">{dispute.appointment.cancellation_reason}</p>
                       </div>
                     )}
+
+                    {/* Show dispute description if available */}
+                    {rawDisputesData.find((d) => d.id === dispute.id)?.description && (
+                      <div className="mt-4 p-4 bg-secondary-50 border border-secondary-200 rounded-lg">
+                        <p className="text-sm font-medium text-text-primary mb-2">Issue Description</p>
+                        <p className="text-sm text-text-secondary whitespace-pre-line">{rawDisputesData.find((d) => d.id === dispute.id)?.description}</p>
+                      </div>
+                    )}
+
+                    {/* Show dispute reason if available */}
+                    {rawDisputesData.find((d) => d.id === dispute.id)?.reason && (
+                      <div className="mt-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                        <p className="text-sm font-medium text-primary-700 mb-2">Brief Summary</p>
+                        <p className="text-sm text-primary-800">{rawDisputesData.find((d) => d.id === dispute.id)?.reason}</p>
+                      </div>
+                    )}
                   </div>
 
                   {dispute.status === "open" && (
@@ -440,7 +589,8 @@ export default function AdminDisputesPage() {
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </motion.div>
     </div>

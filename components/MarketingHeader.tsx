@@ -26,10 +26,10 @@ export default function MarketingHeader() {
 
   return (
     <header className="z-40 bg-white">
-      <div className="max-w-7xl mx-auto px-14 md:px-18">
-        <div className="flex items-center justify-between py-8 md:py-10">
+      <div className="w-full px-6 md:px-10">
+        <div className="flex items-center justify-between gap-8 py-6 md:py-8">
           {/* Brand */}
-          <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
               <span className="text-primary-600 font-extrabold text-xl">H</span>
             </div>
@@ -37,45 +37,49 @@ export default function MarketingHeader() {
               <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITSapp</p>
               <p className="text-sm text-text-secondary">Hire IT Specialists</p>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-7 text-[18px] font-semibold text-primary-900">
+          <nav className="hidden lg:flex flex-1 flex-nowrap items-center justify-center gap-6 text-[17px] font-semibold text-primary-900 whitespace-nowrap">
             <Link href="/about" className="hover:text-primary-600 transition-colors">
               About
             </Link>
-            <Link href="/consumer-services" className="hover:text-primary-600 transition-colors">
-              Consumers
+            <Link href="/for-seniors-families" className="hover:text-primary-600 transition-colors">
+              For Seniors & Families
             </Link>
-            <Link href="/enterprise-services" className="hover:text-primary-600 transition-colors">
-              Enterprises
+            <Link href="/for-partners" className="hover:text-primary-600 transition-colors">
+              For Partners
             </Link>
-            <Link href="/howto-offerings" className="hover:text-primary-600 transition-colors">
+            <Link href="/resources" className="hover:text-primary-600 transition-colors">
               Resources
             </Link>
             <Link href="/plans" className="hover:text-primary-600 transition-colors">
-              Plans
+              Pricing & Plans
+            </Link>
+            <Link href="/contact" className="hover:text-primary-600 transition-colors">
+              Contact / Support
             </Link>
           </nav>
 
           {/* Desktop CTAs */}
-          <div className="hidden lg:flex items-center gap-5">
-            <a href="https://candoo.screenconnect.com" target="_blank" rel="noopener noreferrer">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="px-7 h-13 text-[16px] bg-accent-400 text-white hover:bg-accent-500"
-              >
-                Member Support
-              </Button>
-            </a>
+          <div className="hidden lg:flex items-center gap-3">
             {user ? (
-              <Link href={getDashboardLink()} className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-                Dashboard
+              <Link href={getDashboardLink()}>
+                <Button
+                  size="lg"
+                  className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  Dashboard
+                </Button>
               </Link>
             ) : (
-              <Link href="/login" className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 transition-colors">
-                Sign in
+              <Link href="/login">
+                <Button
+                  size="lg"
+                  className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  Sign in
+                </Button>
               </Link>
             )}
           </div>
@@ -94,45 +98,37 @@ export default function MarketingHeader() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="lg:hidden bg-white">
-          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6">
+          <div className="max-w-6xl mx-auto px-6 md:px-10 py-6">
             <nav className="grid gap-3 text-[18px] font-semibold text-primary-900">
               <Link onClick={() => setMobileOpen(false)} href="/about" className="py-2 hover:text-primary-600">
                 About
               </Link>
-              <Link onClick={() => setMobileOpen(false)} href="/consumer-services" className="py-2 hover:text-primary-600">
-                Consumers
+              <Link onClick={() => setMobileOpen(false)} href="/for-seniors-families" className="py-2 hover:text-primary-600">
+                For Seniors & Families
               </Link>
-              <Link onClick={() => setMobileOpen(false)} href="/enterprise-services" className="py-2 hover:text-primary-600">
-                Enterprises
+              <Link onClick={() => setMobileOpen(false)} href="/for-partners" className="py-2 hover:text-primary-600">
+                For Partners
               </Link>
-              <Link onClick={() => setMobileOpen(false)} href="/howto-offerings" className="py-2 hover:text-primary-600">
+              <Link onClick={() => setMobileOpen(false)} href="/resources" className="py-2 hover:text-primary-600">
                 Resources
               </Link>
               <Link onClick={() => setMobileOpen(false)} href="/plans" className="py-2 hover:text-primary-600">
-                Plans
+                Pricing & Plans
+              </Link>
+              <Link onClick={() => setMobileOpen(false)} href="/contact" className="py-2 hover:text-primary-600">
+                Contact / Support
               </Link>
             </nav>
             <div className="mt-4 flex items-center gap-3">
-              <a
-                onClick={() => setMobileOpen(false)}
-                href="https://candoo.screenconnect.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-              >
-                <Button className="w-full h-12 text-[16px] bg-accent-400 text-white hover:bg-accent-500" variant="secondary">
-                  Member Support
-                </Button>
-              </a>
               {user ? (
                 <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
-                  <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                  <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                     Dashboard
                   </Button>
                 </Link>
               ) : (
                 <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                  <Button className="w-full h-12 text-[16px] text-primary-600 hover:text-primary-500" variant="ghost">
+                  <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                     Sign in
                   </Button>
                 </Link>

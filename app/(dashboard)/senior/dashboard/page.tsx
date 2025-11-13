@@ -8,15 +8,70 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { Calendar, MessageSquare, User, Clock } from "lucide-react";
+import { Calendar, MessageSquare, User, Clock, Crown } from "lucide-react";
+import { useMembership } from "@/lib/hooks/useMembership";
 
 export default function SeniorDashboard() {
   // Always call all hooks first, before any conditional logic
   const { user, loading } = useAuth();
+  const { membership, hasActiveMembership, fetchMembership, isLoading: membershipLoading } = useMembership(user?.id);
+
+  // Debug logging for membership (throttled to avoid spam)
+  useEffect(() => {
+    if (user?.id && membership) {
+      const logKey = `membership_log_${membership.id}`;
+      const lastLog = sessionStorage.getItem(logKey);
+      const now = Date.now();
+      
+      // Only log if we haven't logged this membership state in the last 5 seconds
+      if (!lastLog || now - parseInt(lastLog) > 5000) {
+        console.log("Dashboard membership state:", {
+          hasMembership: !!membership,
+          hasActiveMembership,
+          membershipStatus: membership?.status,
+          hasPlan: !!membership?.membership_plan,
+          planName: membership?.membership_plan?.name,
+          isLoading: membershipLoading,
+        });
+        sessionStorage.setItem(logKey, now.toString());
+      }
+    }
+  }, [membership?.id, hasActiveMembership, membershipLoading, user?.id]);
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Refresh membership when page becomes visible (user returns from membership page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && user?.id && fetchMembership) {
+        // Small delay to ensure any database updates have propagated
+        setTimeout(() => {
+          fetchMembership();
+        }, 500);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    // Also refresh when component mounts (user navigates to dashboard)
+    if (user?.id && fetchMembership) {
+      // Small delay to allow any pending updates to complete
+      const timer = setTimeout(() => {
+        fetchMembership();
+      }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user?.id, fetchMembership]);
 
   useEffect(() => {
     // Don't redirect here - the layout handles authentication
@@ -96,6 +151,54 @@ export default function SeniorDashboard() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Membership Card - Show if membership exists and is active */}
+          {membershipLoading ? (
+            <motion.div
+              variants={slideUp}
+              className="card bg-secondary-50 border-2 border-dashed border-secondary-300 p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Membership</h3>
+                <Crown className="text-text-tertiary" size={24} />
+              </div>
+              <p className="text-sm text-text-tertiary">Loading...</p>
+            </motion.div>
+          ) : hasActiveMembership && membership ? (
+            <motion.div
+              variants={slideUp}
+              className="card bg-gradient-to-br from-primary-500 to-primary-600 p-6 text-white"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white/90">Membership</h3>
+                <Crown className="text-white" size={24} />
+              </div>
+              <p className="text-xl font-bold text-white mb-1">
+                {membership.membership_plan?.name || "Active Plan"}
+              </p>
+              <p className="text-sm text-white/80 mt-1">Active</p>
+              <Link href="/senior/membership" className="mt-3 inline-block">
+                <span className="text-sm text-white underline">Manage →</span>
+              </Link>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={slideUp}
+              className="card bg-secondary-50 border-2 border-dashed border-secondary-300 p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Membership</h3>
+                <Crown className="text-text-tertiary" size={24} />
+              </div>
+              <p className="text-lg font-semibold text-text-primary mb-2">
+                No Active Plan
+              </p>
+              <Link href="/senior/membership">
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  View Plans
+                </Button>
+              </Link>
+            </motion.div>
+          )}
           <motion.div
             variants={slideUp}
             className="card bg-white p-6"
@@ -224,6 +327,18 @@ export default function SeniorDashboard() {
               <Link href="/senior/profile">
                 <Button variant="outline" size="lg" className="w-full">
                   Update Profile
+                </Button>
+              </Link>
+              {hasActiveMembership && (
+                <Link href="/senior/resources">
+                  <Button variant="outline" size="lg" className="w-full">
+                    Resource Library
+                  </Button>
+                </Link>
+              )}
+              <Link href="/contact">
+                <Button variant="outline" size="lg" className="w-full">
+                  Contact Support / Report a Concern
                 </Button>
               </Link>
             </div>

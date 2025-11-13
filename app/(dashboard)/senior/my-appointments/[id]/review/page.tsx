@@ -19,44 +19,107 @@ function ReviewPageContent() {
   const [appointment, setAppointment] = useState<any>(null);
   const [existingReview, setExistingReview] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user?.id && params.id) {
-      fetchData();
-    }
-  }, [user, authLoading, params.id]);
+    // Only fetch if auth is loaded, user exists, and we have params.id
+    if (authLoading) return;
+    if (!user?.id) return;
+    if (hasFetched) return; // Prevent multiple fetches
+    
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) return;
+
+    // Fetch data once
+    setHasFetched(true);
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading]);
 
   const fetchData = async () => {
-    const { data: apt, error } = await supabase
-      .from("appointments")
-      .select("*, specialist:specialist_id(id, user_id, full_name)")
-      .eq("id", params.id)
-      .single();
-
-    if (error || !apt) {
+    setIsLoading(true);
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    if (!appointmentId) {
       router.push("/senior/my-appointments");
+      setIsLoading(false);
       return;
     }
 
-    if (apt.senior_id !== user?.id) {
+    try {
+      // Fetch appointment
+      const { data: apt, error: aptError } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("id", appointmentId)
+        .single();
+
+      if (aptError || !apt) {
+        console.error("Error fetching appointment:", aptError);
+        router.push("/senior/my-appointments");
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify ownership
+      if (apt.senior_id !== user?.id) {
+        console.error("Appointment does not belong to user");
+        router.push("/senior/my-appointments");
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify appointment is completed
+      if (apt.status !== "completed") {
+        console.error("Appointment is not completed, cannot review");
+        router.push(`/senior/my-appointments/${appointmentId}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch specialist user details
+      const { data: specialistData, error: specialistError } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .eq("id", apt.specialist_id)
+        .single();
+
+      if (specialistError) {
+        console.error("Error fetching specialist details:", specialistError);
+      }
+
+      // Combine appointment with specialist data
+      const appointmentWithSpecialist = {
+        ...apt,
+        specialist: {
+          id: specialistData?.id || apt.specialist_id,
+          full_name: specialistData?.full_name || "Unknown",
+          user_id: specialistData?.id || apt.specialist_id,
+        },
+      };
+
+      setAppointment(appointmentWithSpecialist);
+
+      // Check for existing review
+      const { data: review, error: reviewError } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("appointment_id", appointmentId)
+        .maybeSingle();
+
+      if (reviewError) {
+        console.error("Error checking for existing review:", reviewError);
+      }
+
+      if (review) {
+        setExistingReview(review);
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error in fetchData:", error);
       router.push("/senior/my-appointments");
-      return;
+      setIsLoading(false);
     }
-
-    setAppointment(apt);
-
-    // Check for existing review
-    const { data: review } = await supabase
-      .from("reviews")
-      .select("*")
-      .eq("appointment_id", params.id)
-      .single();
-
-    if (review) {
-      setExistingReview(review);
-    }
-
-    setIsLoading(false);
   };
 
   const handleSubmit = async (rating: number, comment: string) => {
@@ -75,7 +138,8 @@ function ReviewPageContent() {
     }
 
     // Refresh to show the new review
-    router.push(`/senior/my-appointments/${params.id}?review=success`);
+    const appointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    router.push(`/senior/my-appointments/${appointmentId}?review=success`);
   };
 
   if (authLoading || isLoading) {
@@ -95,7 +159,7 @@ function ReviewPageContent() {
           variants={fadeIn}
         >
           <Link
-            href={`/senior/my-appointments/${params.id}`}
+            href={`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}`}
             className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
           >
             <ArrowLeft size={20} className="mr-2" />
@@ -110,7 +174,7 @@ function ReviewPageContent() {
             <p className="text-text-secondary mb-6">
               You have already submitted a review for this appointment.
             </p>
-            <Link href={`/senior/my-appointments/${params.id}`}>
+            <Link href={`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}`}>
               <Button variant="primary">View Appointment</Button>
             </Link>
           </motion.div>
@@ -127,7 +191,7 @@ function ReviewPageContent() {
         variants={fadeIn}
       >
         <Link
-          href={`/senior/my-appointments/${params.id}`}
+          href={`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}`}
           className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-6 transition-colors"
         >
           <ArrowLeft size={20} className="mr-2" />
@@ -168,10 +232,10 @@ function ReviewPageContent() {
           </div>
 
           <ReviewForm
-            appointmentId={params.id as string}
+            appointmentId={Array.isArray(params.id) ? params.id[0] : params.id}
             specialistId={appointment?.specialist_id}
             onSubmit={handleSubmit}
-            onCancel={() => router.push(`/senior/my-appointments/${params.id}`)}
+            onCancel={() => router.push(`/senior/my-appointments/${Array.isArray(params.id) ? params.id[0] : params.id}`)}
           />
         </motion.div>
       </motion.div>

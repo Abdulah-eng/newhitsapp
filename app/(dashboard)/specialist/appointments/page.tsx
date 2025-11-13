@@ -191,6 +191,9 @@ export default function SpecialistAppointmentsPage() {
       updateData.cancelled_at = new Date().toISOString();
     }
 
+    const appointment = appointments.find(apt => apt.id === appointmentId);
+    const oldStatus = appointment?.status || "unknown";
+
     const { error } = await supabase
       .from("appointments")
       .update(updateData)
@@ -199,6 +202,26 @@ export default function SpecialistAppointmentsPage() {
     if (error) {
       alert("Failed to update appointment status. Please try again.");
       return;
+    }
+
+    // Log appointment status change
+    try {
+      await fetch("/api/activity/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "appointment_updated",
+          description: `Appointment status changed: ${oldStatus} → ${newStatus}`,
+          metadata: {
+            appointment_id: appointmentId,
+            old_status: oldStatus,
+            new_status: newStatus,
+          },
+        }),
+      });
+    } catch (err) {
+      // Don't block update if logging fails
+      console.error("Error logging appointment update:", err);
     }
 
     // Re-fetch appointments

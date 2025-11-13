@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { MessageSquare, X, Send, Bot, User } from "lucide-react";
+import { MessageSquare, X, Send, Bot, User, ExternalLink } from "lucide-react";
 import { fadeIn, slideUp } from "@/lib/animations/config";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,11 +16,12 @@ interface Message {
 }
 
 export default function AIChatbot() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your AI assistant. How can I help you today?",
+      content: "Hello! I'm HITS Assistant, your virtual assistant for questions about HITS. I can help you learn about our services, pricing, and how visits work. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
@@ -102,7 +105,7 @@ export default function AIChatbot() {
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 w-16 h-16 bg-primary-500 text-white rounded-full shadow-large flex items-center justify-center z-50 hover:bg-primary-600 transition-colors"
-          aria-label="Open AI Chatbot"
+          aria-label="Open HITS Assistant"
         >
           <MessageSquare size={24} />
         </motion.button>
@@ -121,7 +124,10 @@ export default function AIChatbot() {
             <div className="bg-primary-500 text-white p-4 rounded-t-xl flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bot size={20} />
-                <h3 className="font-semibold">AI Assistant</h3>
+                <div>
+                  <h3 className="font-semibold">HITS Assistant</h3>
+                  <p className="text-xs opacity-90">Virtual Assistant</p>
+                </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -131,6 +137,87 @@ export default function AIChatbot() {
                 <X size={20} />
               </button>
             </div>
+
+            {/* Quick Links & Shortcuts */}
+            {messages.length === 1 && (
+              <div className="p-4 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-xs font-semibold text-primary-700 mb-2">Quick Links:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/plans" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                    Pricing & Plans
+                  </Link>
+                  <span className="text-text-secondary">•</span>
+                  <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                    Contact Support
+                  </Link>
+                  <span className="text-text-secondary">•</span>
+                  <Link href="/for-seniors-families" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                    For Seniors & Families
+                  </Link>
+                  <span className="text-text-secondary">•</span>
+                  <Link href="/for-partners" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                    For Partners
+                  </Link>
+                </div>
+                {user && user.role === "senior" && (
+                  <div className="mt-3 pt-3 border-t border-secondary-200">
+                    <p className="text-xs font-semibold text-primary-700 mb-2">Your Shortcuts:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href="/senior/book-appointment" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Book a visit
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/senior/my-appointments" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        My appointments
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/senior/membership" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Membership
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/senior/dashboard" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Dashboard
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Contact support
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                {user && user.role === "specialist" && (
+                  <div className="mt-3 pt-3 border-t border-secondary-200">
+                    <p className="text-xs font-semibold text-primary-700 mb-2">Your Shortcuts:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href="/specialist/appointments" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        My appointments
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/specialist/earnings" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        View earnings
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/specialist/calendar" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Manage availability
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/specialist/dashboard" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Dashboard
+                      </Link>
+                      <span className="text-text-secondary">•</span>
+                      <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
+                        Contact support
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3 pt-3 border-t border-secondary-200">
+                  <p className="text-xs text-text-secondary italic">
+                    Note: HITS Assistant is a virtual assistant, not a live human. For emergencies, contact your bank and local law enforcement.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary-50">

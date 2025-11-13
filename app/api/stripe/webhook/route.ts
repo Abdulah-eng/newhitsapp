@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
+import { createSupabaseServerComponentClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { logPaymentCompleted, logAppointmentStatusChange, logMembershipCreated, logMembershipCancelled } from "@/lib/utils/activityLogger";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -30,7 +31,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = await createSupabaseServerComponentClient();
+  // Use service role client for webhook operations to bypass RLS
+  let supabase;
+  try {
+    supabase = createSupabaseServiceRoleClient();
+  } catch (serviceRoleError) {
+    console.warn("[Webhook] Service role key not set, using regular client. RLS policy must allow operations.");
+    supabase = await createSupabaseServerComponentClient();
+  }
 
   // Handle the event
   switch (event.type) {
@@ -49,6 +57,35 @@ export async function POST(request: NextRequest) {
       await handleRefund(refund, supabase);
       break;
 
+    case "customer.subscription.updated":
+      const subscription = event.data.object as Stripe.Subscription;
+      await handleSubscriptionUpdate(subscription, supabase);
+      break;
+    
+    // Note: customer.subscription.created is handled by invoice.payment_succeeded
+    // to ensure payment is completed before activating membership
+
+    case "customer.subscription.deleted":
+      const deletedSubscription = event.data.object as Stripe.Subscription;
+      await handleSubscriptionDeleted(deletedSubscription, supabase);
+      break;
+
+    case "invoice.payment_succeeded":
+      const invoice = event.data.object as Stripe.Invoice;
+      const invoiceSubscription = (invoice as any).subscription;
+      if (invoiceSubscription) {
+        await handleSubscriptionPaymentSucceeded(invoice, supabase);
+      }
+      break;
+
+    case "invoice.payment_failed":
+      const failedInvoice = event.data.object as Stripe.Invoice;
+      const failedInvoiceSubscription = (failedInvoice as any).subscription;
+      if (failedInvoiceSubscription) {
+        await handleSubscriptionPaymentFailed(failedInvoice, supabase);
+      }
+      break;
+
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
@@ -62,36 +99,72 @@ async function handlePaymentSuccess(
 ) {
   const appointmentId = paymentIntent.metadata.appointment_id;
 
+  console.log(`[Webhook] Payment Intent ${paymentIntent.id} succeeded. Appointment ID: ${appointmentId}`);
+
   if (!appointmentId) {
-    console.error("No appointment_id in payment intent metadata");
+    console.error("[Webhook] No appointment_id in payment intent metadata. Metadata:", paymentIntent.metadata);
     return;
   }
 
-  // Update payment record
-  const { data: existingPayment } = await supabase
+  // Get appointment details first
+  const { data: appointment } = await supabase
+    .from("appointments")
+    .select("senior_id, specialist_id")
+    .eq("id", appointmentId)
+    .single();
+
+  if (!appointment) {
+    console.error("Appointment not found for payment intent:", appointmentId);
+    return;
+  }
+
+  // Check for existing payment by stripe_payment_id first
+  const { data: existingPaymentByStripeId } = await supabase
     .from("payments")
     .select("*")
     .eq("stripe_payment_id", paymentIntent.id)
-    .single();
+    .maybeSingle();
 
-  if (existingPayment) {
-    await supabase
+  if (existingPaymentByStripeId) {
+    // Update existing payment record
+    const { error: updateError } = await supabase
       .from("payments")
       .update({
         status: "completed",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", existingPayment.id);
-  } else {
-    // Get appointment details
-    const { data: appointment } = await supabase
-      .from("appointments")
-      .select("senior_id, specialist_id")
-      .eq("id", appointmentId)
-      .single();
+      .eq("id", existingPaymentByStripeId.id);
 
-    if (appointment) {
-      await supabase.from("payments").insert({
+    if (updateError) {
+      console.error("Error updating payment:", updateError);
+    }
+  } else {
+    // Check if there's an existing payment for this appointment that needs to be updated
+    const { data: existingPaymentByAppointment } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("appointment_id", appointmentId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existingPaymentByAppointment) {
+      // Update existing payment record with Stripe payment ID
+      const { error: updateError } = await supabase
+        .from("payments")
+        .update({
+          status: "completed",
+          stripe_payment_id: paymentIntent.id,
+          stripe_customer_id: paymentIntent.customer as string,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingPaymentByAppointment.id);
+
+      if (updateError) {
+        console.error("Error updating payment:", updateError);
+      }
+    } else {
+      // Create new payment record
+      const paymentData = {
         appointment_id: appointmentId,
         senior_id: appointment.senior_id,
         specialist_id: appointment.specialist_id,
@@ -101,16 +174,67 @@ async function handlePaymentSuccess(
         payment_method: "card",
         stripe_payment_id: paymentIntent.id,
         stripe_customer_id: paymentIntent.customer as string,
-      });
+      };
+
+      console.log(`[Webhook] Creating new payment record for appointment ${appointmentId}:`, paymentData);
+
+      const { data: newPayment, error: insertError } = await supabase
+        .from("payments")
+        .insert(paymentData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("[Webhook] Error inserting payment:", insertError);
+      } else {
+        console.log(`[Webhook] Payment record created successfully: ${newPayment?.id}`);
+      }
     }
   }
 
   // Update appointment status if needed
-  await supabase
+  // Note: Appointments can be "pending" or "confirmed" when payment is made
+  // If "pending", update to "confirmed". If already "confirmed", leave as is.
+  const { data: appointmentForStatus } = await supabase
     .from("appointments")
-    .update({ status: "confirmed" })
+    .select("senior_id, status")
     .eq("id", appointmentId)
-    .eq("status", "pending");
+    .single();
+
+  if (appointmentForStatus) {
+    if (appointmentForStatus.status === "pending") {
+      const { error: updateError } = await supabase
+        .from("appointments")
+        .update({ status: "confirmed" })
+        .eq("id", appointmentId)
+        .eq("status", "pending");
+
+      if (updateError) {
+        console.error("Error updating appointment status:", updateError);
+      } else {
+        // Log appointment status change
+        if (appointmentForStatus.senior_id) {
+          await logAppointmentStatusChange(
+            appointmentId,
+            appointmentForStatus.senior_id,
+            "pending",
+            "confirmed"
+          );
+        }
+      }
+    }
+    // If appointment is already "confirmed", no need to update status
+  }
+
+  // Log payment completion
+  if (appointmentForStatus?.senior_id) {
+    await logPaymentCompleted(
+      paymentIntent.id,
+      appointmentForStatus.senior_id,
+      appointmentId,
+      paymentIntent.amount / 100
+    );
+  }
 }
 
 async function handlePaymentFailure(
@@ -154,6 +278,223 @@ async function handleRefund(charge: Stripe.Charge, supabase: any) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", payment.id);
+  }
+}
+
+async function handleSubscriptionUpdate(
+  subscription: Stripe.Subscription,
+  supabase: any
+) {
+  const userId = subscription.metadata.user_id;
+  const membershipPlanId = subscription.metadata.membership_plan_id;
+
+  if (!userId || !membershipPlanId) {
+    console.error("Missing user_id or membership_plan_id in subscription metadata");
+    return;
+  }
+
+  // Find or create membership record
+  const { data: existingMembership } = await supabase
+    .from("user_memberships")
+    .select("*")
+    .eq("stripe_subscription_id", subscription.id)
+    .maybeSingle();
+
+  const membershipData = {
+    user_id: userId,
+    membership_plan_id: membershipPlanId,
+    status: subscription.status === "active" ? "active" : "cancelled",
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: typeof subscription.customer === "string" 
+      ? subscription.customer 
+      : subscription.customer?.id || "",
+    next_billing_date: (subscription as any).current_period_end
+      ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
+      : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existingMembership) {
+    await supabase
+      .from("user_memberships")
+      .update(membershipData)
+      .eq("id", existingMembership.id);
+  } else {
+    const { data: newMembership } = await supabase
+      .from("user_memberships")
+      .insert({
+        ...membershipData,
+        started_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (newMembership && subscription.status === "active") {
+      // Update senior profile with membership_id
+      await supabase
+        .from("senior_profiles")
+        .update({ membership_id: newMembership.id })
+        .eq("user_id", userId);
+
+      // Log membership creation
+      const { data: plan } = await supabase
+        .from("membership_plans")
+        .select("name, plan_type, monthly_price")
+        .eq("id", membershipPlanId)
+        .single();
+
+      if (plan) {
+        await logMembershipCreated(
+          newMembership.id,
+          userId,
+          plan.plan_type,
+          plan.monthly_price
+        );
+      }
+    }
+  }
+}
+
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  supabase: any
+) {
+  const { data: membership } = await supabase
+    .from("user_memberships")
+    .select("*")
+    .eq("stripe_subscription_id", subscription.id)
+    .single();
+
+  if (membership) {
+    await supabase
+      .from("user_memberships")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", membership.id);
+
+    // Remove membership_id from senior profile
+    await supabase
+      .from("senior_profiles")
+      .update({ membership_id: null })
+      .eq("user_id", membership.user_id);
+
+    // Log membership cancellation
+    await logMembershipCancelled(
+      membership.id,
+      membership.user_id,
+      "Subscription cancelled via Stripe"
+    );
+  }
+}
+
+async function handleSubscriptionPaymentSucceeded(
+  invoice: Stripe.Invoice,
+  supabase: any
+) {
+  const invoiceSubscription = (invoice as any).subscription;
+  const subscriptionId = typeof invoiceSubscription === "string" 
+    ? invoiceSubscription 
+    : invoiceSubscription?.id;
+  if (!subscriptionId) return;
+
+  // Retrieve subscription to get metadata
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const userId = subscription.metadata.user_id;
+  const membershipPlanId = subscription.metadata.membership_plan_id;
+
+  if (!userId || !membershipPlanId) {
+    console.error("Missing user_id or membership_plan_id in subscription metadata");
+    return;
+  }
+
+  // Check if membership already exists
+  let { data: membership } = await supabase
+    .from("user_memberships")
+    .select("*")
+    .eq("stripe_subscription_id", subscriptionId)
+    .maybeSingle();
+
+  if (membership) {
+    // Update existing membership
+    await supabase
+      .from("user_memberships")
+      .update({
+        next_billing_date: (subscription as any).current_period_end
+          ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
+          : null,
+        status: "active",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", membership.id);
+  } else {
+    // Create new membership (first payment succeeded)
+    const { data: newMembership } = await supabase
+      .from("user_memberships")
+      .insert({
+        user_id: userId,
+        membership_plan_id: membershipPlanId,
+        status: "active",
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: typeof subscription.customer === "string" 
+          ? subscription.customer 
+          : subscription.customer?.id || "",
+        next_billing_date: (subscription as any).current_period_end
+          ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
+          : null,
+        started_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (newMembership) {
+      // Update senior profile with membership_id
+      await supabase
+        .from("senior_profiles")
+        .update({ membership_id: newMembership.id })
+        .eq("user_id", userId);
+
+      // Log membership creation
+      const { data: plan } = await supabase
+        .from("membership_plans")
+        .select("name, plan_type, monthly_price")
+        .eq("id", membershipPlanId)
+        .single();
+
+      if (plan) {
+        await logMembershipCreated(
+          newMembership.id,
+          userId,
+          plan.plan_type,
+          plan.monthly_price
+        );
+      }
+    }
+  }
+}
+
+async function handleSubscriptionPaymentFailed(
+  invoice: Stripe.Invoice,
+  supabase: any
+) {
+  const invoiceSubscription = (invoice as any).subscription;
+  const subscriptionId = typeof invoiceSubscription === "string" 
+    ? invoiceSubscription 
+    : invoiceSubscription?.id;
+  if (!subscriptionId) return;
+
+  const { data: membership } = await supabase
+    .from("user_memberships")
+    .select("*")
+    .eq("stripe_subscription_id", subscriptionId)
+    .single();
+
+  if (membership) {
+    // Optionally update status or send notification
+    console.log(`Subscription payment failed for membership ${membership.id}`);
+    // You might want to set status to "pending" or send an email notification
   }
 }
 

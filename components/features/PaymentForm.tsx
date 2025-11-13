@@ -48,30 +48,77 @@ function CheckoutForm({
     setIsProcessing(true);
     setMessage(null);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/senior/my-appointments/${appointmentId}?payment=success`,
-      },
-      redirect: "if_required",
-    });
+    try {
+      // First, submit the elements to validate and prepare the payment
+      const { error: submitError } = await elements.submit();
+      
+      if (submitError) {
+        setMessage({
+          type: "error",
+          text: submitError.message || "Please check your payment details.",
+        });
+        onError(submitError.message || "Validation failed");
+        setIsProcessing(false);
+        return;
+      }
 
-    if (error) {
+      // Then confirm the payment
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/senior/my-appointments/${appointmentId}?payment=success`,
+        },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        setMessage({
+          type: "error",
+          text: error.message || "Payment failed. Please try again.",
+        });
+        onError(error.message || "Payment failed");
+        setIsProcessing(false);
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        setMessage({
+          type: "success",
+          text: "Payment successful! Your appointment is confirmed.",
+        });
+        
+        // Immediately try to sync payment (in case webhook is delayed)
+        try {
+          const syncResponse = await fetch(`/api/appointments/${appointmentId}/sync-payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              paymentIntentId: paymentIntent.id,
+            }),
+          });
+          
+          const syncData = await syncResponse.json();
+          if (syncData.success) {
+            console.log("[PaymentForm] Payment synced successfully");
+          } else {
+            console.log("[PaymentForm] Payment sync returned:", syncData.message);
+          }
+        } catch (syncError) {
+          console.error("[PaymentForm] Error syncing payment:", syncError);
+          // Don't block success - webhook will handle it
+        }
+        
+        setTimeout(() => {
+          onSuccess();
+        }, 2000);
+      } else {
+        setIsProcessing(false);
+      }
+    } catch (err: any) {
       setMessage({
         type: "error",
-        text: error.message || "Payment failed. Please try again.",
+        text: err.message || "An error occurred. Please try again.",
       });
-      onError(error.message || "Payment failed");
-      setIsProcessing(false);
-    } else if (paymentIntent && paymentIntent.status === "succeeded") {
-      setMessage({
-        type: "success",
-        text: "Payment successful! Your appointment is confirmed.",
-      });
-      setTimeout(() => {
-        onSuccess();
-      }, 2000);
-    } else {
+      onError(err.message || "An error occurred");
       setIsProcessing(false);
     }
   };

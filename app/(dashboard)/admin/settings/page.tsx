@@ -3,16 +3,19 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { usePlatformSettings } from "@/lib/hooks/usePlatformSettings";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import { Settings, ArrowLeft, Save, Globe, DollarSign, Mail, Bell, Shield } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export default function AdminSettingsPage() {
-  const supabase = createSupabaseBrowserClient();
+  const { user } = useAuth();
+  const { settings, isLoading, updateSetting } = usePlatformSettings();
   const [isSaving, setIsSaving] = useState(false);
-  const [settings, setSettings] = useState({
+  const [localSettings, setLocalSettings] = useState({
     platformName: "HITSapp",
     platformEmail: "support@hitsapp.com",
     platformPhone: "+1 (555) 123-4567",
@@ -30,15 +33,73 @@ export default function AdminSettingsPage() {
     minAppointmentDuration: 30,
   });
 
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings({
+        platformName: localSettings.platform_name || "HITSapp",
+        platformEmail: localSettings.support_email || "support@hitsapp.com",
+        platformPhone: localSettings.support_phone || "+1 (555) 123-4567",
+        defaultHourlyRate: localSettings.base_hourly_rate || 90,
+        minHourlyRate: 20,
+        maxHourlyRate: 200,
+        platformFee: 15,
+        currency: "USD",
+        timezone: "America/New_York",
+        maintenanceMode: !localSettings.allow_registrations || false,
+        allowNewRegistrations: localSettings.allow_registrations || true,
+        requireEmailVerification: localSettings.require_email_verification || true,
+        enableNotifications: true,
+        maxAppointmentDuration: 240,
+        minAppointmentDuration: 30,
+      });
+    }
+  }, [settings]);
+
   const handleSave = async () => {
+    if (!user) return;
+    
     setIsSaving(true);
-    // In a real app, you would save these to a settings table in the database
-    // For now, we'll just simulate saving
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      // Update platform settings
+      await updateSetting("platform_name", localSettings.platformName);
+      await updateSetting("support_email", localSettings.platformEmail);
+      await updateSetting("support_phone", localSettings.platformPhone);
+      await updateSetting("base_hourly_rate", localSettings.defaultHourlyRate);
+      await updateSetting("allow_registrations", localSettings.allowNewRegistrations);
+      await updateSetting("require_email_verification", localSettings.requireEmailVerification);
+
+      // Log settings update
+      try {
+        await fetch("/api/activity/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "settings_updated",
+            description: "Platform settings updated",
+            metadata: {
+              updated_by: user.id,
+            },
+          }),
+        });
+      } catch (err) {
+        console.error("Error logging settings update:", err);
+      }
+
       alert("Settings saved successfully!");
-    }, 1000);
+    } catch (error: any) {
+      alert("Failed to save settings: " + (error.message || "Unknown error"));
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -77,8 +138,8 @@ export default function AdminSettingsPage() {
               </label>
               <Input
                 type="text"
-                value={settings.platformName}
-                onChange={(e) => setSettings({ ...settings, platformName: e.target.value })}
+                value={localSettings.platformName}
+                onChange={(e) => setLocalSettings({ ...localSettings, platformName: e.target.value })}
               />
             </div>
             <div>
@@ -87,8 +148,8 @@ export default function AdminSettingsPage() {
               </label>
               <Input
                 type="email"
-                value={settings.platformEmail}
-                onChange={(e) => setSettings({ ...settings, platformEmail: e.target.value })}
+                value={localSettings.platformEmail}
+                onChange={(e) => setLocalSettings({ ...localSettings, platformEmail: e.target.value })}
               />
             </div>
             <div>
@@ -97,8 +158,8 @@ export default function AdminSettingsPage() {
               </label>
               <Input
                 type="tel"
-                value={settings.platformPhone}
-                onChange={(e) => setSettings({ ...settings, platformPhone: e.target.value })}
+                value={localSettings.platformPhone}
+                onChange={(e) => setLocalSettings({ ...localSettings, platformPhone: e.target.value })}
               />
             </div>
             <div>
@@ -106,7 +167,7 @@ export default function AdminSettingsPage() {
                 Timezone
               </label>
               <select
-                value={settings.timezone}
+                value={localSettings.timezone}
                 onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
                 className="input"
               >
@@ -132,8 +193,8 @@ export default function AdminSettingsPage() {
               </label>
               <Input
                 type="number"
-                value={settings.defaultHourlyRate}
-                onChange={(e) => setSettings({ ...settings, defaultHourlyRate: Number(e.target.value) })}
+                value={localSettings.defaultHourlyRate}
+                onChange={(e) => setLocalSettings({ ...localSettings, defaultHourlyRate: Number(e.target.value) })}
                 min="0"
               />
             </div>
@@ -144,7 +205,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <Input
                   type="number"
-                  value={settings.minHourlyRate}
+                  value={localSettings.minHourlyRate}
                   onChange={(e) => setSettings({ ...settings, minHourlyRate: Number(e.target.value) })}
                   min="0"
                 />
@@ -155,7 +216,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <Input
                   type="number"
-                  value={settings.maxHourlyRate}
+                  value={localSettings.maxHourlyRate}
                   onChange={(e) => setSettings({ ...settings, maxHourlyRate: Number(e.target.value) })}
                   min="0"
                 />
@@ -167,7 +228,7 @@ export default function AdminSettingsPage() {
               </label>
               <Input
                 type="number"
-                value={settings.platformFee}
+                value={localSettings.platformFee}
                 onChange={(e) => setSettings({ ...settings, platformFee: Number(e.target.value) })}
                 min="0"
                 max="100"
@@ -181,7 +242,7 @@ export default function AdminSettingsPage() {
                 Currency
               </label>
               <select
-                value={settings.currency}
+                value={localSettings.currency}
                 onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
                 className="input"
               >
@@ -208,7 +269,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <Input
                   type="number"
-                  value={settings.minAppointmentDuration}
+                  value={localSettings.minAppointmentDuration}
                   onChange={(e) => setSettings({ ...settings, minAppointmentDuration: Number(e.target.value) })}
                   min="15"
                 />
@@ -219,7 +280,7 @@ export default function AdminSettingsPage() {
                 </label>
                 <Input
                   type="number"
-                  value={settings.maxAppointmentDuration}
+                  value={localSettings.maxAppointmentDuration}
                   onChange={(e) => setSettings({ ...settings, maxAppointmentDuration: Number(e.target.value) })}
                   min="30"
                 />
@@ -245,7 +306,7 @@ export default function AdminSettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.maintenanceMode}
+                  checked={localSettings.maintenanceMode}
                   onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
                   className="sr-only peer"
                 />
@@ -262,7 +323,7 @@ export default function AdminSettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.allowNewRegistrations}
+                  checked={localSettings.allowNewRegistrations}
                   onChange={(e) => setSettings({ ...settings, allowNewRegistrations: e.target.checked })}
                   className="sr-only peer"
                 />
@@ -279,7 +340,7 @@ export default function AdminSettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.requireEmailVerification}
+                  checked={localSettings.requireEmailVerification}
                   onChange={(e) => setSettings({ ...settings, requireEmailVerification: e.target.checked })}
                   className="sr-only peer"
                 />
@@ -306,7 +367,7 @@ export default function AdminSettingsPage() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.enableNotifications}
+                  checked={localSettings.enableNotifications}
                   onChange={(e) => setSettings({ ...settings, enableNotifications: e.target.checked })}
                   className="sr-only peer"
                 />

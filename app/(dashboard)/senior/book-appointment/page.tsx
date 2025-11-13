@@ -8,10 +8,12 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, ArrowLeft, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, ArrowLeft, Sparkles, DollarSign } from "lucide-react";
 import Link from "next/link";
 import IssueDescriptionHelper from "@/components/features/IssueDescriptionHelper";
 import SmartRecommendations from "@/components/features/SmartRecommendations";
+import { calculateBasePrice, calculateTotalPrice, getDirectionsUrl } from "@/lib/utils/travel";
+import { useMembership } from "@/lib/hooks/useMembership";
 
 interface Specialist {
   id: string;
@@ -36,6 +38,7 @@ function BookAppointmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const { membership, hasActiveMembership } = useMembership(user?.id);
   const supabase = createSupabaseBrowserClient();
   const [step, setStep] = useState(1);
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
@@ -45,13 +48,36 @@ function BookAppointmentPageContent() {
   const [duration, setDuration] = useState("60");
   const [locationType, setLocationType] = useState<"remote" | "in-person">("remote");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState("");
+  const [travelDistance, setTravelDistance] = useState<number | null>(null);
+  const [travelFee, setTravelFee] = useState<number>(0);
+  const [isCalculatingTravel, setIsCalculatingTravel] = useState(false);
+  const [basePrice, setBasePrice] = useState<number>(0);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
 
   const preselectedSpecialistId = searchParams.get("specialist");
+
+  // Calculate base price when duration changes
+  useEffect(() => {
+    if (duration) {
+      const memberRate = hasActiveMembership && membership?.membership_plan
+        ? membership.membership_plan.member_hourly_rate
+        : undefined;
+      const price = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
+      setBasePrice(price);
+      const memberDiscount = hasActiveMembership && membership?.membership_plan
+        ? (90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
+        : 0;
+      setTotalPrice(price + travelFee - memberDiscount);
+    }
+  }, [duration, travelFee, hasActiveMembership, membership]);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -201,8 +227,14 @@ function BookAppointmentPageContent() {
       return;
     }
 
-    if (locationType === "in-person" && !address.trim()) {
-      setError("Please provide an address for in-person appointments");
+    if (locationType === "in-person" && (!address.trim() || !city.trim() || !state.trim() || !zipCode.trim())) {
+      setError("Please provide complete address for in-person appointments");
+      return;
+    }
+
+    // For in-person appointments, ensure travel distance is calculated
+    if (locationType === "in-person" && travelDistance === null) {
+      setError("Please calculate travel distance before booking");
       return;
     }
 
@@ -211,6 +243,25 @@ function BookAppointmentPageContent() {
 
     const scheduledAt = new Date(`${selectedDate}T${selectedTime}`);
     const scheduledAtISO = scheduledAt.toISOString();
+
+    // Calculate pricing
+    const memberRate = hasActiveMembership && membership?.membership_plan
+      ? membership.membership_plan.member_hourly_rate
+      : undefined;
+    const calculatedBasePrice = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
+    const calculatedTravelFee = locationType === "in-person" ? travelFee : 0;
+    const memberDiscount = hasActiveMembership && membership?.membership_plan
+      ? (90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
+      : 0;
+    const calculatedTotalPrice = calculateTotalPrice(calculatedBasePrice, calculatedTravelFee, memberDiscount);
+    const specialistReimbursement = locationType === "in-person" && travelDistance && travelDistance > 20
+      ? (travelDistance - 20) * 0.60
+      : 0;
+
+    // Format full address
+    const fullAddress = locationType === "in-person"
+      ? `${address}, ${city}, ${state} ${zipCode}`
+      : null;
 
     const { data, error: bookingError } = await supabase
       .from("appointments")
@@ -223,6 +274,17 @@ function BookAppointmentPageContent() {
         issue_description: issueDescription,
         location_type: locationType,
         address: locationType === "in-person" ? address : null,
+        city: locationType === "in-person" ? city : null,
+        state: locationType === "in-person" ? state : null,
+        zip_code: locationType === "in-person" ? zipCode : null,
+        full_address: fullAddress,
+        travel_distance_miles: locationType === "in-person" ? travelDistance : null,
+        travel_fee: calculatedTravelFee,
+        base_price: calculatedBasePrice,
+        member_discount: memberDiscount,
+        total_price: calculatedTotalPrice,
+        specialist_pay_rate: 30.00,
+        specialist_travel_reimbursement: specialistReimbursement,
       })
       .select()
       .single();
@@ -231,6 +293,28 @@ function BookAppointmentPageContent() {
       setError("Failed to book appointment. Please try again.");
       setIsBooking(false);
       return;
+    }
+
+    // Log appointment creation
+    try {
+      await fetch("/api/activity/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "appointment_created",
+          description: `Appointment created: ${data.id}`,
+          metadata: {
+            appointment_id: data.id,
+            specialist_id: selectedSpecialist.user_id,
+            scheduled_at: scheduledAtISO,
+            total_price: calculatedTotalPrice,
+            location_type: locationType,
+          },
+        }),
+      });
+    } catch (err) {
+      // Don't block booking if logging fails
+      console.error("Error logging appointment creation:", err);
     }
 
     // Redirect to appointment confirmation
@@ -594,17 +678,105 @@ function BookAppointmentPageContent() {
               </div>
 
               {locationType === "in-person" && (
-                <div>
-                  <label className="block text-base font-medium text-text-primary mb-2">
-                    <MapPin className="inline mr-2" size={18} />
-                    Address *
-                  </label>
-                  <Input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter your address"
-                    required={locationType === "in-person"}
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-base font-medium text-text-primary mb-2">
+                      <MapPin className="inline mr-2" size={18} />
+                      Street Address *
+                    </label>
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Enter your street address"
+                      required={locationType === "in-person"}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-base font-medium text-text-primary mb-2">
+                        City *
+                      </label>
+                      <Input
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="City"
+                        required={locationType === "in-person"}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-base font-medium text-text-primary mb-2">
+                        State *
+                      </label>
+                      <Input
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        placeholder="State"
+                        required={locationType === "in-person"}
+                        maxLength={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-base font-medium text-text-primary mb-2">
+                        ZIP Code *
+                      </label>
+                      <Input
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                        placeholder="ZIP"
+                        required={locationType === "in-person"}
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                  {address && city && state && zipCode && (
+                    <div className="mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          setIsCalculatingTravel(true);
+                          try {
+                            const response = await fetch("/api/travel/calculate", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ address, city, state, zipCode }),
+                            });
+                            const data = await response.json();
+                            if (data.error) {
+                              setError(data.error);
+                            } else {
+                              setTravelDistance(data.distanceMiles);
+                              setTravelFee(data.travelFee);
+                            }
+                          } catch (err) {
+                            setError("Unable to calculate travel distance. Please verify your address.");
+                          } finally {
+                            setIsCalculatingTravel(false);
+                          }
+                        }}
+                        disabled={isCalculatingTravel}
+                      >
+                        {isCalculatingTravel ? "Calculating..." : "Calculate Travel Distance"}
+                      </Button>
+                      {travelDistance !== null && (
+                        <div className="mt-3 p-4 bg-primary-50 rounded-lg border border-primary-200">
+                          <p className="text-sm text-text-secondary">
+                            <strong>Distance:</strong> {travelDistance.toFixed(1)} miles from Hope Mills, NC
+                          </p>
+                          {travelFee > 0 ? (
+                            <p className="text-sm text-text-secondary mt-1">
+                              <strong>Travel Fee:</strong> ${travelFee.toFixed(2)} (${(travelDistance - 20).toFixed(1)} miles × $1.00/mile)
+                            </p>
+                          ) : (
+                            <p className="text-sm text-success-600 mt-1">
+                              ✓ Within 20-mile included radius (no travel fee)
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -665,20 +837,57 @@ function BookAppointmentPageContent() {
                 <div>
                   <h3 className="font-semibold text-text-primary mb-2">Location</h3>
                   <p className="text-text-secondary">
-                    {locationType === "remote" ? "Remote (Video Call)" : address}
+                    {locationType === "remote" ? "Remote (Video Call)" : `${address}, ${city}, ${state} ${zipCode}`}
                   </p>
+                  {locationType === "in-person" && travelDistance !== null && (
+                    <p className="text-sm text-text-secondary mt-1">
+                      {travelDistance.toFixed(1)} miles from Hope Mills, NC
+                    </p>
+                  )}
                 </div>
                 <div>
                   <h3 className="font-semibold text-text-primary mb-2">Issue Description</h3>
                   <p className="text-text-secondary whitespace-pre-line">{issueDescription}</p>
                 </div>
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-text-primary">Estimated Cost:</span>
+                    <span className="text-text-secondary">Base Price ({duration} min):</span>
+                    <span className="font-semibold text-text-primary">${basePrice.toFixed(2)}</span>
+                  </div>
+                  {hasActiveMembership && membership?.membership_plan && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-success-600 text-sm">Member Discount:</span>
+                      <span className="text-success-600 text-sm font-semibold">
+                        -${((90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {locationType === "in-person" && travelFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-secondary">Travel Fee:</span>
+                      <span className="font-semibold text-text-primary">${travelFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {locationType === "in-person" && travelFee === 0 && travelDistance !== null && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-success-600 text-sm">Travel Fee:</span>
+                      <span className="text-success-600 text-sm font-semibold">Included (within 20 miles)</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="font-semibold text-text-primary">Total Estimated Cost:</span>
                     <span className="text-2xl font-bold text-primary-500">
-                      ${((parseInt(duration) / 60) * selectedSpecialist.hourly_rate).toFixed(2)}
+                      ${totalPrice.toFixed(2)}
                     </span>
                   </div>
+                  {hasActiveMembership && (
+                    <p className="text-xs text-success-600 mt-2 italic">
+                      ✓ Member pricing applied ({membership?.membership_plan?.name})
+                    </p>
+                  )}
+                  <p className="text-xs text-text-secondary mt-2 italic">
+                    Final cost may vary based on actual visit duration. You'll receive a clear receipt after your visit.
+                  </p>
                 </div>
               </div>
 
