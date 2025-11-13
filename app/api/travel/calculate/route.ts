@@ -23,23 +23,20 @@ export async function POST(request: NextRequest) {
     if (zipCode) destinationParts.push(zipCode);
     const destination = destinationParts.join(", ");
 
-    // HITS Headquarters: Hope Mills, NC 28348
-    const origin = "Hope Mills, NC 28348";
+    // HITS Headquarters coordinates
+    // Latitude: 34.892007, Longitude: -78.880128
+    const origin = "34.892007,-78.880128";
 
-    // Use Google Maps Distance Matrix API
-    // Note: You'll need to add GOOGLE_MAPS_API_KEY to your environment variables
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    // Use Google Maps Distance Matrix API with backend key
+    // Note: Use GOOGLE_MAPS_BACKEND_KEY for server-side API calls
+    const apiKey = process.env.GOOGLE_MAPS_BACKEND_KEY || process.env.GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      // Fallback: Use a simple calculation based on coordinates if API key is not available
-      // This is a rough estimate and should be replaced with actual API call
-      console.warn("GOOGLE_MAPS_API_KEY not set, using fallback calculation");
+      console.warn("GOOGLE_MAPS_BACKEND_KEY not set, using fallback calculation");
       
-      // For now, return a placeholder that indicates API key is needed
-      // In production, you should implement the actual Google Maps API call
       return NextResponse.json({
         distanceMiles: null,
-        error: "Google Maps API key not configured. Please configure GOOGLE_MAPS_API_KEY in environment variables.",
+        error: "Google Maps API key not configured. Please configure GOOGLE_MAPS_BACKEND_KEY in environment variables.",
       });
     }
 
@@ -70,25 +67,29 @@ export async function POST(request: NextRequest) {
     const distanceMeters = element.distance.value;
     const distanceMiles = distanceMeters * 0.000621371;
 
-    // Calculate travel fee
+    // Calculate travel fee and reimbursements
+    // Pricing structure:
+    // - First 20 miles included (no charge)
+    // - After 20 miles: $1.00 per mile (client pays)
+    // - Tech payout: $0.60 per mile
+    // - Company retention: $0.40 per mile ($1.00 - $0.60)
     const includedMiles = 20;
     let travelFee = 0;
-    if (distanceMiles > includedMiles) {
-      const extraMiles = distanceMiles - includedMiles;
-      travelFee = extraMiles * 1.00; // $1.00 per mile
-    }
-
-    // Calculate specialist reimbursement
     let specialistReimbursement = 0;
+    let companyRetention = 0;
+    
     if (distanceMiles > includedMiles) {
       const extraMiles = distanceMiles - includedMiles;
-      specialistReimbursement = extraMiles * 0.60; // $0.60 per mile
+      travelFee = extraMiles * 1.00; // $1.00 per mile (client pays)
+      specialistReimbursement = extraMiles * 0.60; // $0.60 per mile (tech payout)
+      companyRetention = extraMiles * 0.40; // $0.40 per mile (company retention)
     }
 
     return NextResponse.json({
       distanceMiles: Math.round(distanceMiles * 100) / 100, // Round to 2 decimal places
       travelFee: Math.round(travelFee * 100) / 100,
       specialistReimbursement: Math.round(specialistReimbursement * 100) / 100,
+      companyRetention: Math.round(companyRetention * 100) / 100,
       includedMiles,
       origin,
       destination,

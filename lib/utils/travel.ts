@@ -1,12 +1,14 @@
 /**
  * Travel Distance Calculation Utilities
  * HITS Headquarters: Hope Mills, NC 28348
+ * Coordinates: Latitude: 34.892007, Longitude: -78.880128
  */
 
 export const HITS_HEADQUARTERS = {
   address: "Hope Mills, NC 28348",
-  lat: 34.9704,
-  lng: -78.9453,
+  lat: 34.892007,
+  lng: -78.880128,
+  coordinates: "34.892007,-78.880128",
 };
 
 export const TRAVEL_CONFIG = {
