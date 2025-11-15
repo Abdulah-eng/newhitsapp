@@ -305,7 +305,7 @@ export default function AdminPaymentsPage() {
             <p className="text-text-tertiary">
               {searchQuery || statusFilter !== "all"
                 ? "Try adjusting your filters"
-                : "No payments have been processed yet"}
+                : "No payments recorded yet."}
             </p>
           </motion.div>
         ) : (

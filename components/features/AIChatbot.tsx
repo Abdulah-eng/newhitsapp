@@ -213,7 +213,7 @@ export default function AIChatbot() {
                 )}
                 <div className="mt-3 pt-3 border-t border-secondary-200">
                   <p className="text-xs text-text-secondary italic">
-                    Note: HITS Assistant is a virtual assistant, not a live human. For emergencies, contact your bank and local law enforcement.
+                    HITS Assistant is a virtual assistant, not a live human or emergency service. For emergencies, contact 911 or your local law enforcement.
                   </p>
                 </div>
               </div>
@@ -276,6 +276,9 @@ export default function AIChatbot() {
 
             {/* Input */}
             <div className="p-4 border-t border-secondary-200 bg-white rounded-b-xl">
+              <p className="text-xs text-text-secondary mb-2">
+                Please don't share passwords, Social Security numbers, or full bank card numbers in this chat.
+              </p>
               <div className="flex gap-2">
                 <Input
                   value={input}

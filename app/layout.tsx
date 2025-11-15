@@ -3,9 +3,9 @@ import "./globals.css";
 import ClientChatbotWrapper from "@/components/ClientChatbotWrapper";
 
 export const metadata: Metadata = {
-  title: "H.I.T.S. - Hire I.T. Specialists | Tech Support for Seniors",
+  title: "HITS – Hire I.T. Specialist | Tech Support for Seniors",
   description:
-    "Connect with vetted IT specialists for personalized technology support. User-friendly platform designed for seniors.",
+    "Calm, patient tech help for seniors, disabled adults, and the families who love them. Connect with vetted IT specialists for personalized technology support.",
   keywords: [
     "tech support",
     "senior technology",

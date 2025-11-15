@@ -277,6 +277,7 @@ export default function AdminDashboard() {
       icon: Users,
       color: "text-primary-500",
       bgColor: "bg-primary-50",
+      link: "/admin/users",
     },
     {
       title: "Specialists",
@@ -284,6 +285,7 @@ export default function AdminDashboard() {
       icon: Users,
       color: "text-accent-500",
       bgColor: "bg-accent-50",
+      link: "/admin/users?filter=specialists",
     },
     {
       title: "Seniors",
@@ -291,6 +293,7 @@ export default function AdminDashboard() {
       icon: Users,
       color: "text-success-500",
       bgColor: "bg-success-50",
+      link: "/admin/users?filter=seniors",
     },
     {
       title: "Disabled Adults",
@@ -320,6 +323,7 @@ export default function AdminDashboard() {
       icon: Calendar,
       color: "text-primary-500",
       bgColor: "bg-primary-50",
+      link: "/admin/appointments",
     },
     {
       title: "Appointments Today",
@@ -327,6 +331,7 @@ export default function AdminDashboard() {
       icon: Calendar,
       color: "text-accent-500",
       bgColor: "bg-accent-50",
+      link: "/admin/appointments",
     },
     {
       title: "Total Revenue",
@@ -334,6 +339,7 @@ export default function AdminDashboard() {
       icon: DollarSign,
       color: "text-success-500",
       bgColor: "bg-success-50",
+      link: "/admin/payments",
     },
     {
       title: "Net Revenue",
@@ -341,6 +347,7 @@ export default function AdminDashboard() {
       icon: DollarSign,
       color: "text-success-600",
       bgColor: "bg-success-100",
+      link: "/admin/payments",
     },
     {
       title: "Open Disputes",

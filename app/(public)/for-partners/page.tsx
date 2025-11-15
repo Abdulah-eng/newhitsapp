@@ -89,7 +89,13 @@ export default function ForPartnersPage() {
                 Request a Partnership Call
               </Button>
             </Link>
-            <Button size="lg" variant="ghost" className="h-12 px-6 text-primary-600 hover:text-primary-500">
+            <Button 
+              size="lg" 
+              variant="ghost" 
+              className="h-12 px-6 text-primary-600 hover:text-primary-500 opacity-50 cursor-not-allowed"
+              disabled
+              title="Coming soon"
+            >
               Download Partner Overview
             </Button>
           </motion.div>
@@ -219,7 +225,7 @@ export default function ForPartnersPage() {
             viewport={{ once: true, amount: 0.3 }}
             variants={fade}
             custom={0}
-            className="text-[28px] md:text-[36px] font-bold"
+            className="text-[28px] md:text-[36px] font-bold text-white"
           >
             Ready to Partner with HITS?
           </motion.h2>
@@ -246,7 +252,13 @@ export default function ForPartnersPage() {
                 Request a Partnership Call
               </Button>
             </Link>
-            <Button size="lg" variant="secondary" className="h-12 px-6 bg-primary-500 text-white hover:bg-primary-400">
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              className="h-12 px-6 bg-primary-500 text-white hover:bg-primary-400 opacity-50 cursor-not-allowed"
+              disabled
+              title="Coming soon"
+            >
               Download Partner Overview
             </Button>
           </motion.div>

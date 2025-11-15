@@ -365,6 +365,9 @@ export default function SeniorProfilePage() {
                   />
                 </div>
               </div>
+              <p className="text-sm text-text-secondary mt-4 italic">
+                Please don't enter Social Security numbers or full bank card numbers here.
+              </p>
             </div>
 
             {/* Save Button */}

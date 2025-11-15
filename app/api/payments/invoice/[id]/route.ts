@@ -88,7 +88,7 @@ export async function GET(
 </head>
 <body>
   <div class="header">
-    <h1>H.I.T.S. Invoice</h1>
+    <h1>HITS Invoice</h1>
     <p>Invoice #${payment.id.slice(0, 8).toUpperCase()}</p>
   </div>
 
@@ -157,7 +157,7 @@ export async function GET(
   </div>
 
   <div class="footer">
-    <p>Thank you for using H.I.T.S. (Hire I.T. Specialists)</p>
+    <p>Thank you for using HITS (Hire I.T. Specialists)</p>
     <p>This is an automated invoice. For questions, please contact support.</p>
   </div>
 </body>

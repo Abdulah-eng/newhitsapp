@@ -199,45 +199,51 @@ export default function SeniorDashboard() {
               </Link>
             </motion.div>
           )}
-          <motion.div
-            variants={slideUp}
-            className="card bg-white p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Upcoming</h3>
-              <Calendar className="text-primary-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-primary-500">
-              {appointments?.length || 0}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">Appointments</p>
-          </motion.div>
+          <Link href="/senior/my-appointments">
+            <motion.div
+              variants={slideUp}
+              className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Upcoming</h3>
+                <Calendar className="text-primary-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-primary-500">
+                {appointments?.length || 0}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">Appointments</p>
+            </motion.div>
+          </Link>
 
-          <motion.div
-            variants={slideUp}
-            className="card bg-white p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Messages</h3>
-              <MessageSquare className="text-accent-400" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-accent-400">
-              {unreadCount || 0}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">Unread</p>
-          </motion.div>
+          <Link href="/senior/messages">
+            <motion.div
+              variants={slideUp}
+              className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Messages</h3>
+                <MessageSquare className="text-accent-400" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-accent-400">
+                {unreadCount || 0}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">Unread</p>
+            </motion.div>
+          </Link>
 
-          <motion.div
-            variants={slideUp}
-            className="card bg-white p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Profile</h3>
-              <User className="text-secondary-600" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-secondary-600">100%</p>
-            <p className="text-sm text-text-tertiary mt-1">Complete</p>
-          </motion.div>
+          <Link href="/senior/profile">
+            <motion.div
+              variants={slideUp}
+              className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Profile</h3>
+                <User className="text-secondary-600" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-secondary-600">100%</p>
+              <p className="text-sm text-text-tertiary mt-1">Complete</p>
+            </motion.div>
+          </Link>
 
           <motion.div
             variants={slideUp}
@@ -267,38 +273,38 @@ export default function SeniorDashboard() {
             {appointments && appointments.length > 0 ? (
               <div className="space-y-4">
                 {appointments.map((appointment: any) => (
-                  <div
-                    key={appointment.id}
-                    className="p-4 border border-secondary-200 rounded-lg hover:shadow-soft transition-shadow"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-text-primary">
-                        {appointment.specialist?.full_name || "Specialist"}
-                      </h3>
-                      <span className="text-sm px-2 py-1 bg-primary-50 text-primary-600 rounded">
-                        {appointment.status}
-                      </span>
+                  <Link key={appointment.id} href={`/senior/my-appointments/${appointment.id}`}>
+                    <div className="p-4 border border-secondary-200 rounded-lg hover:shadow-soft transition-shadow cursor-pointer">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-text-primary">
+                          {appointment.specialist?.full_name || "Specialist"}
+                        </h3>
+                        <span className="text-sm px-2 py-1 bg-primary-50 text-primary-600 rounded">
+                          {appointment.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-text-secondary mb-1">
+                        {new Date(appointment.scheduled_at).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="text-sm text-text-tertiary line-clamp-2">
+                        {appointment.issue_description}
+                      </p>
                     </div>
-                    <p className="text-sm text-text-secondary mb-1">
-                      {new Date(appointment.scheduled_at).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p className="text-sm text-text-tertiary line-clamp-2">
-                      {appointment.issue_description}
-                    </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
+                <Calendar size={48} className="mx-auto mb-4 text-text-secondary opacity-50" />
                 <p className="text-text-secondary mb-4">
-                  No upcoming appointments
+                  No appointments scheduled yet.
                 </p>
                 <Link href="/senior/book-appointment">
                   <Button variant="primary">Book Your First Appointment</Button>

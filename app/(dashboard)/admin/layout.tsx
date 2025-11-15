@@ -17,7 +17,8 @@ import {
   LogOut,
   Menu,
   X,
-  MessageSquare
+  MessageSquare,
+  FolderOpen
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -39,12 +40,12 @@ export default function AdminLayout({
       }
       
       // Check if user is admin by role or email
-      const isAdmin = user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com";
+      const isAdmin = user.role === "admin" || user.email?.toLowerCase() === "admin@hitspecialist.com";
       
       if (user.role === undefined) {
         // Wait a bit for role to be fetched
         const timer = setTimeout(() => {
-          const stillAdmin = user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com";
+          const stillAdmin = user.role === "admin" || user.email?.toLowerCase() === "admin@hitspecialist.com";
           if (!stillAdmin && !hasRedirected.current) {
             hasRedirected.current = true;
             router.push("/login");
@@ -73,13 +74,14 @@ export default function AdminLayout({
     { href: "/admin/payments", label: "Payments", icon: DollarSign },
     { href: "/admin/disputes", label: "Disputes", icon: FileText },
     { href: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare },
+    { href: "/admin/resources", label: "Resources", icon: FolderOpen },
     { href: "/admin/security", label: "Security", icon: Shield },
     { href: "/admin/logs", label: "Activity Logs", icon: Activity },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   // Check if user is admin by role or email
-  const isAdmin = user?.role === "admin" || user?.email?.toLowerCase() === "admin@hitsapp.com";
+  const isAdmin = user?.role === "admin" || user?.email?.toLowerCase() === "admin@hitspecialist.com";
   
   if (loading || !user || !isAdmin) {
     return (

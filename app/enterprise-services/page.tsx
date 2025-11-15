@@ -17,7 +17,7 @@ const solutions = [
   {
     title: "Resident & Member Concierge",
     description:
-      "Offer live, white-labeled HITSapp support under your brand. Our specialists act as an extension of your team, delivering secure remote assistance and proactive outreach.",
+      "Offer live, white-labeled HITS support under your brand. Our specialists act as an extension of your team, delivering secure remote assistance and proactive outreach.",
   },
   {
     title: "Digital Adoption Programs",
@@ -75,7 +75,7 @@ export default function EnterpriseServicesPage() {
               Concierge technology care for every resident, customer, and member.
             </h1>
             <p className="mt-6 text-lg leading-8 text-white/90">
-              HITSapp helps senior living communities, healthcare organizations, financial institutions, and libraries deliver
+              HITS helps senior living communities, healthcare organizations, financial institutions, and libraries deliver
               human-centered digital support. We protect brand trust by empowering older adults to thrive online.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -191,8 +191,8 @@ export default function EnterpriseServicesPage() {
 
       <section className="bg-primary-700 text-white">
         <div className="max-w-5xl mx-auto px-8 md:px-12 py-20 text-center">
-          <motion.h2 {...fade(0)} className="text-[32px] md:text-[42px] font-bold">
-            Let’s design your concierge technology program
+          <motion.h2 {...fade(0)} className="text-[32px] md:text-[42px] font-bold text-white">
+            Let's design your concierge technology program
           </motion.h2>
           <motion.p
             {...fade(0.1)}

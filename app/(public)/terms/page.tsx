@@ -98,7 +98,7 @@ export default function TermsOfServicePage() {
                 <div>
                   <h3 className="font-semibold text-text-primary mb-2">Pay-As-You-Go Visits</h3>
                   <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>$90 for the first hour of service</li>
+                    <li>$95 for the first hour of service</li>
                     <li>$45 for each additional 30 minutes</li>
                     <li>1-hour minimum for in-home visits</li>
                     <li>30-minute minimum for remote support</li>
@@ -169,9 +169,60 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Limitation of Liability</h2>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">No Financial, Legal, or Medical Advice</h2>
               <p className="text-text-secondary leading-7">
-                To the maximum extent permitted by law, HITS shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses resulting from your use of our services.
+                HITS specialists may help you use online banking, insurance portals, medical portals, and other websites. They do not provide financial, legal, tax, medical, or mental health advice. Any information provided during a visit is for technical and educational purposes only. You are responsible for contacting your own bank, attorney, tax professional, or healthcare provider for advice.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Passwords and Security Responsibility</h2>
+              <p className="text-text-secondary leading-7">
+                HITS staff and specialists will never ask you to send passwords, PINs, or full card numbers by email, text, or chat. When a password is needed, you should type it yourself on your own device. You agree not to share your passwords with HITS or any specialist, and you remain responsible for keeping your login credentials safe.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Third-Party Services Disclaimer</h2>
+              <p className="text-text-secondary leading-7">
+                HITS may help you access or use third-party websites, services, or devices (such as banks, email providers, or telehealth portals). Those services are not controlled by HITS. HITS is not responsible for the content, security, decisions, or policies of any third-party service. You agree to follow the terms and privacy policies of those companies.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Data and Backups Limitation</h2>
+              <p className="text-text-secondary leading-7">
+                Before any work begins, you are responsible for keeping copies or backups of important files, photos, and documents. HITS and its specialists will take reasonable care when working on your devices, but we cannot guarantee against data loss, hardware failure, or issues caused by existing viruses, device age, or third-party software.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Independent Contractors</h2>
+              <p className="text-text-secondary leading-7">
+                HITS – Hire I.T. Specialist connects clients with independent I.T. specialists. Specialists are not employees of HITS; they are independent contractors responsible for their own actions and professional judgment. While HITS performs screening and requires adherence to its code of conduct, HITS is not responsible for any specialist's actions outside the HITS platform or for services performed that are not booked and documented through the platform.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Limitation of Liability</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                To the fullest extent allowed by North Carolina law, HITS – Hire I.T. Specialist, its owners, and its staff are not responsible for:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Any indirect, incidental, special, or consequential damages</li>
+                <li>Loss of data, loss of business, or loss of income</li>
+                <li>Problems caused by third-party services, devices, or software</li>
+                <li>Any actions of independent specialists outside the HITS platform</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                If HITS is found responsible for any claim, the total liability will be limited to the amount you paid for the specific HITS service related to that claim.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">Governing Law and Venue</h2>
+              <p className="text-text-secondary leading-7">
+                These Terms and any services provided by HITS – Hire I.T. Specialist are governed by and construed in accordance with the laws of the State of North Carolina, without regard to conflict-of-law principles. Any dispute, claim, or lawsuit relating to HITS or these Terms will be brought exclusively in the state or federal courts located in North Carolina, and you consent to the personal jurisdiction of those courts.
               </p>
             </div>
 

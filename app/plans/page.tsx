@@ -128,7 +128,7 @@ export default function PlansPage() {
             <ul className="space-y-4 text-lg text-text-secondary">
               <li className="flex items-start gap-3">
                 <span className="mt-1 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
-                <span><strong className="text-primary-700">$90</strong> for the first hour of one-on-one help</span>
+                <span><strong className="text-primary-700">$95</strong> for the first hour of one-on-one help</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
@@ -144,7 +144,7 @@ export default function PlansPage() {
               </li>
             </ul>
             <p className="mt-8 text-base text-text-secondary leading-7">
-              You always see the estimated cost of your visit, including any travel fee, before you confirm your appointment. You'll receive a clear receipt after every session.
+              After the first hour, the rate drops to $45 per 30 minutes (a $5 savings compared to the first hour). You always see the estimated cost of your visit, including any travel fee, before you confirm your appointment. You'll receive a clear receipt after every session.
             </p>
           </motion.div>
         </div>

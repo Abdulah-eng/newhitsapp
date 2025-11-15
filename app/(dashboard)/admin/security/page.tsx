@@ -170,13 +170,15 @@ export default function AdminSecurityPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <motion.div variants={slideUp} className="card bg-white p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-text-secondary">Total Users</p>
-              <User className="text-primary-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-primary-500">{stats.totalUsers}</p>
-          </motion.div>
+          <Link href="/admin/users">
+            <motion.div variants={slideUp} className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-text-secondary">Total Users</p>
+                <User className="text-primary-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-primary-500">{stats.totalUsers}</p>
+            </motion.div>
+          </Link>
 
           <motion.div variants={slideUp} className="card bg-white p-6">
             <div className="flex items-center justify-between mb-2">

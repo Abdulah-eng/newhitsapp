@@ -50,7 +50,7 @@ export default function HomePage() {
   
   const getDashboardLink = () => {
     if (!user) return "/login";
-    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com") {
+    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitspecialist.com") {
       return "/admin/dashboard";
     }
     if (user.role === "senior") {
@@ -74,7 +74,7 @@ export default function HomePage() {
                 <span className="text-primary-600 font-extrabold text-xl">H</span>
               </div>
               <div>
-                <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITSapp</p>
+                <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
                 <p className="text-sm text-text-secondary">Hire IT Specialists</p>
               </div>
             </Link>
@@ -225,7 +225,7 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center">
-            How HITSapp Works
+            How HITS Works
           </motion.h2>
           <motion.div
             variants={staggerChildren}
@@ -278,10 +278,10 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
-            Problems HITSapp Solves
+            Problems HITS Solves
           </motion.h2>
           <motion.p variants={fadeUp(0.05)} className="text-center text-text-secondary text-lg max-w-3xl mx-auto mb-12">
-            Stop missing out on technology. Use HITSapp to get the help you need, when you need it.
+            Stop missing out on technology. Use HITS to get the help you need, when you need it.
           </motion.p>
           <motion.div
             variants={staggerChildren}
@@ -291,27 +291,27 @@ export default function HomePage() {
               {
                 title: "Device Setup",
                 description: "Phones, tablets, computers, smart TVs",
-                img: "/images/first.webp",
+                img: "/images/device-setup.jpg",
               },
               {
                 title: "Wi-Fi & Network",
                 description: "Router and printer issues",
-                img: "/images/second.png",
+                img: "/images/wifi.jpg",
               },
               {
                 title: "Account Recovery",
                 description: "Email and online accounts, password resets",
-                img: "/images/third.jpg",
+                img: "/images/account-recovery.webp",
               },
               {
                 title: "Video Calls",
                 description: "Connect with family, friends, and doctors",
-                img: "/images/fourth.jpg",
+                img: "/images/video-call.avif",
               },
               {
                 title: "Telehealth",
                 description: "Online appointments and portals",
-                img: "/images/fifth.jpg",
+                img: "/images/telehealth.webp",
               },
               {
                 title: "Safety & Security",
@@ -321,12 +321,12 @@ export default function HomePage() {
               {
                 title: "File Organization",
                 description: "Organizing photos and files",
-                img: "/images/first.webp",
+                img: "/images/file-organization.jpg",
               },
               {
                 title: "App Training",
                 description: "Basic training on everyday apps and websites",
-                img: "/images/second.png",
+                img: "/images/app-training.jpg",
               },
             ].map((problem, idx) => (
               <motion.div
@@ -363,10 +363,10 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
-            Who HITSapp Is For
+            Who HITS Is For
           </motion.h2>
           <motion.p variants={fadeUp(0.05)} className="text-center text-text-secondary text-lg max-w-3xl mx-auto mb-12">
-            HITSapp serves everyone who needs patient, respectful tech support.
+            HITS serves everyone who needs patient, respectful tech support.
           </motion.p>
           <motion.div
             variants={staggerChildren}
@@ -376,22 +376,22 @@ export default function HomePage() {
               {
                 title: "Seniors",
                 description: "Patient, one-on-one help tailored to your pace",
-                img: "/images/third.jpg",
+                img: "/images/seniors.jpg",
               },
               {
                 title: "Disabled Adults",
                 description: "Accessible, paced support that respects your needs",
-                img: "/images/fourth.jpg",
+                img: "/images/disabled-adults.jpg",
               },
               {
                 title: "Caregivers",
                 description: "Peace of mind knowing your loved ones have tech support",
-                img: "/images/fifth.jpg",
+                img: "/images/care-giver.jpg",
               },
               {
                 title: "Families",
                 description: "A trusted \"tech person\" you can call anytime",
-                img: "/images/sixth.jpg",
+                img: "/images/second.png",
               },
               {
                 title: "Communities & Partners",
@@ -434,7 +434,7 @@ export default function HomePage() {
         className="bg-primary-700 text-white"
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
-          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-center mb-8">
+          <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-center mb-8 text-white">
             Trust & Safety
           </motion.h2>
           <motion.div
@@ -472,7 +472,7 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[40px] md:text-[48px] font-extrabold text-primary-600 text-center">
-            What HITSapp Does
+            What HITS Does
           </motion.h2>
           <motion.div
             variants={staggerChildren}
@@ -485,7 +485,7 @@ export default function HomePage() {
                     Remote Lessons &<br />Support
                   </>
                 ),
-                img: "/images/first.webp",
+                img: "/images/fifth.jpg",
                 alt: "Remote Lessons & Support",
               },
               {
@@ -494,7 +494,7 @@ export default function HomePage() {
                     Library of On‑Demand How To<br />Guides & Videos
                   </>
                 ),
-                img: "/images/second.png",
+                img: "/images/liberty.webp",
                 alt: "On-Demand Guides & Videos",
               },
               {
@@ -503,7 +503,7 @@ export default function HomePage() {
                     Group Lessons
                   </>
                 ),
-                img: "/images/third.jpg",
+                img: "/images/fourth.jpg",
                 alt: "Group Lessons",
               },
               {
@@ -512,7 +512,7 @@ export default function HomePage() {
                     In-Home Tech Support
                   </>
                 ),
-                img: "/images/fourth.jpg",
+                img: "/images/inhome.jpg",
                 alt: "In-Home Tech Support",
               },
               {
@@ -521,7 +521,7 @@ export default function HomePage() {
                     Device Setup &<br />Configuration
                   </>
                 ),
-                img: "/images/fifth.jpg",
+                img: "/images/device-setup.jpg",
                 alt: "Device Setup & Configuration",
               },
               {
@@ -575,7 +575,7 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[40px] md:text-[48px] font-extrabold text-primary-600 text-center">
-            I need HITSapp for…
+            I need HITS for…
           </motion.h2>
           <motion.div
             variants={staggerChildren}
@@ -584,7 +584,7 @@ export default function HomePage() {
             {[
               {
                 title: "Myself",
-                img: "/images/first.webp",
+                img: "/images/third.jpg",
                 description: "Get the help you need right now.",
               },
               {
@@ -594,9 +594,9 @@ export default function HomePage() {
               },
               {
                 title: "My residents, clients & members",
-                img: "/images/third.jpg",
+                img: "/images/fourth.jpg",
                 description:
-                  "Learn how HITSapp supports senior communities, health plans, and social service organizations.",
+                  "Learn how HITS supports senior communities, health plans, and social service organizations.",
               },
             ].map((card) => (
               <motion.div
@@ -642,7 +642,7 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-600">
-            Why HITSapp?
+            Why HITS?
           </motion.h2>
           <motion.p variants={fadeUp(0.1)} className="text-center text-text-secondary mt-3 max-w-3xl mx-auto text-[16px]">
             Secure, affordable, and tailored to older adults — delivered remotely by friendly, background‑checked specialists.
@@ -757,34 +757,29 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
             <div>
-              <h4 className="text-[20px] font-extrabold text-primary-700">HITSapp</h4>
+              <h4 className="text-[20px] font-extrabold text-primary-700">HITS</h4>
               <ul className="mt-4 space-y-2 text-[16px]">
                 <li><Link href="/consumer-services" className="hover:text-primary-500">Consumers</Link></li>
                 <li><Link href="/enterprise-services" className="hover:text-primary-500">Enterprises</Link></li>
                 <li><Link href="#" className="hover:text-primary-500">In the News</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Blog</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Customer Stories</Link></li>
                 <li><Link href="/howto-offerings" className="hover:text-primary-500">Resources</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Media Kit</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Account Updates</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-[20px] font-extrabold text-primary-700">Team</h4>
               <ul className="mt-4 space-y-2 text-[16px]">
                 <li><Link href="/about" className="hover:text-primary-500">About</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Careers</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Partners</Link></li>
+                <li><Link href="/for-partners" className="hover:text-primary-500">Partners</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-[20px] font-extrabold text-primary-700">Support</h4>
               <ul className="mt-4 space-y-2 text-[16px]">
                 <li><a href="https://candoo.screenconnect.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500">Member Support</a></li>
-                <li><Link href="#" className="hover:text-primary-500">FAQ</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Safety &amp; Security</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">Terms of Use</Link></li>
+                <li><Link href="/faq" className="hover:text-primary-500">FAQ</Link></li>
+                <li><Link href="/safety" className="hover:text-primary-500">Safety &amp; Security</Link></li>
+                <li><Link href="/privacy" className="hover:text-primary-500">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-primary-500">Terms of Use</Link></li>
                 <li><a href="mailto:support@hitsapp.com" className="hover:text-primary-500">support@hitsapp.com</a></li>
                 <li className="font-extrabold text-primary-700">(646) 758-6606</li>
               </ul>
@@ -809,10 +804,21 @@ export default function HomePage() {
           </div>
         </div>
         <div className="border-t border-secondary-200">
-          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6 flex items-center justify-center">
-            <p className="text-[14px] text-text-secondary">
-              © {new Date().getFullYear()} HITSapp. All Rights Reserved.
-            </p>
+          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-[14px]">
+                <Link href="/terms" className="text-text-secondary hover:text-primary-500">Terms & Conditions</Link>
+                <span className="text-text-secondary">•</span>
+                <Link href="/privacy" className="text-text-secondary hover:text-primary-500">Privacy Policy</Link>
+                <span className="text-text-secondary">•</span>
+                <Link href="/safety" className="text-text-secondary hover:text-primary-500">Safety & Security</Link>
+                <span className="text-text-secondary">•</span>
+                <Link href="/contact" className="text-text-secondary hover:text-primary-500">Contact & Support</Link>
+              </div>
+              <p className="text-[14px] text-text-secondary text-center">
+                © {new Date().getFullYear()} HITS – Hire I.T. Specialist. All rights reserved. HITS is not a 911 or emergency service and does not provide financial, legal, or medical advice.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

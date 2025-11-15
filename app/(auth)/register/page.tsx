@@ -21,6 +21,7 @@ export default function RegisterPage() {
     phone: "",
     role: "senior" as UserRole,
     isDisabledAdult: false,
+    isCaregiver: false,
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +181,7 @@ export default function RegisterPage() {
               Create Your Account
             </h1>
             <p className="text-text-secondary">
-              Join H.I.T.S. to connect with technology specialists
+              Join HITS to connect with technology specialists
             </p>
           </div>
 
@@ -207,12 +208,12 @@ export default function RegisterPage() {
                   I am a...
                   <span className="text-error-500 ml-1">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <motion.button
                     type="button"
-                    onClick={() => setFormData({ ...formData, role: "senior" })}
+                    onClick={() => setFormData({ ...formData, role: "senior", isCaregiver: false })}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      formData.role === "senior"
+                      formData.role === "senior" && !formData.isCaregiver
                         ? "border-primary-500 bg-primary-50"
                         : "border-secondary-300 hover:border-primary-300"
                     }`}
@@ -223,7 +224,7 @@ export default function RegisterPage() {
                       <div className="text-2xl mb-2">👴</div>
                       <div className="font-medium">Senior User</div>
                       <div className="text-sm text-text-tertiary mt-1">
-                        Need tech help
+                        I need tech help
                       </div>
                     </div>
                   </motion.button>
@@ -242,7 +243,26 @@ export default function RegisterPage() {
                       <div className="text-2xl mb-2">💻</div>
                       <div className="font-medium">IT Specialist</div>
                       <div className="text-sm text-text-tertiary mt-1">
-                        Provide tech help
+                        I provide tech help
+                      </div>
+                    </div>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "senior" as UserRole, isCaregiver: true })}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      formData.isCaregiver
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-secondary-300 hover:border-primary-300"
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">👨‍👩‍👧‍👦</div>
+                      <div className="font-medium">Caregiver / Family Member</div>
+                      <div className="text-sm text-text-tertiary mt-1">
+                        I'm booking for someone else
                       </div>
                     </div>
                   </motion.button>
@@ -316,11 +336,11 @@ export default function RegisterPage() {
                       className="w-5 h-5 text-primary-500 border-secondary-300 rounded focus:ring-primary-500"
                     />
                     <span className="text-base text-text-primary">
-                      I am a disabled adult or have accessibility needs
+                      I have a disability or accessibility needs.
                     </span>
                   </label>
                   <p className="text-sm text-text-secondary mt-1 ml-8">
-                    This helps us provide the best support for your needs
+                    This helps us match you with a specialist and support that fit your needs.
                   </p>
                 </motion.div>
               )}

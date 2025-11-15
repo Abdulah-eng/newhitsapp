@@ -64,7 +64,7 @@ function LoginForm() {
         }
 
         // Check for admin email specifically
-        if (email.toLowerCase() === "admin@hitsapp.com" || role === "admin") {
+        if (email.toLowerCase() === "admin@hitspecialist.com" || role === "admin") {
           router.replace("/admin/dashboard");
         } else if (role === "senior") {
           router.replace("/senior/dashboard");
@@ -97,7 +97,7 @@ function LoginForm() {
               Welcome Back
             </h1>
             <p className="text-text-secondary">
-              Sign in to your H.I.T.S. account
+              Sign in to your HITS account
             </p>
           </div>
 

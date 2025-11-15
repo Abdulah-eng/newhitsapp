@@ -25,7 +25,7 @@ export function useAuth() {
       let role = (u.user_metadata?.role as UserRole | undefined);
       
       // If no role in metadata, check if admin email
-      if (!role && u.email?.toLowerCase() === "admin@hitsapp.com") {
+      if (!role && u.email?.toLowerCase() === "admin@hitspecialist.com") {
         role = "admin";
       }
       

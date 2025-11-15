@@ -118,6 +118,15 @@ export default function ContactPage() {
           >
             Have questions before you book? Need help with an existing appointment? We're here to help.
           </motion.p>
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.15}
+            variants={fade}
+            className="mt-4 text-base leading-7 text-text-secondary max-w-3xl mx-auto"
+          >
+            We usually respond within 1 business day.
+          </motion.p>
         </div>
       </section>
 

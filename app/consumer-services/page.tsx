@@ -18,7 +18,7 @@ const offerings = [
   {
     title: "Live Concierge Sessions",
     description:
-      "Video or phone sessions with vetted HITSapp specialists who walk through tasks at your pace—no jargon, no judgment.",
+      "Video or phone sessions with vetted HITS specialists who walk through tasks at your pace—no jargon, no judgment.",
     points: ["Device setup & personalization", "Video chat, email, social media coaching", "Fraud & scam protection"],
   },
   {
@@ -80,7 +80,7 @@ export default function ConsumerServicesPage() {
               Your friendly tech specialist, whenever you need it.
             </h1>
             <p className="mt-6 text-lg leading-8 text-text-secondary">
-              HITSapp pairs older adults and caregivers with patient experts who make technology simple, secure, and a
+              HITS pairs older adults and caregivers with patient experts who make technology simple, secure, and a
               little more fun. From the first setup to everyday confidence, we stay by your side.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -108,7 +108,7 @@ export default function ConsumerServicesPage() {
                   “My specialist never rushes me. She answers the same “silly” question ten times with the same smile.
                   Now I stream concerts with my sisters every Sunday.”
                 </p>
-                <p className="mt-6 text-sm uppercase tracking-[0.3em] text-accent-400">Lynette, HITSapp Member</p>
+                <p className="mt-6 text-sm uppercase tracking-[0.3em] text-accent-400">Lynette, HITS Member</p>
               </div>
             </div>
             <div className="absolute -bottom-10 -right-6 hidden md:block rounded-2xl bg-secondary-100 border border-secondary-200 px-5 py-4 shadow-soft">
@@ -273,9 +273,9 @@ export default function ConsumerServicesPage() {
             viewport={{ once: true, amount: 0.4 }}
             variants={fadeVariants}
             custom={0}
-            className="text-[32px] md:text-[40px] font-bold"
+            className="text-[32px] md:text-[40px] font-bold text-white"
           >
-            Let’s make the digital world feel welcoming again.
+            Let's make the digital world feel welcoming again.
           </motion.h2>
           <motion.p
             initial="hidden"
@@ -297,7 +297,7 @@ export default function ConsumerServicesPage() {
           >
             <Link href="/register">
               <Button size="lg" className="h-12 px-6 bg-white text-primary-700 hover:bg-secondary-100">
-                Join HITSapp
+                Join HITS
               </Button>
             </Link>
             <Link href="/howto-offerings">

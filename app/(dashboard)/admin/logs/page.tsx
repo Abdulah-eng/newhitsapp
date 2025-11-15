@@ -365,11 +365,11 @@ export default function AdminLogsPage() {
         ) : filteredLogs.length === 0 ? (
           <motion.div variants={slideUp} className="card bg-white p-12 text-center">
             <FileText size={48} className="mx-auto mb-4 text-text-secondary opacity-50" />
-            <p className="text-xl text-text-secondary mb-4">No logs found</p>
+            <p className="text-xl text-text-secondary mb-4">No activity yet.</p>
             <p className="text-text-tertiary">
               {searchQuery || typeFilter !== "all"
                 ? "Try adjusting your filters"
-                : "No activity logs available"}
+                : "Activity logs will appear here as events occur on the platform."}
             </p>
           </motion.div>
         ) : (

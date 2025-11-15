@@ -55,7 +55,7 @@ const resourceHighlights = [
 
 const faqs = [
   {
-    q: "Do I need to be a HITSapp member to access resources?",
+    q: "Do I need to be a HITS member to access resources?",
     a: "Members receive full access to guides, classes, and recordings. We offer select resources free for caregivers and community partners.",
   },
   {
@@ -99,7 +99,7 @@ export default function ResourcesPage() {
             variants={fadeIn}
             className="mt-6 text-lg leading-8 text-text-secondary"
           >
-            Explore the HITSapp How-To hub—hundreds of guides, live sessions, and printable checklists curated for older
+            Explore the HITS How-To hub—hundreds of guides, live sessions, and printable checklists curated for older
             adults, caregivers, and community partners.
           </motion.p>
           <motion.div
@@ -255,9 +255,9 @@ export default function ResourcesPage() {
             viewport={{ once: true, amount: 0.3 }}
             variants={fadeIn}
             custom={0}
-            className="text-[30px] md:text-[38px] font-bold"
+            className="text-[30px] md:text-[38px] font-bold text-white"
           >
-            Bring HITSapp learning to your community
+            Bring HITS learning to your community
           </motion.h2>
           <motion.p
             initial="hidden"

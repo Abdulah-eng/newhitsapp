@@ -11,28 +11,50 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.6, delay },
 });
 
-
 export default function AboutPage() {
   return (
     <main className="bg-secondary-50 text-text-primary">
       <MarketingHeader />
+      
+      {/* Hero Section */}
       <section className="bg-white border-b border-secondary-200">
         <div className="max-w-6xl mx-auto px-8 md:px-12 py-20 lg:py-28">
           <motion.div {...fadeUp(0)} className="text-center max-w-4xl mx-auto">
-            <p className="text-sm font-semibold tracking-[0.3em] text-primary-500 uppercase">About HITS</p>
-            <h1 className="mt-6 text-[40px] md:text-[52px] font-extrabold leading-tight text-primary-900">
+            <h1 className="text-[40px] md:text-[52px] font-extrabold leading-tight text-primary-900">
               About HITS – Hire I.T. Specialist
             </h1>
-            <p className="mt-4 text-base md:text-lg text-primary-600 italic">
-              We hit the mark with care, connection, and technology.
+            <p className="mt-6 text-xl md:text-2xl font-semibold text-primary-700 leading-relaxed">
+              Calm, patient tech help for seniors, disabled adults, and the families who love them.
+            </p>
+            <p className="mt-8 text-lg text-text-secondary leading-8">
+              HITS – Hire I.T. Specialist was created for people who are tired of feeling rushed, talked down to, or ignored when they ask for help with technology.
             </p>
             <p className="mt-6 text-lg text-text-secondary leading-8">
-              HITS – Hire I.T. Specialist exists to make technology feel safe, simple, and human for older adults, disabled adults, and the people who love them.
+              Too many seniors and disabled adults have been:
+            </p>
+            <ul className="mt-4 text-left max-w-2xl mx-auto space-y-3 text-lg text-text-secondary">
+              <li className="flex items-start gap-3">
+                <span className="mt-2 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                <span>spoken to like they're a burden</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-2 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                <span>pushed into services they don't understand</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-2 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                <span>left scared of scams and unsure who to trust</span>
+              </li>
+            </ul>
+            <p className="mt-8 text-lg text-text-secondary leading-8">
+              HITS is the answer to that problem: patient, one-on-one support, clear explanations, and strong security from silent professionals who understand what it means to protect people.
+            </p>
+            <p className="mt-6 text-lg text-text-secondary leading-8">
+              Whether it's setting up a new phone, getting rid of a virus, joining a telehealth visit, or making sure online banking feels safe, HITS is designed to meet people where they are without judgment or pressure.
             </p>
           </motion.div>
         </div>
       </section>
-
 
       {/* Mission Section */}
       <section className="bg-white">
@@ -57,57 +79,18 @@ export default function AboutPage() {
           </motion.h2>
           <motion.p
             {...fadeUp(0.1)}
-            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary"
+            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary mb-6"
           >
-            Our vision is a world where older adults and disabled adults feel confident and independent online, caregivers feel supported, and families stay connected without tech getting in the way.
+            Our vision is a world where:
           </motion.p>
-        </div>
-      </section>
-
-      {/* How HITS Works Section */}
-      <section className="bg-white">
-        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
-          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
-            How HITS Works
-          </motion.h2>
-          <div className="mt-12 space-y-6 max-w-3xl mx-auto">
+          <div className="mt-8 space-y-4 max-w-3xl mx-auto">
             {[
-              { step: "1", text: "Share what you need help with." },
-              { step: "2", text: "Get matched with a vetted I.T. specialist." },
-              { step: "3", text: "Choose a time and see your cost upfront." },
-              { step: "4", text: "Get one-on-one help and a clear visit summary." },
+              "older adults and disabled adults feel confident and independent online,",
+              "caregivers feel supported, not overwhelmed, and",
+              "families stay connected and protected without tech getting in the way.",
             ].map((item, idx) => (
               <motion.div
-                key={item.step}
-                {...fadeUp(0.1 + idx * 0.1)}
-                className="flex items-start gap-4 p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold flex-shrink-0">
-                  {item.step}
-                </div>
-                <p className="text-lg text-text-secondary pt-2">{item.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Who We Serve Section */}
-      <section className="bg-secondary-100">
-        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
-          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
-            Who We Serve
-          </motion.h2>
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              "Older adults living on their own or with family",
-              "Disabled adults and people with accessibility needs",
-              "Adult children and caregivers supporting loved ones",
-              "Families wanting a long-term, trusted tech helper",
-              "Organizations serving seniors, disabled adults, and other vulnerable populations",
-            ].map((item, idx) => (
-              <motion.div
-                key={item}
+                key={idx}
                 {...fadeUp(0.1 + idx * 0.1)}
                 className="flex items-start gap-3 p-4 rounded-2xl border border-secondary-200 bg-white"
               >
@@ -119,56 +102,250 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Meet Our Founder Section */}
+      {/* Who We Serve Section */}
       <section className="bg-white">
         <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
           <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
-            Meet Our Founder
+            Who We Serve
           </motion.h2>
-          <motion.div
+          <motion.p
             {...fadeUp(0.1)}
-            className="mt-12 rounded-3xl border border-secondary-200 bg-secondary-50 p-8 md:p-12 shadow-soft"
+            className="mt-4 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary mb-8"
           >
-            <h3 className="text-2xl font-bold text-primary-700 mb-4">Shawn Thomas, Founder & Lead I.T. Specialist</h3>
-            <div className="space-y-4 text-base leading-7 text-text-secondary">
-              <p>
-                Shawn is a disabled, retired U.S. Army veteran with 4 combat tours and a lifelong commitment to service. After leaving the military, he earned a Bachelor of Arts with a major in Organizational Management and a degree in Computer Information Technology, concentrating in Cybersecurity, Information Assurance, and Business Information Systems.
-              </p>
-              <p>
-                Over the years, Shawn has been the "tech person" for his unit, his family, and his community; fixing laptops, cleaning viruses, recovering photos, setting up devices, and explaining technology in plain language. After watching too many older adults and disabled adults get rushed, talked down to, or overcharged, he created HITS – Hire I.T. Specialist with a simple promise:
-              </p>
-              <div className="bg-white rounded-2xl p-6 border border-primary-200 my-6">
-                <p className="text-xl font-semibold text-primary-700 text-center italic">
-                  "Treat Every Client Like Family"
-                </p>
-              </div>
-              <p>
-                HITS is built on three priorities:
-              </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Care first</li>
-                <li>Clear communication</li>
-                <li>Strong security</li>
-              </ul>
-              <p>
-                As a disabled, retired U.S. Army veteran with 4 combat tours, Shawn understands what it feels like to rely on systems you can't fully control and the importance of trust, discipline, and protection. HITS exists to give seniors, disabled adults, and their families calm, trustworthy, one-on-one tech support; whether that's at the kitchen table or over a secure video call.
+            HITS is designed for:
+          </motion.p>
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {[
+              "Older adults living on their own or with family",
+              "Disabled adults and people with accessibility needs",
+              "Adult children and caregivers supporting loved ones",
+              "Families wanting a long-term, trusted \"tech helper\"",
+              "Organizations serving seniors, disabled adults, and other vulnerable populations",
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                {...fadeUp(0.1 + idx * 0.1)}
+                className="flex items-start gap-3 p-4 rounded-2xl border border-secondary-200 bg-secondary-50"
+              >
+                <span className="mt-1 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                <span className="text-base text-text-secondary">{item}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How HITS Works Section */}
+      <section className="bg-secondary-100">
+        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
+          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
+            How HITS Works
+          </motion.h2>
+          <div className="mt-12 space-y-6 max-w-3xl mx-auto">
+            {[
+              { step: "1", text: "Share what you need help with.", detail: "Tell us, in plain language, what's going wrong: a password problem, a \"no signal\" message, strange emails, or trouble joining a video call." },
+              { step: "2", text: "Get matched with a vetted I.T. specialist.", detail: "We connect you with a patient, background-checked specialist who understands how to work at your pace." },
+              { step: "3", text: "Choose a time and see your cost upfront.", detail: "You pick a visit time that works for you and see the pricing and any travel fee before you confirm. No surprises." },
+              { step: "4", text: "Get one-on-one help and a clear visit summary.", detail: "Your specialist walks you through each step, answers questions, and provides a simple summary of what was done and any next steps." },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.step}
+                {...fadeUp(0.1 + idx * 0.1)}
+                className="flex items-start gap-4 p-6 rounded-2xl border border-secondary-200 bg-white"
+              >
+                <div className="w-12 h-12 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold flex-shrink-0 text-lg">
+                  {item.step}
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-semibold text-text-primary mb-2">{item.text}</p>
+                  <p className="text-base text-text-secondary">{item.detail}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The Heart Behind HITS Section */}
+      <section className="bg-white">
+        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
+          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
+            The Heart Behind HITS
+          </motion.h2>
+          <motion.p
+            {...fadeUp(0.1)}
+            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary mb-8"
+          >
+            HITS is built on three priorities:
+          </motion.p>
+          <div className="mt-8 space-y-6 max-w-3xl mx-auto">
+            {[
+              {
+                title: "1. Care First",
+                description: "Every visit starts with listening. The pace is set by the client, not the clock. Breaks, questions, and \"can you show me that again?\" are always welcome.",
+              },
+              {
+                title: "2. Clear Communication",
+                description: "No tech jargon. No scary tactics. No hidden fees. Clients get calm, honest explanations in plain language they can repeat to their doctor, caregiver, or family if needed.",
+              },
+              {
+                title: "3. Strong Security",
+                description: "From passwords and online banking to telehealth portals and email, HITS is designed with safety and privacy in mind. Tools and methods are chosen to protect, not to overwhelm.",
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                {...fadeUp(0.1 + idx * 0.1)}
+                className="p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
+              >
+                <h3 className="text-xl font-bold text-primary-700 mb-3">{item.title}</h3>
+                <p className="text-base leading-7 text-text-secondary">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+          <motion.p
+            {...fadeUp(0.4)}
+            className="mt-10 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary"
+          >
+            HITS understands what it feels like to rely on systems you can't fully control and how critical trust, discipline, and protection really are. That mindset is built into HITS from the ground up.
+          </motion.p>
+          <motion.p
+            {...fadeUp(0.5)}
+            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary"
+          >
+            HITS exists to give seniors, disabled adults, and their families calm, trustworthy, one-on-one tech support; whether that's at the kitchen table or over a secure video call.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* What That Means for HITS Clients Section */}
+      <section className="bg-secondary-100">
+        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
+          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
+            What That Means for HITS Clients
+          </motion.h2>
+          <motion.p
+            {...fadeUp(0.1)}
+            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary mb-8"
+          >
+            For seniors, disabled adults, and families, working with HITS means:
+          </motion.p>
+          <div className="mt-8 space-y-4 max-w-3xl mx-auto">
+            {[
+              "A patient specialist who listens first",
+              "Clear pricing with no surprises",
+              "Help that respects your time, your dignity, and your boundaries",
+              "Security practices shaped by real-world cybersecurity experience",
+              "Support that feels less like a \"tech appointment\" and more like a trusted family member helping you get things back on track",
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                {...fadeUp(0.1 + idx * 0.1)}
+                className="flex items-start gap-3 p-4 rounded-2xl border border-secondary-200 bg-white"
+              >
+                <span className="mt-1 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                <span className="text-base text-text-secondary">{item}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Core Philosophy Section */}
+      <section className="bg-white">
+        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
+          <motion.div {...fadeUp(0)} className="max-w-3xl mx-auto text-center">
+            <p className="text-lg leading-8 text-text-secondary mb-8">
+              All of this work centers on a simple idea:
+            </p>
+            <p className="text-xl leading-8 text-text-secondary mb-10">
+              Use serious cybersecurity and technical skill to quietly make life easier, safer, and less stressful for people who may not consider themselves "tech savvy."
+            </p>
+            <p className="text-lg leading-8 text-text-secondary mb-8">
+              That's what HITS is meant to be:
+            </p>
+            <div className="bg-primary-50 rounded-3xl border-2 border-primary-200 p-8 md:p-12 my-8">
+              <p className="text-2xl md:text-3xl font-bold text-primary-700 italic leading-relaxed">
+                professional-level tech support with the heart of a trusted friend or family member.
               </p>
             </div>
           </motion.div>
         </div>
       </section>
 
+      {/* Meet the Founder Section */}
+      <section className="bg-secondary-100">
+        <div className="max-w-5xl mx-auto px-8 md:px-12 py-20">
+          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
+            Meet the Founder
+          </motion.h2>
+          <motion.div
+            {...fadeUp(0.1)}
+            className="mt-12 rounded-3xl border border-secondary-200 bg-white p-8 md:p-12 shadow-soft"
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-bold text-primary-700 mb-2">Shane Thompson</h3>
+              <p className="text-xl text-text-secondary">Founder</p>
+            </div>
+            <div className="space-y-6 text-base leading-7 text-text-secondary">
+              <p>
+                Shane Thompson is a disabled, retired U.S. Army veteran with 4 combat tours and a lifelong commitment to service.
+              </p>
+              <p>
+                After serving his country, Shane shifted his focus to serving his community. He earned a Bachelor of Arts in Organizational Management (2016) from the University of Arizona and a degree in Computer Information Technology (2025) with concentrations in Cybersecurity, Information Assurance, and Business Information Systems.
+              </p>
+              <p>
+                He is currently expanding that foundation by attending North Carolina State University, pursuing the Master of Science in Cybersecurity (MCYS). In this graduate program, he is focused on:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>designing and analyzing secure, privacy aware systems</li>
+                <li>securing critical infrastructure such as networks, cloud services, and connected devices</li>
+                <li>enhancing the security and privacy of end-user technologies like mobile, web, IoT, and emerging platforms</li>
+              </ul>
+              <p>
+                Shane has been "the tech person" for as long as he can remember—the one people call when:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>the laptop won't turn on,</li>
+                <li>the Wi-Fi keeps dropping,</li>
+                <li>the TV says "no signal,"</li>
+                <li>or the email looks "a little funny."</li>
+              </ul>
+              <p>
+                He fixes laptops, cleans out viruses, recovers priceless photos, sets up new devices, and most importantly, explains technology in plain language.
+              </p>
+              <p>
+                After seeing too many seniors and disabled adults get:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>rushed through appointments,</li>
+                <li>talked down to,</li>
+                <li>or overcharged for things they didn't need,</li>
+              </ul>
+              <p>
+                he started HITS – Hire I.T. Specialist with one simple promise:
+              </p>
+              <div className="bg-primary-50 rounded-2xl p-6 border border-primary-200 my-6">
+                <p className="text-xl font-semibold text-primary-700 text-center italic">
+                  "Treat every client like family."
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
+      {/* CTA Section */}
       <section className="bg-primary-700 text-white">
         <div className="max-w-5xl mx-auto px-8 md:px-12 py-20 text-center">
-          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold">
+          <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-white">
             Ready to empower more families through technology?
           </motion.h2>
           <motion.p
             {...fadeUp(0.1)}
             className="mt-4 text-lg leading-8 text-white/90"
           >
-            Join as a member, become a specialist, or partner with HITSapp to deliver concierge support at scale.
+            Join as a member, become a specialist, or partner with HITS to deliver concierge support at scale.
           </motion.p>
           <motion.div {...fadeUp(0.2)} className="mt-6 flex flex-wrap justify-center gap-4">
             <Link href="/register">

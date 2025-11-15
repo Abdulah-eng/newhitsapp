@@ -15,6 +15,10 @@ import {
   Phone,
   MapPin,
   ArrowLeft,
+  UserPlus,
+  Ban,
+  UserCheck,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -27,6 +31,7 @@ interface User {
   role: string;
   phone?: string;
   created_at: string;
+  is_active?: boolean;
   specialist_profile?: {
     id: string;
     verification_status: string;
@@ -46,6 +51,14 @@ function AdminUsersPageContent() {
     searchParams.get("specialist") || null
   );
   const [processing, setProcessing] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createUserData, setCreateUserData] = useState({
+    email: "",
+    full_name: "",
+    role: "senior" as "senior" | "specialist" | "admin",
+    phone: "",
+  });
+  const [createUserLoading, setCreateUserLoading] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
   useEffect(() => {
@@ -158,6 +171,62 @@ function AdminUsersPageContent() {
     }
   };
 
+  const handleDeactivate = async (userId: string, isActive: boolean) => {
+    if (!confirm(`Are you sure you want to ${isActive ? "deactivate" : "activate"} this user?`)) {
+      return;
+    }
+
+    try {
+      setProcessing(userId);
+      const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: !isActive }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update user status");
+      }
+
+      await fetchUsers();
+      alert(`User ${!isActive ? "activated" : "deactivated"} successfully`);
+    } catch (error: any) {
+      console.error("Error updating user status:", error);
+      alert(error.message || "Failed to update user status");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateUserLoading(true);
+
+    try {
+      const response = await fetch("/api/admin/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createUserData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create user");
+      }
+
+      alert("User created successfully! Password reset email has been sent.");
+      setShowCreateModal(false);
+      setCreateUserData({ email: "", full_name: "", role: "senior", phone: "" });
+      await fetchUsers();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      alert(error.message || "Failed to create user");
+    } finally {
+      setCreateUserLoading(false);
+    }
+  };
+
   const getVerificationBadge = (status: string) => {
     switch (status) {
       case "verified":
@@ -209,13 +278,24 @@ function AdminUsersPageContent() {
           Back to Dashboard
         </Link>
 
-        <motion.div variants={slideUp} className="mb-8">
-          <h1 className="text-4xl font-bold text-primary-500 mb-2">
-            User Management
-          </h1>
-          <p className="text-xl text-text-secondary">
-            Manage users, verify specialists, and monitor accounts
-          </p>
+        <motion.div variants={slideUp} className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-primary-500 mb-2">
+              User Management
+            </h1>
+            <p className="text-xl text-text-secondary">
+              Manage users, verify specialists, and monitor accounts
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2"
+          >
+            <UserPlus size={20} />
+            Create User
+          </Button>
         </motion.div>
 
         {/* Filters and Search */}
@@ -304,9 +384,16 @@ function AdminUsersPageContent() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
-                          {user.role}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
+                            {user.role}
+                          </span>
+                          {user.is_active === false && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-error-50 text-error-700">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
                         {user.specialist_profile && getVerificationBadge(user.specialist_profile.verification_status)}
                       </div>
                     </div>
@@ -345,35 +432,158 @@ function AdminUsersPageContent() {
                     </div>
                   </div>
 
-                  {user.specialist_profile && user.specialist_profile.verification_status === "pending" && (
-                    <div className="flex flex-col gap-2 lg:min-w-[200px]">
-                      <Button
-                        variant="primary"
-                        size="md"
-                        onClick={() => handleVerification(user.id, "verified")}
-                        isLoading={processing === user.id}
-                        disabled={!!processing}
-                      >
-                        <CheckCircle size={16} className="mr-2" />
-                        Verify
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="md"
-                        onClick={() => handleVerification(user.id, "rejected")}
-                        isLoading={processing === user.id}
-                        disabled={!!processing}
-                      >
-                        <XCircle size={16} className="mr-2" />
-                        Reject
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-2 lg:min-w-[200px]">
+                    {user.specialist_profile && user.specialist_profile.verification_status === "pending" && (
+                      <>
+                        <Button
+                          variant="primary"
+                          size="md"
+                          onClick={() => handleVerification(user.id, "verified")}
+                          isLoading={processing === user.id}
+                          disabled={!!processing}
+                        >
+                          <CheckCircle size={16} className="mr-2" />
+                          Verify
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => handleVerification(user.id, "rejected")}
+                          isLoading={processing === user.id}
+                          disabled={!!processing}
+                        >
+                          <XCircle size={16} className="mr-2" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant={user.is_active !== false ? "outline" : "primary"}
+                      size="md"
+                      onClick={() => handleDeactivate(user.id, user.is_active !== false)}
+                      isLoading={processing === user.id}
+                      disabled={!!processing}
+                    >
+                      {user.is_active !== false ? (
+                        <>
+                          <Ban size={16} className="mr-2" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck size={16} className="mr-2" />
+                          Activate
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             ))
           )}
         </div>
+
+        {/* Create User Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-lg p-6 max-w-md w-full"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-primary-500">Create New User</h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-text-secondary hover:text-text-primary"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">
+                    Full Name *
+                  </label>
+                  <Input
+                    type="text"
+                    value={createUserData.full_name}
+                    onChange={(e) => setCreateUserData({ ...createUserData, full_name: e.target.value })}
+                    required
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">
+                    Email *
+                  </label>
+                  <Input
+                    type="email"
+                    value={createUserData.email}
+                    onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
+                    required
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">
+                    Role *
+                  </label>
+                  <select
+                    value={createUserData.role}
+                    onChange={(e) => setCreateUserData({ ...createUserData, role: e.target.value as any })}
+                    className="input w-full"
+                    required
+                  >
+                    <option value="senior">Senior / Caregiver</option>
+                    <option value="specialist">Specialist</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">
+                    Phone (Optional)
+                  </label>
+                  <Input
+                    type="tel"
+                    value={createUserData.phone}
+                    onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    isLoading={createUserLoading}
+                    className="flex-1"
+                  >
+                    Create User
+                  </Button>
+                </div>
+              </form>
+
+              <p className="text-xs text-text-secondary mt-4">
+                A password reset email will be sent to the user's email address.
+              </p>
+            </motion.div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

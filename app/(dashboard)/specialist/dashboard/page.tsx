@@ -132,29 +132,33 @@ export default function SpecialistDashboard() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <motion.div variants={slideUp} className="card bg-white p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Upcoming</h3>
-              <Calendar className="text-primary-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-primary-500">
-              {appointments?.length || 0}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">Appointments</p>
-          </motion.div>
+          <Link href="/specialist/appointments">
+            <motion.div variants={slideUp} className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Upcoming</h3>
+                <Calendar className="text-primary-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-primary-500">
+                {appointments?.length || 0}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">Appointments</p>
+            </motion.div>
+          </Link>
 
-          <motion.div variants={slideUp} className="card bg-white p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Rating</h3>
-              <Star className="text-warning-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-warning-500">
-              {profile?.rating_average?.toFixed(1) || "0.0"}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">
-              {profile?.total_reviews || 0} reviews
-            </p>
-          </motion.div>
+          <Link href="/specialist/profile">
+            <motion.div variants={slideUp} className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Rating</h3>
+                <Star className="text-warning-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-warning-500">
+                {profile?.rating_average?.toFixed(1) || "0.0"}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">
+                {profile?.total_reviews || 0} reviews
+              </p>
+            </motion.div>
+          </Link>
 
           <motion.div variants={slideUp} className="card bg-white p-6">
             <div className="flex items-center justify-between mb-4">
@@ -167,29 +171,33 @@ export default function SpecialistDashboard() {
             <p className="text-sm text-text-tertiary mt-1">Appointments</p>
           </motion.div>
 
-          <motion.div variants={slideUp} className="card bg-white p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Earnings</h3>
-              <DollarSign className="text-success-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-success-500">
-              ${earnings.thisMonth.toFixed(2)}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">This month</p>
-          </motion.div>
+          <Link href="/specialist/earnings">
+            <motion.div variants={slideUp} className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Earnings</h3>
+                <DollarSign className="text-success-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-success-500">
+                ${earnings.thisMonth.toFixed(2)}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">This month</p>
+            </motion.div>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <motion.div variants={slideUp} className="card bg-white p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-text-secondary">Total Earnings</h3>
-              <DollarSign className="text-primary-500" size={24} />
-            </div>
-            <p className="text-3xl font-bold text-primary-500">
-              ${earnings.total.toFixed(2)}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">All time</p>
-          </motion.div>
+          <Link href="/specialist/earnings">
+            <motion.div variants={slideUp} className="card bg-white p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-text-secondary">Total Earnings</h3>
+                <DollarSign className="text-primary-500" size={24} />
+              </div>
+              <p className="text-3xl font-bold text-primary-500">
+                ${earnings.total.toFixed(2)}
+              </p>
+              <p className="text-sm text-text-tertiary mt-1">All time</p>
+            </motion.div>
+          </Link>
 
           <motion.div variants={slideUp} className="card bg-white p-6">
             <div className="flex items-center justify-between mb-4">
@@ -218,38 +226,38 @@ export default function SpecialistDashboard() {
             {appointments && appointments.length > 0 ? (
               <div className="space-y-4">
                 {appointments.map((appointment: any) => (
-                  <div
-                    key={appointment.id}
-                    className="p-4 border border-secondary-200 rounded-lg hover:shadow-soft transition-shadow"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-text-primary">
-                        {appointment.senior?.full_name || "Client"}
-                      </h3>
-                      <span className="text-sm px-2 py-1 bg-primary-50 text-primary-600 rounded">
-                        {appointment.status}
-                      </span>
+                  <Link key={appointment.id} href={`/specialist/appointments/${appointment.id}`}>
+                    <div className="p-4 border border-secondary-200 rounded-lg hover:shadow-soft transition-shadow cursor-pointer">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-text-primary">
+                          {appointment.senior?.full_name || "Client"}
+                        </h3>
+                        <span className="text-sm px-2 py-1 bg-primary-50 text-primary-600 rounded">
+                          {appointment.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-text-secondary mb-1">
+                        {new Date(appointment.scheduled_at).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="text-sm text-text-tertiary line-clamp-2">
+                        {appointment.issue_description}
+                      </p>
                     </div>
-                    <p className="text-sm text-text-secondary mb-1">
-                      {new Date(appointment.scheduled_at).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p className="text-sm text-text-tertiary line-clamp-2">
-                      {appointment.issue_description}
-                    </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
+                <Calendar size={48} className="mx-auto mb-4 text-text-secondary opacity-50" />
                 <p className="text-text-secondary mb-4">
-                  No upcoming appointments
+                  No upcoming appointments scheduled yet.
                 </p>
                 <Link href="/specialist/calendar">
                   <Button variant="primary">Manage Availability</Button>

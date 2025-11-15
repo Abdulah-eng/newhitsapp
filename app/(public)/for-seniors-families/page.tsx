@@ -279,7 +279,7 @@ export default function ForSeniorsFamiliesPage() {
             viewport={{ once: true, amount: 0.3 }}
             variants={fade}
             custom={0}
-            className="text-[28px] md:text-[36px] font-bold"
+            className="text-[28px] md:text-[36px] font-bold text-white"
           >
             Ready to Get Started?
           </motion.h2>

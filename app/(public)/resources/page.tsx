@@ -1,10 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import MarketingHeader from "@/components/MarketingHeader";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useMembership } from "@/lib/hooks/useMembership";
+import { Download, FileText, Lock } from "lucide-react";
 
 const fade = {
   hidden: { opacity: 0, y: 28 },
@@ -31,7 +35,7 @@ const categories = [
     description: "Passwords, fraud, safe browsing",
     resources: [
       "How to create strong passwords",
-      "Recognizing email scams",
+      "How to spot fake emails and text messages.",
       "Safe online shopping",
       "Protecting your personal information",
     ],
@@ -65,7 +69,7 @@ const resourceTypes = [
     icon: "📄",
   },
   {
-    type: "Short how-to videos",
+    type: "Short step-by-step videos you can pause and rewatch.",
     description: "Visual tutorials you can watch at your own pace",
     icon: "🎥",
   },
@@ -81,9 +85,53 @@ const resourceTypes = [
   },
 ];
 
+interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_name: string;
+  file_size: number | null;
+  access_level: "free" | "members_only";
+  category: string | null;
+}
+
 export default function ResourcesPage() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  const { hasActiveMembership } = useMembership(user?.id);
+  const supabase = createSupabaseBrowserClient();
+  const [downloadableResources, setDownloadableResources] = useState<Resource[]>([]);
+  const [isLoadingResources, setIsLoadingResources] = useState(true);
+
+  useEffect(() => {
+    fetchResources();
+  }, [user, hasActiveMembership]);
+
+  const fetchResources = async () => {
+    try {
+      let query = supabase
+        .from("resources")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      // If user is logged in and has membership, show all resources
+      // Otherwise, only show free resources
+      if (!isLoggedIn || !hasActiveMembership) {
+        query = query.eq("access_level", "free");
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setDownloadableResources(data || []);
+    } catch (error: any) {
+      console.error("Error fetching resources:", error);
+    } finally {
+      setIsLoadingResources(false);
+    }
+  };
 
   return (
     <main className="bg-secondary-50 text-text-primary">
@@ -253,6 +301,116 @@ export default function ResourcesPage() {
         </div>
       </section>
 
+      {/* Resource Downloads Section */}
+      <section className="bg-white">
+        <div className="max-w-7xl mx-auto px-8 md:px-12 py-18">
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fade}
+            custom={0}
+            className="text-[32px] md:text-[40px] font-bold text-primary-700 text-center mb-12"
+          >
+            Downloadable Resources
+          </motion.h2>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fade}
+            custom={0.1}
+            className="bg-secondary-50 rounded-3xl border border-secondary-200 p-8 md:p-12 shadow-soft"
+          >
+            <p className="text-lg text-text-secondary leading-7 text-center mb-8">
+              Download large-print PDFs, tip sheets, guides, and checklists to keep near your devices.
+            </p>
+            {isLoadingResources ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
+              </div>
+            ) : downloadableResources.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-text-secondary">Resources will appear here once uploaded by the admin.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {downloadableResources.map((resource) => (
+                  <motion.div
+                    key={resource.id}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.3 }}
+                    variants={fade}
+                    custom={0}
+                    className="bg-white rounded-xl border border-secondary-200 p-6 shadow-soft hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                        <FileText size={24} className="text-primary-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-semibold text-primary-700 mb-1">{resource.title}</h3>
+                          {resource.access_level === "members_only" && (
+                            <Lock size={16} className="text-primary-500 flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                        {resource.description && (
+                          <p className="text-sm text-text-secondary mb-3 line-clamp-2">
+                            {resource.description}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-4">
+                          <span className="text-xs text-text-tertiary">
+                            {resource.file_size ? `${(resource.file_size / 1024).toFixed(2)} KB` : ""}
+                            {resource.category && ` • ${resource.category}`}
+                          </span>
+                          <a
+                            href={resource.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-500 text-white text-sm rounded-lg hover:bg-primary-600 transition-colors"
+                          >
+                            <Download size={16} />
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            {!isLoggedIn && (
+              <div className="mt-6 p-4 bg-secondary-50 rounded-lg border border-secondary-200 text-center">
+                <p className="text-sm text-text-secondary mb-2">
+                  Some resources are available only to members.
+                </p>
+                <Link href="/register">
+                  <Button size="sm" className="bg-primary-500 hover:bg-primary-600">
+                    Sign Up for Full Access
+                  </Button>
+                </Link>
+              </div>
+            )}
+            {isLoggedIn && !hasActiveMembership && (
+              <div className="mt-6 p-4 bg-secondary-50 rounded-lg border border-secondary-200 text-center">
+                <p className="text-sm text-text-secondary mb-2">
+                  Upgrade to a membership plan to access all resources.
+                </p>
+                <Link href="/plans">
+                  <Button size="sm" className="bg-primary-500 hover:bg-primary-600">
+                    View Membership Plans
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-primary-700 text-white">
         <div className="max-w-4xl mx-auto px-8 md:px-12 py-18 text-center">
@@ -262,7 +420,7 @@ export default function ResourcesPage() {
             viewport={{ once: true, amount: 0.3 }}
             variants={fade}
             custom={0}
-            className="text-[28px] md:text-[36px] font-bold"
+            className="text-[28px] md:text-[36px] font-bold text-white"
           >
             Need More Help?
           </motion.h2>

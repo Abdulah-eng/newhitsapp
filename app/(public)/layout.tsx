@@ -17,7 +17,7 @@ export default function PublicLayout({
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-xl font-bold text-primary-500">
-              H.I.T.S.
+              HITS
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/specialists">

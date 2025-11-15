@@ -147,6 +147,9 @@ function AIMatchPageContent() {
           <p className="text-xl text-text-secondary">
             Describe your issue and we'll find the best specialist for you
           </p>
+          <p className="text-sm text-text-secondary mt-3">
+            Your description is only used to match you with a specialist. Please don't include passwords or full account numbers.
+          </p>
         </motion.div>
 
         <motion.div variants={slideUp} className="card bg-white p-8 mb-6">

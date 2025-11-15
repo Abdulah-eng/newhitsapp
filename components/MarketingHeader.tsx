@@ -12,7 +12,7 @@ export default function MarketingHeader() {
   
   const getDashboardLink = () => {
     if (!user) return "/login";
-    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitsapp.com") {
+    if (user.role === "admin" || user.email?.toLowerCase() === "admin@hitspecialist.com") {
       return "/admin/dashboard";
     }
     if (user.role === "senior") {
@@ -34,7 +34,7 @@ export default function MarketingHeader() {
               <span className="text-primary-600 font-extrabold text-xl">H</span>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITSapp</p>
+              <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
               <p className="text-sm text-text-secondary">Hire IT Specialists</p>
             </div>
           </Link>
