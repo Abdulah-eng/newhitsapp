@@ -17,19 +17,121 @@ function ResetPasswordForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [isSessionReady, setIsSessionReady] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
   useEffect(() => {
-    // Check if we have the necessary tokens in the URL
-    const hashParams = window.location.hash.substring(1);
-    if (!hashParams && !searchParams.get("access_token")) {
-      setError("Invalid or expired reset link. Please request a new one.");
-    }
-  }, [searchParams]);
+    let isMounted = true;
+
+    const establishSession = async () => {
+      try {
+        setSessionLoading(true);
+        setError("");
+
+        const hashParams = window.location.hash.substring(1);
+        const queryCode = searchParams.get("code");
+        const tokenHash = searchParams.get("token_hash");
+        const token = searchParams.get("token");
+        const emailParam = searchParams.get("email");
+        let sessionEstablished = false;
+
+        if (queryCode) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(queryCode);
+          if (exchangeError) {
+            throw exchangeError;
+          }
+          sessionEstablished = true;
+        } else if (tokenHash) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            token_hash: tokenHash,
+          });
+
+          if (verifyError) {
+            throw verifyError;
+          }
+
+          const url = new URL(window.location.href);
+          url.searchParams.delete("token_hash");
+          url.searchParams.delete("token");
+          window.history.replaceState({}, document.title, url.toString());
+          sessionEstablished = true;
+        } else if (token) {
+          if (!emailParam) {
+            throw new Error("Invalid reset link. Email parameter missing.");
+          }
+
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            email: emailParam,
+            token,
+          });
+
+          if (verifyError) {
+            throw verifyError;
+          }
+
+          const url = new URL(window.location.href);
+          url.searchParams.delete("token");
+          window.history.replaceState({}, document.title, url.toString());
+          sessionEstablished = true;
+        } else if (hashParams) {
+          const params = new URLSearchParams(hashParams);
+          const accessToken = params.get("access_token");
+          const refreshToken = params.get("refresh_token");
+
+          if (accessToken && refreshToken) {
+            const { error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (setSessionError) {
+              throw setSessionError;
+            }
+
+            // Clean up URL to remove sensitive tokens
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+            sessionEstablished = true;
+          }
+        }
+
+        if (!sessionEstablished) {
+          throw new Error("Invalid or expired reset link. Please request a new one.");
+        }
+
+        if (isMounted) {
+          setIsSessionReady(true);
+        }
+      } catch (sessionError: any) {
+        console.error("Error establishing reset session:", sessionError);
+        if (isMounted) {
+          setError(sessionError.message || "Invalid or expired reset link. Please request a new one.");
+          setIsSessionReady(false);
+        }
+      } finally {
+        if (isMounted) {
+          setSessionLoading(false);
+        }
+      }
+    };
+
+    establishSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!isSessionReady) {
+      setError("Reset session is not ready. Please open the password reset link from your email again.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -126,37 +228,51 @@ function ResetPasswordForm() {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              type="password"
-              label="New Password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-            />
+          {sessionLoading && (
+            <div className="p-4 bg-secondary-50 border border-secondary-200 rounded-lg text-sm text-text-secondary">
+              Validating your reset link...
+            </div>
+          )}
 
-            <Input
-              type="password"
-              label="Confirm New Password"
-              placeholder="Re-enter your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-            />
+          {!sessionLoading && !isSessionReady && (
+            <div className="p-4 bg-error-50 border border-error-200 rounded-lg text-sm text-error-700">
+              Unable to validate the reset link. Please request a new password reset email.
+            </div>
+          )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              isLoading={isLoading}
-            >
-              Update Password
-            </Button>
-          </form>
+          {!sessionLoading && isSessionReady && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Input
+                type="password"
+                label="New Password"
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+
+              <Input
+                type="password"
+                label="Confirm New Password"
+                placeholder="Re-enter your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                isLoading={isLoading}
+              >
+                Update Password
+              </Button>
+            </form>
+          )}
         </motion.div>
       </motion.div>
     </div>

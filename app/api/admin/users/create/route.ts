@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auth user first (this will send password reset email)
+    // Create auth user first (email is auto-confirmed so we can send password reset)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
       user_metadata: {
         full_name,
         role,
@@ -81,27 +81,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send password reset email using Supabase Auth Admin API
-    // Note: This requires the service role key to have admin access
-    try {
-      const { data: linkData, error: resetError } = await supabase.auth.admin.generateLink({
-        type: "recovery",
-        email,
-      });
+    // Send password reset email so the user can set their password
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${appUrl}/reset-password?email=${encodeURIComponent(email)}`,
+    });
 
-      if (resetError) {
-        console.error("Error generating password reset link:", resetError);
-        // User is created, but password reset email failed
-        // Still return success, but log the error
-      } else {
-        // The link is generated, but we need to send it via email
-        // Supabase should automatically send the email, but if not configured,
-        // you may need to use a custom email service
-        console.log("Password reset link generated:", linkData);
-      }
-    } catch (emailError) {
-      console.error("Error sending password reset email:", emailError);
-      // User is created successfully, email sending can be retried manually
+    if (resetError) {
+      console.error("Error sending password reset email:", resetError);
+      return NextResponse.json(
+        {
+          error: "User created, but failed to send password reset email. Please try resending from user detail.",
+        },
+        { status: 500 }
+      );
     }
 
     // If role is specialist, create specialist profile placeholder
