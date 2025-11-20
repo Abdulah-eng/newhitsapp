@@ -1,6 +1,6 @@
 "use server";
 
-import nodemailer from "nodemailer";
+import { createSmtpTransporter, getSmtpConfig } from "./transporter";
 
 type SendNewMessageEmailParams = {
   to: string;
@@ -9,41 +9,14 @@ type SendNewMessageEmailParams = {
   conversationUrl: string;
 };
 
-function getSmtpConfig() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM } = process.env;
-
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM) {
-    throw new Error(
-      "SMTP configuration is missing. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM environment variables."
-    );
-  }
-
-  return {
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    user: SMTP_USER,
-    pass: SMTP_PASSWORD,
-    from: SMTP_FROM,
-  };
-}
-
 export async function sendNewMessageEmail({
   to,
   recipientName,
   senderName,
   conversationUrl,
 }: SendNewMessageEmailParams) {
-  const { host, port, user, pass, from } = getSmtpConfig();
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-  });
+  const { from } = getSmtpConfig();
+  const transporter = createSmtpTransporter();
 
   const displayRecipient = recipientName || "there";
   const displaySender = senderName || "a member of the HITS community";

@@ -62,11 +62,14 @@ ADD COLUMN IF NOT EXISTS member_discount NUMERIC(10, 2) DEFAULT 0 CHECK (member_
 ADD COLUMN IF NOT EXISTS total_price NUMERIC(10, 2),
 ADD COLUMN IF NOT EXISTS specialist_pay_rate NUMERIC(10, 2) DEFAULT 30.00,
 ADD COLUMN IF NOT EXISTS specialist_travel_reimbursement NUMERIC(10, 2) DEFAULT 0 CHECK (specialist_travel_reimbursement >= 0),
-ADD COLUMN IF NOT EXISTS full_address TEXT; -- Combined address for map calculations
+ADD COLUMN IF NOT EXISTS full_address TEXT, -- Combined address for map calculations
+ADD COLUMN IF NOT EXISTS confirmation_email_sent_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS reminder_email_sent_at TIMESTAMP WITH TIME ZONE;
 
 -- Add fields to users table
 ALTER TABLE users
-ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT,
+ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMP WITH TIME ZONE;
 
 -- Add fields to senior_profiles table
 ALTER TABLE senior_profiles

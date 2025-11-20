@@ -150,6 +150,19 @@ function BookAppointmentPageContent() {
     }
   };
 
+  const notifyAppointmentConfirmation = async (appointmentId: string) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/send-confirmation`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        console.error("Confirmation email API returned non-200 status");
+      }
+    } catch (err) {
+      console.error("Failed to trigger confirmation email:", err);
+    }
+  };
+
   const fetchAvailableSlots = async () => {
     if (!selectedSpecialist || !selectedDate) return;
 
@@ -316,6 +329,8 @@ function BookAppointmentPageContent() {
       // Don't block booking if logging fails
       console.error("Error logging appointment creation:", err);
     }
+
+    await notifyAppointmentConfirmation(data.id);
 
     // Redirect to appointment confirmation
     router.push(`/senior/my-appointments/${data.id}?success=true`);

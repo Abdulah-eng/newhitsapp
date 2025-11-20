@@ -27,6 +27,21 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
+  const triggerWelcomeEmail = async (userId: string) => {
+    try {
+      const response = await fetch("/api/email/welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (!response.ok) {
+        console.error("Welcome email API returned non-200 status");
+      }
+    } catch (err) {
+      console.error("Failed to trigger welcome email:", err);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
@@ -76,6 +91,8 @@ export default function RegisterPage() {
         setIsLoading(false);
         return;
       }
+
+      await triggerWelcomeEmail(authData.user.id);
 
       // Check if email confirmation is required
       // If session is null, try to get it (might be a timing issue)

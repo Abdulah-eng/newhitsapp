@@ -24,7 +24,8 @@ CREATE TABLE users (
     avatar_url TEXT,
     stripe_customer_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    welcome_email_sent_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Indexes for users
@@ -123,6 +124,16 @@ CREATE TABLE appointments (
     cancelled_at TIMESTAMP WITH TIME ZONE,
     cancellation_reason TEXT,
     completed_at TIMESTAMP WITH TIME ZONE,
+    total_price NUMERIC(10, 2),
+    specialist_pay_rate NUMERIC(10, 2) DEFAULT 30.00,
+    specialist_travel_reimbursement NUMERIC(10, 2) DEFAULT 0,
+    travel_fee NUMERIC(10, 2) DEFAULT 0,
+    base_price NUMERIC(10, 2),
+    member_discount NUMERIC(10, 2),
+    payment_status payment_status DEFAULT 'pending',
+    stripe_payment_intent_id TEXT,
+    confirmation_email_sent_at TIMESTAMP WITH TIME ZONE,
+    reminder_email_sent_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CHECK (
