@@ -61,11 +61,38 @@ export default function MembershipPaymentForm({
         setIsProcessing(false);
       } else {
         setSuccess(true);
-        // Wait for webhook to process and membership to be created
-        // Poll for membership status with retries
+        // Payment succeeded - try to sync membership immediately
+        // Then poll to confirm it's active
         let retries = 0;
-        const maxRetries = 10;
-        const pollInterval = 1000; // 1 second
+        const maxRetries = 8;
+        const pollInterval = 1500; // 1.5 seconds
+        
+        // First, try manual sync immediately (webhook might be delayed)
+        const trySync = async () => {
+          try {
+            console.log("Attempting immediate membership sync...");
+            const syncResponse = await fetch("/api/membership/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ subscriptionId }),
+            });
+            const syncData = await syncResponse.json();
+            
+            if (syncResponse.ok && syncData.success) {
+              console.log("Membership synced successfully");
+              return true;
+            } else {
+              console.warn("Sync returned:", syncData.error || syncData.message);
+              // If membership already exists, that's also success
+              if (syncData.message && syncData.message.includes("already exists")) {
+                return true;
+              }
+            }
+          } catch (syncErr: any) {
+            console.error("Error syncing membership:", syncErr);
+          }
+          return false;
+        };
         
         const checkMembership = async () => {
           try {
@@ -77,73 +104,49 @@ export default function MembershipPaymentForm({
               console.log("Membership is active, proceeding with success");
               setTimeout(() => {
                 onSuccess();
-              }, 1000);
-            } else if (data.subscriptionActive) {
-              // Subscription is active in Stripe but membership not created yet
-              // Webhook might not have processed - try manual sync after a few retries
-              if (retries < 5) {
-                // Wait a bit more for webhook
-                retries++;
-                setTimeout(checkMembership, pollInterval);
-              } else if (retries === 5) {
-                // After 5 retries, try manual sync
-                console.log("Attempting manual membership sync...");
-                try {
-                  const syncResponse = await fetch("/api/membership/sync", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ subscriptionId }),
-                  });
-                  const syncData = await syncResponse.json();
-                  
-                  if (syncData.success) {
-                    console.log("Membership synced successfully");
-                    setTimeout(() => {
-                      onSuccess();
-                    }, 1000);
-                  } else {
-                    // Sync failed, continue polling
-                    retries++;
-                    setTimeout(checkMembership, pollInterval);
-                  }
-                } catch (syncErr) {
-                  console.error("Error syncing membership:", syncErr);
-                  retries++;
-                  setTimeout(checkMembership, pollInterval);
-                }
-              } else if (retries < maxRetries) {
-                // Continue polling
-                retries++;
-                setTimeout(checkMembership, pollInterval);
-              } else {
-                // Max retries reached, proceed anyway
-                console.warn("Max retries reached, proceeding anyway");
+              }, 500);
+              return;
+            }
+            
+            // If not active yet and we haven't tried sync, try it now
+            if (retries === 0) {
+              const synced = await trySync();
+              if (synced) {
+                // Wait a moment for the sync to complete, then check again
                 setTimeout(() => {
-                  onSuccess();
+                  checkMembership();
                 }, 1000);
+                retries++;
+                return;
               }
-            } else if (retries < maxRetries) {
-              // Not yet active, retry
+            }
+            
+            // Continue polling
+            if (retries < maxRetries) {
               retries++;
               setTimeout(checkMembership, pollInterval);
             } else {
-              // Max retries reached, still proceed (webhook might be delayed)
-              console.warn("Membership check timeout, proceeding anyway");
+              // Max retries reached, try one more sync then proceed
+              console.warn("Max retries reached, attempting final sync");
+              await trySync();
               setTimeout(() => {
                 onSuccess();
               }, 1000);
             }
           } catch (err) {
             console.error("Error checking membership:", err);
-            // On error, still proceed after delay
+            // On error, try sync one more time then proceed
+            if (retries === 0) {
+              await trySync();
+            }
             setTimeout(() => {
               onSuccess();
-            }, 3000);
+            }, 2000);
           }
         };
         
-        // Start checking after a short delay to allow webhook to process
-        setTimeout(checkMembership, 2000);
+        // Start checking after a short delay to allow payment to settle
+        setTimeout(checkMembership, 1000);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");

@@ -44,6 +44,10 @@ export interface UserMembership {
   stripe_subscription_id: string | null;
   stripe_customer_id: string | null;
   covered_user_ids: string[];
+  cancellation_requested_at?: string | null;
+  cancellation_effective_date?: string | null;
+  reactivated_at?: string | null;
+  reactivated_from_membership_id?: string | null;
   membership_plan?: MembershipPlan;
 }
 
@@ -88,10 +92,11 @@ export function useMembership(userId: string | undefined) {
   const fetchMembershipData = useCallback(async () => {
     if (!userId) return;
     
-    // Throttle: don't fetch if we fetched in the last 2 seconds
+    // Throttle: don't fetch if we fetched in the last 3 seconds
+    // This prevents rapid-fire fetches from real-time subscriptions
     const now = Date.now();
-    if (lastFetchTimeRef.current && now - lastFetchTimeRef.current < 2000) {
-      console.log("Throttling membership fetch - too soon since last fetch");
+    if (lastFetchTimeRef.current && now - lastFetchTimeRef.current < 3000) {
+      // Don't log throttling - it's expected behavior
       return;
     }
     
@@ -159,38 +164,53 @@ export function useMembership(userId: string | undefined) {
 
     let isMounted = true;
     let subscriptionChannel: any = null;
+    let refreshTimeout: NodeJS.Timeout | null = null;
 
     // Initial fetch
     fetchMembershipData();
 
     // Set up real-time subscription to listen for membership changes
-    // Only subscribe to INSERT and UPDATE events to avoid infinite loops
     subscriptionChannel = supabase
       .channel(`user_memberships:${userId}`)
       .on(
         "postgres_changes",
         {
-          event: "UPDATE", // Only listen to UPDATE events, not all events
+          event: "*", // Listen to INSERT, UPDATE, DELETE
           schema: "public",
           table: "user_memberships",
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          // Only refresh if the status actually changed or if it's a new record
-          const newStatus = payload.new?.status;
-          const oldStatus = payload.old?.status;
+          // Only refresh if this is a meaningful change
+          const newStatus = (payload.new as any)?.status;
+          const oldStatus = (payload.old as any)?.status;
+          const newMembershipId = (payload.new as any)?.id;
+          const oldMembershipId = (payload.old as any)?.id;
           
-          // Only refresh if status changed or if membership was just created
-          if (newStatus !== oldStatus || newStatus === "active") {
-            console.log("Membership change detected:", { newStatus, oldStatus });
-            if (isMounted) {
-              // Use a small delay to avoid rapid-fire updates
-              setTimeout(() => {
-                if (isMounted) {
-                  fetchMembershipData();
-                }
-              }, 500);
+          // Refresh on INSERT (new membership created)
+          // Refresh on UPDATE if status changed or membership ID changed
+          // Refresh on DELETE (membership removed)
+          const shouldRefresh = 
+            payload.eventType === "INSERT" ||
+            payload.eventType === "DELETE" ||
+            (payload.eventType === "UPDATE" && (
+              newStatus !== oldStatus || 
+              newMembershipId !== oldMembershipId ||
+              (newStatus === "active" && oldStatus !== "active")
+            ));
+          
+          if (shouldRefresh && isMounted) {
+            // Clear any pending refresh
+            if (refreshTimeout) {
+              clearTimeout(refreshTimeout);
             }
+            
+            // Use a delay to avoid rapid-fire updates and allow database to settle
+            refreshTimeout = setTimeout(() => {
+              if (isMounted) {
+                fetchMembershipData();
+              }
+            }, 1500);
           }
         }
       )
@@ -199,11 +219,14 @@ export function useMembership(userId: string | undefined) {
     // Cleanup subscription on unmount
     return () => {
       isMounted = false;
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
       if (subscriptionChannel) {
         supabase.removeChannel(subscriptionChannel);
       }
     };
-  }, [userId, fetchMembershipData]);
+  }, [userId, fetchMembershipData, supabase]);
 
   const createMembership = async (planId: string) => {
     if (!userId) {
@@ -270,7 +293,11 @@ export function useMembership(userId: string | undefined) {
         .update({
           status: "cancelled",
           cancelled_at: new Date().toISOString(),
+          cancellation_requested_at: new Date().toISOString(),
+          cancellation_effective_date: new Date().toISOString().split("T")[0],
           cancellation_reason: reason || null,
+          reactivated_at: null,
+          reactivated_from_membership_id: null,
         })
         .eq("id", membership.id);
 

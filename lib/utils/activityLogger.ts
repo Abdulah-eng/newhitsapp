@@ -16,6 +16,7 @@ export type ActivityLogType =
   | "membership_created"
   | "membership_cancelled"
   | "membership_updated"
+  | "membership_reinstated"
   | "dispute_created"
   | "dispute_resolved"
   | "dispute_dismissed"
@@ -201,6 +202,25 @@ export async function logMembershipCancelled(
     {
       membership_id: membershipId,
       cancellation_reason: reason,
+    }
+  );
+}
+
+/**
+ * Log membership reinstatement
+ */
+export async function logMembershipReinstated(
+  membershipId: string,
+  userId: string,
+  planType?: string
+): Promise<void> {
+  await logActivity(
+    "membership_reinstated",
+    userId,
+    `Membership reinstated: ${membershipId}`,
+    {
+      membership_id: membershipId,
+      plan_type: planType,
     }
   );
 }

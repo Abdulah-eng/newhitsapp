@@ -3,34 +3,51 @@
 -- This adds all required fields and tables for production specification
 
 -- ============================================
--- STEP 1: Add new enums
+-- STEP 1: Add new enums (with existence checks)
 -- ============================================
 
-CREATE TYPE membership_plan_type AS ENUM ('connect', 'comfort', 'family_care_plus');
-CREATE TYPE membership_status AS ENUM ('active', 'cancelled', 'expired', 'pending');
-CREATE TYPE dispute_status AS ENUM ('open', 'resolved', 'dismissed');
-CREATE TYPE dispute_type AS ENUM ('review', 'cancellation', 'payment', 'service', 'other');
-CREATE TYPE activity_log_type AS ENUM (
-    'user_registration',
-    'user_login',
-    'appointment_created',
-    'appointment_confirmed',
-    'appointment_completed',
-    'appointment_cancelled',
-    'payment_processed',
-    'payment_refunded',
-    'message_sent',
-    'review_submitted',
-    'dispute_created',
-    'dispute_resolved',
-    'settings_changed',
-    'membership_created',
-    'membership_cancelled',
-    'specialist_verified',
-    'specialist_rejected',
-    'contact_message_created',
-    'contact_message_updated'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'membership_plan_type') THEN
+        CREATE TYPE membership_plan_type AS ENUM ('connect', 'comfort', 'family_care_plus');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'membership_status') THEN
+        CREATE TYPE membership_status AS ENUM ('active', 'cancelled', 'expired', 'pending');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'dispute_status') THEN
+        CREATE TYPE dispute_status AS ENUM ('open', 'resolved', 'dismissed');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'dispute_type') THEN
+        CREATE TYPE dispute_type AS ENUM ('review', 'cancellation', 'payment', 'service', 'other');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'activity_log_type') THEN
+        CREATE TYPE activity_log_type AS ENUM (
+            'user_registration',
+            'user_login',
+            'appointment_created',
+            'appointment_confirmed',
+            'appointment_completed',
+            'appointment_cancelled',
+            'payment_processed',
+            'payment_refunded',
+            'message_sent',
+            'review_submitted',
+            'dispute_created',
+            'dispute_resolved',
+            'settings_changed',
+            'membership_created',
+            'membership_cancelled',
+            'specialist_verified',
+            'specialist_rejected',
+            'contact_message_created',
+            'contact_message_updated'
+        );
+    END IF;
+END $$;
 
 -- ============================================
 -- STEP 2: Add columns to existing tables
@@ -47,6 +64,10 @@ ADD COLUMN IF NOT EXISTS specialist_pay_rate NUMERIC(10, 2) DEFAULT 30.00,
 ADD COLUMN IF NOT EXISTS specialist_travel_reimbursement NUMERIC(10, 2) DEFAULT 0 CHECK (specialist_travel_reimbursement >= 0),
 ADD COLUMN IF NOT EXISTS full_address TEXT; -- Combined address for map calculations
 
+-- Add fields to users table
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+
 -- Add fields to senior_profiles table
 ALTER TABLE senior_profiles
 ADD COLUMN IF NOT EXISTS is_disabled_adult BOOLEAN DEFAULT FALSE,
@@ -57,6 +78,13 @@ ALTER TABLE payments
 ADD COLUMN IF NOT EXISTS travel_fee NUMERIC(10, 2) DEFAULT 0 CHECK (travel_fee >= 0),
 ADD COLUMN IF NOT EXISTS membership_discount NUMERIC(10, 2) DEFAULT 0 CHECK (membership_discount >= 0),
 ADD COLUMN IF NOT EXISTS base_amount NUMERIC(10, 2);
+
+-- Add lifecycle tracking columns to user_memberships
+ALTER TABLE user_memberships
+ADD COLUMN IF NOT EXISTS cancellation_requested_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS cancellation_effective_date DATE,
+ADD COLUMN IF NOT EXISTS reactivated_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS reactivated_from_membership_id UUID REFERENCES user_memberships(id);
 
 -- ============================================
 -- STEP 3: Create new tables
@@ -172,6 +200,9 @@ CREATE TABLE IF NOT EXISTS specialist_payments (
 CREATE INDEX IF NOT EXISTS idx_appointments_travel_distance ON appointments(travel_distance_miles);
 CREATE INDEX IF NOT EXISTS idx_appointments_total_price ON appointments(total_price);
 
+-- Users indexes
+CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);
+
 -- Senior profiles indexes
 CREATE INDEX IF NOT EXISTS idx_senior_profiles_disabled_adult ON senior_profiles(is_disabled_adult);
 CREATE INDEX IF NOT EXISTS idx_senior_profiles_membership ON senior_profiles(membership_id);
@@ -208,15 +239,20 @@ CREATE INDEX IF NOT EXISTS idx_specialist_payments_created_at ON specialist_paym
 -- STEP 5: Add triggers for updated_at
 -- ============================================
 
+-- Drop triggers if they exist, then create them
+DROP TRIGGER IF EXISTS update_membership_plans_updated_at ON membership_plans;
 CREATE TRIGGER update_membership_plans_updated_at BEFORE UPDATE ON membership_plans
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_memberships_updated_at ON user_memberships;
 CREATE TRIGGER update_user_memberships_updated_at BEFORE UPDATE ON user_memberships
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_disputes_updated_at ON disputes;
 CREATE TRIGGER update_disputes_updated_at BEFORE UPDATE ON disputes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_specialist_payments_updated_at ON specialist_payments;
 CREATE TRIGGER update_specialist_payments_updated_at BEFORE UPDATE ON specialist_payments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -372,9 +408,11 @@ ALTER TABLE specialist_payments ENABLE ROW LEVEL SECURITY;
 -- ============================================
 
 -- Membership Plans: Public read, admin write
+DROP POLICY IF EXISTS "Anyone can view active membership plans" ON membership_plans;
 CREATE POLICY "Anyone can view active membership plans" ON membership_plans
     FOR SELECT USING (is_active = TRUE);
 
+DROP POLICY IF EXISTS "Admins can manage membership plans" ON membership_plans;
 CREATE POLICY "Admins can manage membership plans" ON membership_plans
     FOR ALL USING (
         EXISTS (
@@ -385,15 +423,19 @@ CREATE POLICY "Admins can manage membership plans" ON membership_plans
     );
 
 -- User Memberships: Users can view their own, admins can view all
+DROP POLICY IF EXISTS "Users can view own memberships" ON user_memberships;
 CREATE POLICY "Users can view own memberships" ON user_memberships
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create own memberships" ON user_memberships;
 CREATE POLICY "Users can create own memberships" ON user_memberships
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own memberships" ON user_memberships;
 CREATE POLICY "Users can update own memberships" ON user_memberships
     FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all memberships" ON user_memberships;
 CREATE POLICY "Admins can view all memberships" ON user_memberships
     FOR SELECT USING (
         EXISTS (
@@ -404,12 +446,15 @@ CREATE POLICY "Admins can view all memberships" ON user_memberships
     );
 
 -- Disputes: Users can view/create their own, admins can view/manage all
+DROP POLICY IF EXISTS "Users can view own disputes" ON disputes;
 CREATE POLICY "Users can view own disputes" ON disputes
     FOR SELECT USING (auth.uid() = senior_id OR auth.uid() = specialist_id);
 
+DROP POLICY IF EXISTS "Users can create disputes" ON disputes;
 CREATE POLICY "Users can create disputes" ON disputes
     FOR INSERT WITH CHECK (auth.uid() = senior_id);
 
+DROP POLICY IF EXISTS "Admins can view all disputes" ON disputes;
 CREATE POLICY "Admins can view all disputes" ON disputes
     FOR SELECT USING (
         EXISTS (
@@ -419,6 +464,7 @@ CREATE POLICY "Admins can view all disputes" ON disputes
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage disputes" ON disputes;
 CREATE POLICY "Admins can manage disputes" ON disputes
     FOR ALL USING (
         EXISTS (
@@ -429,6 +475,7 @@ CREATE POLICY "Admins can manage disputes" ON disputes
     );
 
 -- Activity Logs: Admins only
+DROP POLICY IF EXISTS "Admins can view activity logs" ON activity_logs;
 CREATE POLICY "Admins can view activity logs" ON activity_logs
     FOR SELECT USING (
         EXISTS (
@@ -438,13 +485,16 @@ CREATE POLICY "Admins can view activity logs" ON activity_logs
         )
     );
 
+DROP POLICY IF EXISTS "System can create activity logs" ON activity_logs;
 CREATE POLICY "System can create activity logs" ON activity_logs
     FOR INSERT WITH CHECK (true); -- Allow system/service role to insert
 
 -- Platform Settings: Public read, admin write
+DROP POLICY IF EXISTS "Anyone can view platform settings" ON platform_settings;
 CREATE POLICY "Anyone can view platform settings" ON platform_settings
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage platform settings" ON platform_settings;
 CREATE POLICY "Admins can manage platform settings" ON platform_settings
     FOR ALL USING (
         EXISTS (
@@ -455,9 +505,11 @@ CREATE POLICY "Admins can manage platform settings" ON platform_settings
     );
 
 -- Specialist Payments: Specialists can view their own, admins can view all
+DROP POLICY IF EXISTS "Specialists can view own payments" ON specialist_payments;
 CREATE POLICY "Specialists can view own payments" ON specialist_payments
     FOR SELECT USING (auth.uid() = specialist_id);
 
+DROP POLICY IF EXISTS "Admins can view all specialist payments" ON specialist_payments;
 CREATE POLICY "Admins can view all specialist payments" ON specialist_payments
     FOR SELECT USING (
         EXISTS (
@@ -467,9 +519,11 @@ CREATE POLICY "Admins can view all specialist payments" ON specialist_payments
         )
     );
 
+DROP POLICY IF EXISTS "System can create specialist payments" ON specialist_payments;
 CREATE POLICY "System can create specialist payments" ON specialist_payments
     FOR INSERT WITH CHECK (true); -- Allow system/service role to insert
 
+DROP POLICY IF EXISTS "Admins can update specialist payments" ON specialist_payments;
 CREATE POLICY "Admins can update specialist payments" ON specialist_payments
     FOR UPDATE USING (
         EXISTS (
@@ -560,6 +614,48 @@ LEFT JOIN membership_plans mp ON mp.id = um.membership_plan_id;
 -- ============================================
 -- COMPLETION MESSAGE
 -- ============================================
+
+-- ============================================
+-- NEWSLETTER SUBSCRIPTIONS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE NOT NULL,
+    subscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE,
+    unsubscribed_at TIMESTAMP WITH TIME ZONE,
+    source TEXT DEFAULT 'website_footer', -- Track where subscription came from
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for newsletter subscriptions
+CREATE INDEX IF NOT EXISTS idx_newsletter_subscriptions_email ON newsletter_subscriptions(email);
+CREATE INDEX IF NOT EXISTS idx_newsletter_subscriptions_active ON newsletter_subscriptions(is_active) WHERE is_active = TRUE;
+
+-- RLS Policies for newsletter_subscriptions
+ALTER TABLE newsletter_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to insert (subscribe)
+DROP POLICY IF EXISTS "Allow public newsletter subscriptions" ON newsletter_subscriptions;
+CREATE POLICY "Allow public newsletter subscriptions" ON newsletter_subscriptions
+    FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+-- Allow authenticated users to view their own subscription
+DROP POLICY IF EXISTS "Users can view own subscription" ON newsletter_subscriptions;
+CREATE POLICY "Users can view own subscription" ON newsletter_subscriptions
+    FOR SELECT
+    TO authenticated
+    USING (true);
+
+-- Allow service role to manage all subscriptions
+DROP POLICY IF EXISTS "Service role can manage all subscriptions" ON newsletter_subscriptions;
+CREATE POLICY "Service role can manage all subscriptions" ON newsletter_subscriptions
+    FOR ALL
+    TO service_role
+    USING (true);
 
 DO $$
 BEGIN

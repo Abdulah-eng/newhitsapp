@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { createSupabaseServerComponentClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
-import { logPaymentCompleted, logAppointmentStatusChange, logMembershipCreated, logMembershipCancelled } from "@/lib/utils/activityLogger";
+import { logPaymentCompleted, logAppointmentStatusChange, logMembershipCreated, logMembershipCancelled, logMembershipReinstated } from "@/lib/utils/activityLogger";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -98,11 +98,106 @@ async function handlePaymentSuccess(
   supabase: any
 ) {
   const appointmentId = paymentIntent.metadata.appointment_id;
+  const subscriptionId = paymentIntent.metadata.subscription_id;
+  const userId = paymentIntent.metadata.user_id;
+  const membershipPlanId = paymentIntent.metadata.membership_plan_id;
 
-  console.log(`[Webhook] Payment Intent ${paymentIntent.id} succeeded. Appointment ID: ${appointmentId}`);
+  console.log(`[Webhook] Payment Intent ${paymentIntent.id} succeeded.`);
+  console.log(`[Webhook] Metadata:`, paymentIntent.metadata);
 
+  // Handle subscription payment (membership)
+  if (subscriptionId && userId && membershipPlanId) {
+    console.log(`[Webhook] Processing subscription payment for subscription ${subscriptionId}`);
+    
+    // Retrieve subscription to verify status
+    try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      if (subscription.status === "active" || subscription.status === "trialing") {
+        // Check if membership already exists
+        const { data: existingMembership } = await supabase
+          .from("user_memberships")
+          .select("*")
+          .eq("stripe_subscription_id", subscriptionId)
+          .maybeSingle();
+
+        if (existingMembership) {
+          // Update existing membership
+          await supabase
+            .from("user_memberships")
+            .update({
+              status: "active",
+              next_billing_date: (subscription as any).current_period_end
+                ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
+                : null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingMembership.id);
+          
+          console.log(`[Webhook] Updated existing membership ${existingMembership.id}`);
+        } else {
+          // Create new membership
+          const { data: newMembership, error: createError } = await supabase
+            .from("user_memberships")
+            .insert({
+              user_id: userId,
+              membership_plan_id: membershipPlanId,
+              status: "active",
+              stripe_subscription_id: subscriptionId,
+              stripe_customer_id: typeof subscription.customer === "string"
+                ? subscription.customer
+                : subscription.customer?.id || "",
+              next_billing_date: (subscription as any).current_period_end
+                ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
+                : null,
+              started_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("[Webhook] Error creating membership:", createError);
+            return;
+          }
+
+          if (newMembership) {
+            // Update senior profile with membership_id
+            await supabase
+              .from("senior_profiles")
+              .update({ membership_id: newMembership.id })
+              .eq("user_id", userId);
+
+            // Log membership creation
+            const { data: plan } = await supabase
+              .from("membership_plans")
+              .select("name, plan_type, monthly_price")
+              .eq("id", membershipPlanId)
+              .single();
+
+            if (plan) {
+              await logMembershipCreated(
+                newMembership.id,
+                userId,
+                plan.plan_type,
+                plan.monthly_price
+              );
+            }
+
+            console.log(`[Webhook] Created new membership ${newMembership.id} for user ${userId}`);
+          }
+        }
+      }
+    } catch (subscriptionError: any) {
+      console.error("[Webhook] Error processing subscription payment:", subscriptionError);
+    }
+    
+    // Return early - don't process as appointment payment
+    return;
+  }
+
+  // Handle appointment payment (existing logic)
   if (!appointmentId) {
-    console.error("[Webhook] No appointment_id in payment intent metadata. Metadata:", paymentIntent.metadata);
+    console.error("[Webhook] No appointment_id or subscription_id in payment intent metadata. Metadata:", paymentIntent.metadata);
     return;
   }
 
@@ -300,43 +395,80 @@ async function handleSubscriptionUpdate(
     .eq("stripe_subscription_id", subscription.id)
     .maybeSingle();
 
-  const membershipData = {
+  const updates: Record<string, any> = {
     user_id: userId,
     membership_plan_id: membershipPlanId,
     status: subscription.status === "active" ? "active" : "cancelled",
     stripe_subscription_id: subscription.id,
-    stripe_customer_id: typeof subscription.customer === "string" 
-      ? subscription.customer 
-      : subscription.customer?.id || "",
+    stripe_customer_id:
+      typeof subscription.customer === "string"
+        ? subscription.customer
+        : subscription.customer?.id || "",
     next_billing_date: (subscription as any).current_period_end
       ? new Date((subscription as any).current_period_end * 1000).toISOString().split("T")[0]
       : null,
     updated_at: new Date().toISOString(),
   };
 
+  if (subscription.cancel_at_period_end) {
+    updates.cancellation_requested_at = new Date().toISOString();
+    updates.cancellation_effective_date = subscription.cancel_at
+      ? new Date(subscription.cancel_at * 1000).toISOString().split("T")[0]
+      : updates.next_billing_date;
+    updates.cancellation_reason =
+      updates.cancellation_reason || "User requested cancellation";
+  } else {
+    updates.cancellation_requested_at = null;
+    updates.cancellation_effective_date = null;
+  }
+
+  if (subscription.status === "active") {
+    updates.cancelled_at = null;
+    updates.cancellation_reason = null;
+  }
+
   if (existingMembership) {
-    await supabase
-      .from("user_memberships")
-      .update(membershipData)
-      .eq("id", existingMembership.id);
+    const wasCancelled = existingMembership.status === "cancelled";
+
+    if (subscription.status === "active" && wasCancelled) {
+      updates.reactivated_at = new Date().toISOString();
+      updates.reactivated_from_membership_id = existingMembership.id;
+    } else if (subscription.status !== "active") {
+      updates.reactivated_at = null;
+    }
+
+    await supabase.from("user_memberships").update(updates).eq("id", existingMembership.id);
+
+    if (subscription.status === "active" && wasCancelled) {
+      await supabase
+        .from("senior_profiles")
+        .update({ membership_id: existingMembership.id })
+        .eq("user_id", userId);
+
+      const { data: plan } = await supabase
+        .from("membership_plans")
+        .select("plan_type")
+        .eq("id", membershipPlanId)
+        .single();
+
+      await logMembershipReinstated(existingMembership.id, userId, plan?.plan_type);
+    }
   } else {
     const { data: newMembership } = await supabase
       .from("user_memberships")
       .insert({
-        ...membershipData,
+        ...updates,
         started_at: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (newMembership && subscription.status === "active") {
-      // Update senior profile with membership_id
       await supabase
         .from("senior_profiles")
         .update({ membership_id: newMembership.id })
         .eq("user_id", userId);
 
-      // Log membership creation
       const { data: plan } = await supabase
         .from("membership_plans")
         .select("name, plan_type, monthly_price")
@@ -344,12 +476,7 @@ async function handleSubscriptionUpdate(
         .single();
 
       if (plan) {
-        await logMembershipCreated(
-          newMembership.id,
-          userId,
-          plan.plan_type,
-          plan.monthly_price
-        );
+        await logMembershipCreated(newMembership.id, userId, plan.plan_type, plan.monthly_price);
       }
     }
   }
@@ -371,6 +498,10 @@ async function handleSubscriptionDeleted(
       .update({
         status: "cancelled",
         cancelled_at: new Date().toISOString(),
+        cancellation_effective_date: subscription.canceled_at
+          ? new Date(subscription.canceled_at * 1000).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+        cancellation_reason: membership.cancellation_reason || "Subscription cancelled via Stripe",
         updated_at: new Date().toISOString(),
       })
       .eq("id", membership.id);

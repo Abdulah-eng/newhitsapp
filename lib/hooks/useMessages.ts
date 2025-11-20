@@ -197,13 +197,17 @@ export function useMessages(options: UseMessagesOptions = {}) {
         return null;
       }
 
-      // Optimistically add message to local state for immediate UI feedback
+      const trimmed = content.trim();
+      if (!trimmed) {
+        return null;
+      }
+
       const tempMessage: Message = {
         id: `temp-${Date.now()}`,
         sender_id: user.id,
         receiver_id: receiverId,
         appointment_id: appointmentId || undefined,
-        content,
+        content: trimmed,
         attachments: attachments || [],
         created_at: new Date().toISOString(),
         read_at: undefined,
@@ -211,32 +215,39 @@ export function useMessages(options: UseMessagesOptions = {}) {
 
       setMessages((prev) => [...prev, tempMessage]);
 
-      const { data, error: sendError } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: user.id,
-          receiver_id: receiverId,
-          appointment_id: appointmentId || null,
-          content,
-          attachments: attachments || [],
-        })
-        .select()
-        .single();
+      try {
+        const response = await fetch("/api/messages/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receiverId,
+            content: trimmed,
+            appointmentId: appointmentId || null,
+            attachments: attachments || [],
+          }),
+        });
 
-      if (sendError) {
-        // Remove temp message on error
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to send message");
+        }
+
+        const data = await response.json();
+        const realMessage = data.message as Message;
+
+        setMessages((prev) =>
+          [...prev.filter((msg) => msg.id !== tempMessage.id), realMessage].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
+        );
+
+        return realMessage;
+      } catch (err: any) {
+        console.error("Error sending message:", err);
         setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
-        setError(sendError.message);
+        setError(err.message || "Failed to send message");
         return null;
       }
-
-      // Replace temp message with real message from database
-      const realMessage = data as Message;
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === tempMessage.id ? realMessage : msg))
-      );
-
-      return realMessage;
     },
     [appointmentId, supabase]
   );

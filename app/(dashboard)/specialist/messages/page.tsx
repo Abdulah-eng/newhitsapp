@@ -16,16 +16,8 @@ function SpecialistMessagesPageContent() {
   const { conversations, isLoading } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-      return;
-    }
-    if (user?.role !== "specialist") {
-      router.push("/");
-      return;
-    }
-  }, [user, authLoading, router]);
+  // Authentication and role checking is handled by the layout
+  // No need to duplicate redirect logic here
 
   const filteredConversations = conversations.filter((conv) =>
     conv.otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase())

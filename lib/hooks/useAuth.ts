@@ -7,6 +7,7 @@ import type { UserRole } from "@/types";
 
 interface AuthUser extends User {
   role?: UserRole;
+  full_name?: string;
 }
 
 export function useAuth() {
@@ -23,6 +24,7 @@ export function useAuth() {
       
       // First check user_metadata
       let role = (u.user_metadata?.role as UserRole | undefined);
+      let fullName = u.user_metadata?.full_name as string | undefined;
       
       // If no role in metadata, check if admin email
       if (!role && u.email?.toLowerCase() === "admin@hitspecialist.com") {
@@ -30,23 +32,30 @@ export function useAuth() {
       }
       
       // If still no role, try to fetch from database
-      if (!role) {
+      if (!role || !fullName) {
         try {
           const { data } = await supabase
             .from("users")
-            .select("role")
+            .select("role, full_name")
             .eq("id", u.id)
             .single();
           if (data?.role) {
             role = data.role as UserRole;
           }
+          if (data?.full_name) {
+            fullName = data.full_name as string;
+          }
         } catch (error) {
           // Silently fail - role will remain undefined
-          console.error("Error fetching user role:", error);
+          console.error("Error fetching user role or name:", error);
         }
       }
       
-      return { ...u, role };
+      return {
+        ...u,
+        role,
+        full_name: fullName,
+      };
     };
 
     const init = async () => {

@@ -7,8 +7,9 @@ import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Save, CheckCircle, AlertCircle, ArrowLeft, User, Phone, Mail, MapPin } from "lucide-react";
+import { Save, CheckCircle, AlertCircle, ArrowLeft, User, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
+import ChangePasswordCard from "@/components/account/ChangePasswordCard";
 
 export default function SeniorProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -105,6 +106,13 @@ export default function SeniorProfilePage() {
 
       if (userError) throw userError;
 
+      // Update auth metadata so dashboards reflect new name immediately
+      await supabase.auth.updateUser({
+        data: {
+          full_name: formData.full_name,
+        },
+      });
+
       // Update or create senior profile
       const { error: profileError } = await supabase
         .from("senior_profiles")
@@ -196,6 +204,10 @@ export default function SeniorProfilePage() {
             </p>
           </motion.div>
         )}
+
+        <motion.div variants={slideUp} className="mb-8">
+          <ChangePasswordCard description="Your initial password matches your email address. Update it to keep your account secure." />
+        </motion.div>
 
         <motion.div variants={slideUp} className="card bg-white p-8">
           <form onSubmit={handleSave} className="space-y-6">

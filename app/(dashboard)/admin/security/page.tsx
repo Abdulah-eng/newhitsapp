@@ -7,6 +7,7 @@ import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations
 import { Shield, ArrowLeft, AlertTriangle, CheckCircle, Clock, User, Lock, Activity } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import ChangePasswordCard from "@/components/account/ChangePasswordCard";
 
 interface SecurityEvent {
   id: string;
@@ -166,6 +167,12 @@ export default function AdminSecurityPage() {
           <p className="text-xl text-text-secondary">
             Monitor security events and generate audit reports
           </p>
+        </motion.div>
+
+        <motion.div variants={slideUp} className="mb-8">
+          <ChangePasswordCard
+            description="Your initial password matches your email address. Update it to something unique to keep the admin area secure."
+          />
         </motion.div>
 
         {/* Stats Cards */}

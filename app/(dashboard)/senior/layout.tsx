@@ -26,19 +26,33 @@ export default function SeniorLayout({
       
       // Wait a bit for role to be fetched if user exists but role is not set yet
       if (user && user.role === undefined) {
-        // Role is still being fetched, wait a bit
+        // Role is still being fetched, wait longer to allow DB fetch to complete
         const timer = setTimeout(() => {
+          // Re-check user.role after timeout - it might have been loaded
           if (user.role !== "senior" && !hasRedirected.current) {
             hasRedirected.current = true;
-            router.push("/login");
+            if (user.role === "specialist") {
+              router.replace("/specialist/dashboard");
+            } else if (user.role === "admin") {
+              router.replace("/admin/dashboard");
+            } else {
+              router.push("/login");
+            }
           }
-        }, 1000);
+        }, 3000); // Increased timeout to allow DB fetch
         return () => clearTimeout(timer);
       }
       
+      // Role is defined - check and redirect if not senior
       if (user.role !== "senior") {
         hasRedirected.current = true;
-        router.push("/login");
+        if (user.role === "specialist") {
+          router.replace("/specialist/dashboard");
+        } else if (user.role === "admin") {
+          router.replace("/admin/dashboard");
+        } else {
+          router.push("/login");
+        }
       }
     }
   }, [user, loading, router]);
@@ -62,7 +76,7 @@ export default function SeniorLayout({
         <>
           <DashboardHeader />
           <main className="min-h-screen bg-secondary-100">
-            <div className="max-w-7xl mx-auto px-14 md:px-18 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-14 py-4 sm:py-6 md:py-8">
               {children}
             </div>
           </main>

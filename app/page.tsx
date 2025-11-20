@@ -47,6 +47,9 @@ const loopFloat = {
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   
   const getDashboardLink = () => {
     if (!user) return "/login";
@@ -66,16 +69,16 @@ export default function HomePage() {
     <main className="min-h-screen bg-secondary-100 text-text-primary">
       {/* Header (matched spacing/scale) */}
       <header className="z-40 bg-white">
-        <div className="w-full px-6 md:px-10">
-          <div className="flex items-center justify-between gap-8 py-6 md:py-8">
+        <div className="w-full px-4 sm:px-6 md:px-10">
+          <div className="flex items-center justify-between gap-4 sm:gap-6 md:gap-8 py-4 sm:py-6 md:py-8">
             {/* Brand */}
-            <Link href="/" className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
-                <span className="text-primary-600 font-extrabold text-xl">H</span>
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl border-2 sm:border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
+                <span className="text-primary-600 font-extrabold text-sm sm:text-base md:text-xl">H</span>
               </div>
               <div>
-                <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
-                <p className="text-sm text-text-secondary">Hire IT Specialists</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
+                <p className="text-xs sm:text-sm text-text-secondary hidden sm:block">Hire IT Specialists</p>
               </div>
             </Link>
 
@@ -91,6 +94,15 @@ export default function HomePage() {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-3">
+              <Link href="/specialists">
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="px-6 h-12 text-[16px] text-primary-700 hover:text-primary-600"
+                >
+                  Find Specialist
+                </Button>
+              </Link>
               {user ? (
                 <Link href={getDashboardLink()}>
                   <Button
@@ -101,14 +113,25 @@ export default function HomePage() {
                   </Button>
                 </Link>
               ) : (
-                <Link href="/login">
-                  <Button
-                    size="lg"
-                    className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
-                  >
-                    Sign in
-                  </Button>
-                </Link>
+                <>
+                  <Link href="/login">
+                    <Button
+                      size="lg"
+                      variant="ghost"
+                      className="px-6 h-12 text-[16px] text-primary-700 hover:text-primary-600"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button
+                      size="lg"
+                      className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                    >
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
 
@@ -126,7 +149,7 @@ export default function HomePage() {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="lg:hidden bg-white">
-            <div className="max-w-6xl mx-auto px-6 md:px-10 py-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-4 sm:py-6">
               <nav className="grid gap-3 text-[18px] font-semibold text-primary-900">
                 <Link onClick={() => setMobileOpen(false)} href="/about" className="py-2 hover:text-primary-600">About</Link>
                 <Link onClick={() => setMobileOpen(false)} href="/for-seniors-families" className="py-2 hover:text-primary-600">For Seniors & Families</Link>
@@ -135,19 +158,31 @@ export default function HomePage() {
                 <Link onClick={() => setMobileOpen(false)} href="/plans" className="py-2 hover:text-primary-600">Pricing & Plans</Link>
                 <Link onClick={() => setMobileOpen(false)} href="/contact" className="py-2 hover:text-primary-600">Contact / Support</Link>
               </nav>
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-4 space-y-3">
+                <Link onClick={() => setMobileOpen(false)} href="/specialists" className="block">
+                  <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
+                    Find Specialist
+                  </Button>
+                </Link>
                 {user ? (
-                  <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
+                  <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="block">
                     <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                       Dashboard
                     </Button>
                   </Link>
                 ) : (
-                  <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                    <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
-                      Sign in
-                    </Button>
-                  </Link>
+                  <>
+                    <Link onClick={() => setMobileOpen(false)} href="/login" className="block">
+                      <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link onClick={() => setMobileOpen(false)} href="/register" className="block">
+                      <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -171,7 +206,7 @@ export default function HomePage() {
           {...loopFloat}
           transition={{ ...loopFloat.transition, duration: 8 }}
         />
-        <div className="relative max-w-7xl mx-auto px-12 md:px-16 py-6 md:py-8 text-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-12 text-center">
           <motion.div variants={staggerChildren} className="max-w-4xl mx-auto">
             <motion.h1
               variants={fadeUp(0)}
@@ -223,7 +258,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-secondary-100"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center">
             How HITS Works
           </motion.h2>
@@ -276,7 +311,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
             Problems HITS Solves
           </motion.h2>
@@ -361,7 +396,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-secondary-100"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-primary-700 text-center mb-4">
             Who HITS Is For
           </motion.h2>
@@ -433,7 +468,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-primary-700 text-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[36px] md:text-[48px] font-extrabold text-center mb-8 text-white">
             Trust & Safety
           </motion.h2>
@@ -470,7 +505,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.25 }}
         className="bg-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[40px] md:text-[48px] font-extrabold text-primary-600 text-center">
             What HITS Does
           </motion.h2>
@@ -573,7 +608,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.25 }}
         className="bg-white border-t border-b border-secondary-200"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[40px] md:text-[48px] font-extrabold text-primary-600 text-center">
             I need HITS for…
           </motion.h2>
@@ -640,7 +675,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-600">
             Why HITS?
           </motion.h2>
@@ -678,7 +713,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.3 }}
         className="bg-secondary-100"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.h2 variants={fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center">
             What our members say
           </motion.h2>
@@ -719,7 +754,7 @@ export default function HomePage() {
         viewport={{ once: true, amount: 0.4 }}
         className="bg-white"
       >
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20">
           <motion.div variants={fadeUp(0)} className="max-w-3xl mx-auto text-center">
             <motion.h2 variants={fadeUp(0)} className="text-[32px] md:text-[40px] font-bold">
               Get free resources and up‑to‑date tips
@@ -754,14 +789,14 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer id="contact" className="bg-secondary-100 border-t border-secondary-200">
-        <div className="max-w-7xl mx-auto px-12 md:px-16 py-16 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-12 sm:py-16 md:py-20 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 sm:gap-12">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
             <div>
               <h4 className="text-[20px] font-extrabold text-primary-700">HITS</h4>
               <ul className="mt-4 space-y-2 text-[16px]">
                 <li><Link href="/consumer-services" className="hover:text-primary-500">Consumers</Link></li>
                 <li><Link href="/enterprise-services" className="hover:text-primary-500">Enterprises</Link></li>
-                <li><Link href="#" className="hover:text-primary-500">In the News</Link></li>
+                <li><Link href="/news" className="hover:text-primary-500">In the News</Link></li>
                 <li><Link href="/howto-offerings" className="hover:text-primary-500">Resources</Link></li>
               </ul>
             </div>
@@ -775,7 +810,17 @@ export default function HomePage() {
             <div>
               <h4 className="text-[20px] font-extrabold text-primary-700">Support</h4>
               <ul className="mt-4 space-y-2 text-[16px]">
-                <li><a href="https://candoo.screenconnect.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500">Member Support</a></li>
+                <li>
+                  <a 
+                    href="https://candoo.screenconnect.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-primary-500"
+                    title="Remote technical support for HITS members"
+                  >
+                    Member Support (Remote Help)
+                  </a>
+                </li>
                 <li><Link href="/faq" className="hover:text-primary-500">FAQ</Link></li>
                 <li><Link href="/safety" className="hover:text-primary-500">Safety &amp; Security</Link></li>
                 <li><Link href="/privacy" className="hover:text-primary-500">Privacy Policy</Link></li>
@@ -790,21 +835,70 @@ export default function HomePage() {
             <p className="mt-3 text-[15px] text-text-secondary">
               Join our newsletter to get the latest news and tips.
             </p>
-            <form className="mt-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form 
+              className="mt-6 space-y-4" 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setNewsletterLoading(true);
+                setNewsletterMessage(null);
+
+                try {
+                  const response = await fetch("/api/newsletter/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: newsletterEmail }),
+                  });
+
+                  const data = await response.json();
+
+                  if (!response.ok) {
+                    setNewsletterMessage({ type: "error", text: data.error || "Failed to subscribe. Please try again." });
+                  } else {
+                    setNewsletterMessage({ type: "success", text: data.message || "Successfully subscribed!" });
+                    setNewsletterEmail("");
+                    // Clear success message after 5 seconds
+                    setTimeout(() => setNewsletterMessage(null), 5000);
+                  }
+                } catch (error: any) {
+                  console.error("Newsletter subscription error:", error);
+                  setNewsletterMessage({ type: "error", text: "An error occurred. Please try again later." });
+                } finally {
+                  setNewsletterLoading(false);
+                }
+              }}
+            >
               <input
                 type="email"
                 required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Email Address"
-                className="w-full h-12 px-4 rounded-lg border border-secondary-300 focus:outline-none focus:ring-2 focus:ring-primary-300"
+                disabled={newsletterLoading}
+                className="w-full h-12 px-4 rounded-lg border border-secondary-300 focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:bg-secondary-100 disabled:cursor-not-allowed"
               />
-              <Button className="w-full h-12 bg-primary-600 text-white font-semibold hover:bg-primary-700">
-                SUBMIT
+              {newsletterMessage && (
+                <div
+                  className={`p-3 rounded-lg text-sm ${
+                    newsletterMessage.type === "success"
+                      ? "bg-green-50 border border-green-200 text-green-700"
+                      : "bg-error-50 border border-error-200 text-error-700"
+                  }`}
+                >
+                  {newsletterMessage.text}
+                </div>
+              )}
+              <Button 
+                type="submit"
+                className="w-full h-12 bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={newsletterLoading}
+              >
+                {newsletterLoading ? "SUBSCRIBING..." : "SUBMIT"}
               </Button>
             </form>
           </div>
         </div>
         <div className="border-t border-secondary-200">
-          <div className="max-w-7xl mx-auto px-12 md:px-16 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-4 sm:py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center justify-center gap-4 text-[14px]">
                 <Link href="/terms" className="text-text-secondary hover:text-primary-500">Terms & Conditions</Link>

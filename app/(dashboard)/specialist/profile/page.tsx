@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Save, Upload, CheckCircle, AlertCircle, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import ChangePasswordCard from "@/components/account/ChangePasswordCard";
 
 export default function SpecialistProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -246,6 +247,10 @@ export default function SpecialistProfilePage() {
             </p>
           </motion.div>
         )}
+
+        <motion.div variants={slideUp} className="mb-8">
+          <ChangePasswordCard description="Your initial password matches your email address. Update it to keep your specialist account secure." />
+        </motion.div>
 
         <motion.form
           variants={staggerContainer}

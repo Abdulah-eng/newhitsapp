@@ -124,7 +124,7 @@ export default function SpecialistDashboard() {
       >
         <motion.div variants={slideUp} className="mb-8">
           <h1 className="text-4xl font-bold text-primary-500 mb-2">
-            Welcome back, {user.user_metadata?.full_name?.split(" ")[0] || "User"}!
+            Welcome back, {(user.user_metadata?.full_name || user.full_name || "User").split(" ")[0]}!
           </h1>
           <p className="text-xl text-text-secondary">
             Manage your appointments and help seniors with technology

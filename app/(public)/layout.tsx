@@ -14,12 +14,12 @@ export default function PublicLayout({
   return (
     <div className="min-h-screen bg-secondary-100">
       <nav className="bg-white shadow-soft border-b border-secondary-200">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold text-primary-500">
+            <Link href="/" className="text-lg sm:text-xl font-bold text-primary-500">
               HITS
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <Link href="/specialists">
                 <Button variant="ghost" size="sm">
                   Find Specialists

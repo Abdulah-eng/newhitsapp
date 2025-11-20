@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
-import { DollarSign, ArrowLeft, Search, Filter, CheckCircle, X, AlertCircle, Clock, TrendingUp, Download } from "lucide-react";
+import { DollarSign, ArrowLeft, Search, Filter, X, TrendingUp, Download, XCircle } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -32,8 +32,11 @@ interface Payment {
   appointment?: {
     scheduled_at: string;
     status: string;
+    issue_description: string;
   };
 }
+
+const PLATFORM_FEE_PERCENTAGE = 0.15;
 
 export default function AdminPaymentsPage() {
   const supabase = createSupabaseBrowserClient();
@@ -42,6 +45,9 @@ export default function AdminPaymentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     fetchPayments();
@@ -66,8 +72,19 @@ export default function AdminPaymentsPage() {
       );
     }
 
+    if (startDate) {
+      const start = new Date(startDate);
+      filtered = filtered.filter((payment) => new Date(payment.created_at) >= start);
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((payment) => new Date(payment.created_at) <= end);
+    }
+
     setFilteredPayments(filtered);
-  }, [payments, statusFilter, searchQuery]);
+  }, [payments, statusFilter, searchQuery, startDate, endDate]);
 
   const fetchPayments = async () => {
     setIsLoading(true);
@@ -103,7 +120,7 @@ export default function AdminPaymentsPage() {
           .in("id", allUserIds),
         supabase
           .from("appointments")
-          .select("id, scheduled_at, status")
+          .select("id, scheduled_at, status, issue_description")
           .in("id", appointmentIds),
       ]);
 
@@ -177,6 +194,78 @@ export default function AdminPaymentsPage() {
   };
 
   const stats = getStats();
+
+  const payoutStatusLabel = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "Paid";
+      case "pending":
+        return "Processing";
+      case "refunded":
+        return "Refunded";
+      case "failed":
+        return "Failed";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const handleExport = () => {
+    if (filteredPayments.length === 0) {
+      alert("No payments to export. Adjust filters or date range.");
+      return;
+    }
+
+    const headers = [
+      "Date",
+      "Client",
+      "Specialist",
+      "Job Description",
+      "Amount",
+      "Stripe Charge ID",
+      "Payout Status",
+    ];
+
+    const rows = filteredPayments.map((payment) => {
+      const date = new Date(payment.created_at).toLocaleString();
+      const jobDescription = payment.appointment?.issue_description || "N/A";
+      return [
+        date,
+        payment.senior.full_name,
+        payment.specialist.full_name,
+        jobDescription.replace(/[\r\n]+/g, " "),
+        Number(payment.amount).toFixed(2),
+        payment.stripe_payment_id || "N/A",
+        payoutStatusLabel(payment.status),
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payments_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const selectedPaymentBreakdown = useMemo(() => {
+    if (!selectedPayment) return null;
+    const total = Number(selectedPayment.amount) || 0;
+    const fee = total * PLATFORM_FEE_PERCENTAGE;
+    const payout = total - fee - Number(selectedPayment.refund_amount || 0);
+    return {
+      total,
+      fee,
+      payout: Math.max(payout, 0),
+    };
+  }, [selectedPayment]);
 
   return (
     <div>
@@ -261,7 +350,7 @@ export default function AdminPaymentsPage() {
         </div>
 
         {/* Filters */}
-        <motion.div variants={slideUp} className="card bg-white p-6 mb-6">
+        <motion.div variants={slideUp} className="card bg-white p-6 mb-6 space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -288,6 +377,22 @@ export default function AdminPaymentsPage() {
                 <option value="refunded">Refunded</option>
                 <option value="failed">Failed</option>
               </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-text-secondary mb-1">Start Date</label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-text-secondary mb-1">End Date</label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+            <div className="flex items-end justify-start md:justify-end">
+              <Button variant="primary" size="lg" className="w-full md:w-auto flex items-center gap-2" onClick={handleExport}>
+                <Download size={18} />
+                Export CSV
+              </Button>
             </div>
           </div>
         </motion.div>
@@ -319,7 +424,8 @@ export default function AdminPaymentsPage() {
               <motion.div
                 key={payment.id}
                 variants={staggerItem}
-                className="card bg-white p-6 hover:shadow-medium transition-shadow"
+                className="card bg-white p-6 hover:shadow-medium transition-shadow cursor-pointer"
+                onClick={() => setSelectedPayment(payment)}
               >
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                   <div className="flex-1">
@@ -411,6 +517,108 @@ export default function AdminPaymentsPage() {
           </motion.div>
         )}
       </motion.div>
+
+      {selectedPayment && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4 py-8">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative">
+            <button
+              onClick={() => setSelectedPayment(null)}
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary"
+            >
+              <XCircle size={22} />
+            </button>
+            <div className="mb-6">
+              <p className="text-sm text-text-secondary mb-1">
+                Payment ID: {selectedPayment.id}
+              </p>
+              <h2 className="text-3xl font-bold text-primary-600 mb-2">
+                ${Number(selectedPayment.amount).toFixed(2)}
+              </h2>
+              <p className="text-sm text-text-secondary">
+                {new Date(selectedPayment.created_at).toLocaleString()}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-secondary-50 rounded-xl">
+                <p className="text-xs uppercase text-text-tertiary mb-1">Client</p>
+                <p className="text-lg font-semibold">{selectedPayment.senior.full_name}</p>
+                <p className="text-sm text-text-secondary">{selectedPayment.senior.email}</p>
+              </div>
+              <div className="p-4 bg-secondary-50 rounded-xl">
+                <p className="text-xs uppercase text-text-tertiary mb-1">Specialist</p>
+                <p className="text-lg font-semibold">{selectedPayment.specialist.full_name}</p>
+                <p className="text-sm text-text-secondary">{selectedPayment.specialist.email}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <DetailItem label="Job Description" value={selectedPayment.appointment?.issue_description || "N/A"} />
+              <DetailItem
+                label="Date of Service"
+                value={
+                  selectedPayment.appointment?.scheduled_at
+                    ? new Date(selectedPayment.appointment.scheduled_at).toLocaleString()
+                    : "N/A"
+                }
+              />
+              <DetailItem label="Payment Status" value={selectedPayment.status.toUpperCase()} />
+              <DetailItem label="Payout Status" value={payoutStatusLabel(selectedPayment.status)} />
+              <DetailItem label="Stripe Payment ID" value={selectedPayment.stripe_payment_id || "N/A"} />
+              <DetailItem label="Payment Method" value={selectedPayment.payment_method || "Stripe"} />
+            </div>
+
+            {selectedPaymentBreakdown && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-3">Payment Breakdown</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <BreakdownCard title="Total Amount" value={selectedPaymentBreakdown.total} />
+                  <BreakdownCard
+                    title={`HITS Fee (${(PLATFORM_FEE_PERCENTAGE * 100).toFixed(0)}%)`}
+                    value={selectedPaymentBreakdown.fee}
+                  />
+                  <BreakdownCard title="Specialist Payout" value={selectedPaymentBreakdown.payout} highlight />
+                </div>
+              </div>
+            )}
+
+            {selectedPayment.refund_amount > 0 && (
+              <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-xl">
+                <p className="text-sm font-semibold text-error-700 mb-1">Refund Details</p>
+                <p className="text-sm text-error-600">
+                  Amount Refunded: ${Number(selectedPayment.refund_amount).toFixed(2)}
+                </p>
+                {selectedPayment.refund_reason && (
+                  <p className="text-sm text-error-600 mt-1">Reason: {selectedPayment.refund_reason}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase text-text-tertiary mb-1">{label}</p>
+      <p className="text-sm font-semibold text-text-primary whitespace-pre-wrap break-words">{value}</p>
+    </div>
+  );
+}
+
+function BreakdownCard({ title, value, highlight }: { title: string; value: number; highlight?: boolean }) {
+  return (
+    <div
+      className={`p-4 rounded-xl border ${
+        highlight ? "bg-success-50 border-success-200" : "bg-secondary-50 border-secondary-200"
+      }`}
+    >
+      <p className="text-xs uppercase text-text-tertiary mb-1">{title}</p>
+      <p className="text-xl font-semibold text-text-primary">${value.toFixed(2)}</p>
+    </div>
+  );
+}
+

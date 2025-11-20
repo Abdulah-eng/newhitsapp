@@ -22,6 +22,7 @@ CREATE TABLE users (
     full_name TEXT NOT NULL,
     phone TEXT,
     avatar_url TEXT,
+    stripe_customer_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -29,6 +30,7 @@ CREATE TABLE users (
 -- Indexes for users
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
 
 -- ============================================
 -- SENIOR PROFILES TABLE
@@ -401,13 +403,16 @@ CREATE POLICY "Users can update own notifications" ON notifications
 -- Or use the following SQL (if your Supabase version supports it):
 
 -- Avatars bucket
--- INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;
 
 -- Documents bucket (for certifications, etc.)
--- INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false) ON CONFLICT (id) DO NOTHING;
 
 -- Message attachments bucket
--- INSERT INTO storage.buckets (id, name, public) VALUES ('attachments', 'attachments', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('attachments', 'attachments', false) ON CONFLICT (id) DO NOTHING;
+
+-- Resources bucket (for downloadable resources)
+INSERT INTO storage.buckets (id, name, public) VALUES ('resources', 'resources', true) ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
 -- SAMPLE DATA (Optional - for testing)

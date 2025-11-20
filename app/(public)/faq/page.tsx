@@ -92,6 +92,26 @@ const faqs = [
     ),
   },
   {
+    question: "What is the 'Member Support (Remote Help)' link?",
+    answer: (
+      <>
+        The Member Support link provides access to our secure remote support tool (CanDoo ScreenConnect). This tool allows HITS members to receive real-time technical assistance from our specialists directly on their computer or device.
+        <br /><br />
+        <strong>How it works:</strong>
+        <br />
+        • Click the "Member Support (Remote Help)" link in the footer
+        <br />
+        • You'll be connected to our secure remote support portal
+        <br />
+        • A HITS specialist can then help you with your device remotely, with your permission
+        <br /><br />
+        This service is available to HITS members and is used for scheduled remote support sessions. If you need immediate help, please contact us at{" "}
+        <a href="mailto:support@hitsapp.com" className="text-primary-600 hover:text-primary-700">support@hitsapp.com</a> or call{" "}
+        <a href="tel:6467586606" className="text-primary-600 hover:text-primary-700">(646) 758-6606</a>.
+      </>
+    ),
+  },
+  {
     question: "How does pricing work?",
     answer: (
       <>

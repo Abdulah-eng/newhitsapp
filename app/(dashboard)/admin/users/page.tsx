@@ -215,7 +215,7 @@ function AdminUsersPageContent() {
         throw new Error(error.message || "Failed to create user");
       }
 
-      alert("User created successfully! Password reset email has been sent.");
+      alert("User created successfully! Their temporary password is their email address.");
       setShowCreateModal(false);
       setCreateUserData({ email: "", full_name: "", role: "senior", phone: "" });
       await fetchUsers();
@@ -579,7 +579,7 @@ function AdminUsersPageContent() {
               </form>
 
               <p className="text-xs text-text-secondary mt-4">
-                A password reset email will be sent to the user's email address.
+                The user's initial password will be their email address. Remind them to change it after signing in.
               </p>
             </motion.div>
           </div>

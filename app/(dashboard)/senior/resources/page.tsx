@@ -4,43 +4,35 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useMembership } from "@/lib/hooks/useMembership";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { FileText, Video, Users, Mail, Lock, CheckCircle, Crown } from "lucide-react";
+import { FileText, Video, Users, Mail, Lock, CheckCircle, Crown, Download, AlertCircle } from "lucide-react";
 
-const memberResources = {
-  connect: [
-    { type: "pdf", title: "Quick Reference: Video Calls", icon: FileText },
-    { type: "pdf", title: "Quick Reference: Email Basics", icon: FileText },
-    { type: "pdf", title: "Quick Reference: Password Reset", icon: FileText },
-    { type: "pdf", title: "Quick Reference: Wi-Fi Troubleshooting", icon: FileText },
-  ],
-  comfort: [
-    { type: "pdf", title: "All Connect Plan Resources", icon: FileText },
-    { type: "video", title: "Setting Up Your First Smartphone", icon: Video },
-    { type: "pdf", title: "Safe Online Shopping Guide", icon: FileText },
-    { type: "pdf", title: "Telehealth Portal Setup", icon: FileText },
-  ],
-  family_care_plus: [
-    { type: "pdf", title: "All Comfort Plan Resources", icon: FileText },
-    { type: "video", title: "Family Tech Support Workshop", icon: Video },
-    { type: "pdf", title: "Caregiver Tech Guide", icon: FileText },
-    { type: "workshop", title: "Monthly Tech Tips Newsletter Archive", icon: Mail },
-  ],
-};
-
-const publicResources = [
-  { type: "pdf", title: "Getting Started with HITS", icon: FileText, public: true },
-  { type: "pdf", title: "Basic Safety Tips", icon: FileText, public: true },
-];
+interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_name: string;
+  file_size: number | null;
+  file_type: string | null;
+  access_level: "free" | "members_only";
+  category: string | null;
+  is_active: boolean;
+  created_at: string;
+}
 
 export default function ResourcesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { membership, hasActiveMembership } = useMembership(user?.id);
-  const [resources, setResources] = useState<any[]>([]);
+  const supabase = createSupabaseBrowserClient();
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,14 +44,55 @@ export default function ResourcesPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (hasActiveMembership && membership?.membership_plan) {
-      const planType = membership.membership_plan.plan_type;
-      const memberRes = memberResources[planType] || [];
-      setResources([...publicResources, ...memberRes]);
-    } else {
-      setResources(publicResources);
+    if (!authLoading && user) {
+      fetchResources();
     }
-  }, [hasActiveMembership, membership]);
+  }, [user, authLoading, hasActiveMembership]);
+
+  const fetchResources = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      let query = supabase
+        .from("resources")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      // If user doesn't have active membership, only show free resources
+      if (!hasActiveMembership) {
+        query = query.eq("access_level", "free");
+      }
+
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) throw fetchError;
+      setResources(data || []);
+    } catch (err: any) {
+      console.error("Error fetching resources:", err);
+      setError("Failed to load resources. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getFileIcon = (fileType: string | null) => {
+    if (!fileType) return FileText;
+    const type = fileType.toLowerCase();
+    if (type === "pdf") return FileText;
+    if (["doc", "docx"].includes(type)) return FileText;
+    if (["ppt", "pptx"].includes(type)) return FileText;
+    if (["xls", "xlsx"].includes(type)) return FileText;
+    return FileText;
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "Unknown size";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   if (authLoading) {
     return (
@@ -127,57 +160,109 @@ export default function ResourcesPage() {
           </motion.div>
         )}
 
-        {/* Resources Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resources.map((resource, idx) => {
-            const Icon = resource.icon;
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="card bg-white p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary-50 rounded-lg">
-                    <Icon className="text-primary-500" size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-text-primary mb-2">
-                      {resource.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      {resource.type === "pdf" && <span>PDF Guide</span>}
-                      {resource.type === "video" && <span>Video Tutorial</span>}
-                      {resource.type === "workshop" && <span>Workshop</span>}
-                      {resource.public && (
-                        <span className="px-2 py-0.5 bg-success-50 text-success-600 rounded text-xs">
-                          Free
-                        </span>
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            variants={slideUp}
+            className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-center gap-3"
+          >
+            <AlertCircle className="text-error-600" size={20} />
+            <span className="text-error-700">{error}</span>
+          </motion.div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          </div>
+        ) : resources.length === 0 ? (
+          <motion.div
+            variants={slideUp}
+            className="text-center py-12 bg-white rounded-lg border border-secondary-200"
+          >
+            <FileText size={48} className="mx-auto text-text-tertiary mb-4" />
+            <h3 className="text-lg font-semibold text-text-primary mb-2">
+              No Resources Available
+            </h3>
+            <p className="text-text-secondary">
+              {!hasActiveMembership
+                ? "Check back soon for free resources, or upgrade to a membership for exclusive content."
+                : "Resources will appear here once they are uploaded."}
+            </p>
+          </motion.div>
+        ) : (
+          /* Resources Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resources.map((resource, idx) => {
+              const Icon = getFileIcon(resource.file_type);
+              return (
+                <motion.div
+                  key={resource.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="card bg-white p-6 hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-primary-50 rounded-lg">
+                      <Icon className="text-primary-500" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-text-primary mb-2">
+                        {resource.title}
+                      </h3>
+                      {resource.description && (
+                        <p className="text-sm text-text-secondary mb-2">
+                          {resource.description}
+                        </p>
                       )}
+                      <div className="flex items-center gap-2 text-sm text-text-secondary flex-wrap">
+                        <span className="uppercase text-xs">
+                          {resource.file_type || "File"}
+                        </span>
+                        {resource.file_size && (
+                          <span>• {formatFileSize(resource.file_size)}</span>
+                        )}
+                        {resource.access_level === "free" ? (
+                          <span className="px-2 py-0.5 bg-success-50 text-success-600 rounded text-xs">
+                            Free
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded text-xs">
+                            Members Only
+                          </span>
+                        )}
+                        {resource.category && (
+                          <span className="px-2 py-0.5 bg-secondary-100 text-text-secondary rounded text-xs">
+                            {resource.category}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => {
-                      // In production, this would link to actual resource files
-                      alert("Resource download coming soon! This will link to the actual resource file.");
-                    }}
-                  >
-                    {resource.type === "pdf" && "Download PDF"}
-                    {resource.type === "video" && "Watch Video"}
-                    {resource.type === "workshop" && "View Archive"}
-                  </Button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <div className="mt-4">
+                    <a
+                      href={resource.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Download size={16} className="mr-2" />
+                        Download {resource.file_type?.toUpperCase() || "File"}
+                      </Button>
+                    </a>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Member-Only Resources Locked */}
         {!hasActiveMembership && (
@@ -192,24 +277,8 @@ export default function ResourcesPage() {
               </h2>
             </div>
             <p className="text-text-secondary mb-4">
-              Unlock additional resources, video tutorials, and workshop archives with a membership plan.
+              Unlock additional resources, guides, and exclusive content with a membership plan.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 opacity-60">
-              {memberResources.comfort.slice(0, 3).map((resource, idx) => {
-                const Icon = resource.icon;
-                return (
-                  <div key={idx} className="p-4 bg-white rounded-lg border border-secondary-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className="text-text-tertiary" size={20} />
-                      <span className="text-sm font-medium text-text-tertiary">
-                        {resource.title}
-                      </span>
-                    </div>
-                    <Lock className="text-text-tertiary" size={16} />
-                  </div>
-                );
-              })}
-            </div>
             <div className="mt-6 text-center">
               <Link href="/senior/membership">
                 <Button variant="primary">

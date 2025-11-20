@@ -21,7 +21,7 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm HITS Assistant, your virtual assistant for questions about HITS. I can help you learn about our services, pricing, and how visits work. How can I help you today?",
+      content: "Hello! I'm HITS virtual assistant. I can help you learn about our services, pricing, and how visits work. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
@@ -124,10 +124,7 @@ export default function AIChatbot() {
             <div className="bg-primary-500 text-white p-4 rounded-t-xl flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bot size={20} />
-                <div>
-                  <h3 className="font-semibold">HITS Assistant</h3>
-                  <p className="text-xs opacity-90">Virtual Assistant</p>
-                </div>
+                <h3 className="text-2xl font-extrabold text-white tracking-tight">HITS</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -138,84 +135,12 @@ export default function AIChatbot() {
               </button>
             </div>
 
-            {/* Quick Links & Shortcuts */}
+            {/* Simple Welcome Message - No Quick Links */}
             {messages.length === 1 && (
-              <div className="p-4 bg-secondary-50 border-b border-secondary-200">
-                <p className="text-xs font-semibold text-primary-700 mb-2">Quick Links:</p>
-                <div className="flex flex-wrap gap-2">
-                  <Link href="/plans" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                    Pricing & Plans
-                  </Link>
-                  <span className="text-text-secondary">•</span>
-                  <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                    Contact Support
-                  </Link>
-                  <span className="text-text-secondary">•</span>
-                  <Link href="/for-seniors-families" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                    For Seniors & Families
-                  </Link>
-                  <span className="text-text-secondary">•</span>
-                  <Link href="/for-partners" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                    For Partners
-                  </Link>
-                </div>
-                {user && user.role === "senior" && (
-                  <div className="mt-3 pt-3 border-t border-secondary-200">
-                    <p className="text-xs font-semibold text-primary-700 mb-2">Your Shortcuts:</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href="/senior/book-appointment" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Book a visit
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/senior/my-appointments" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        My appointments
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/senior/membership" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Membership
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/senior/dashboard" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Dashboard
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Contact support
-                      </Link>
-                    </div>
-                  </div>
-                )}
-                {user && user.role === "specialist" && (
-                  <div className="mt-3 pt-3 border-t border-secondary-200">
-                    <p className="text-xs font-semibold text-primary-700 mb-2">Your Shortcuts:</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href="/specialist/appointments" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        My appointments
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/specialist/earnings" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        View earnings
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/specialist/calendar" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Manage availability
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/specialist/dashboard" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Dashboard
-                      </Link>
-                      <span className="text-text-secondary">•</span>
-                      <Link href="/contact" className="text-xs text-primary-600 hover:text-primary-500 underline">
-                        Contact support
-                      </Link>
-                    </div>
-                  </div>
-                )}
-                <div className="mt-3 pt-3 border-t border-secondary-200">
-                  <p className="text-xs text-text-secondary italic">
-                    HITS Assistant is a virtual assistant, not a live human or emergency service. For emergencies, contact 911 or your local law enforcement.
-                  </p>
-                </div>
+              <div className="p-3 bg-secondary-50 border-b border-secondary-200">
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  I'm a virtual assistant for HITS. I can answer questions about our services, pricing, and how visits work. I'm not a live human and cannot handle emergencies. For emergencies, contact 911 or your local law enforcement. For urgent support, contact us at support@hitsapp.com or (646) 758-6606.
+                </p>
               </div>
             )}
 
@@ -276,9 +201,6 @@ export default function AIChatbot() {
 
             {/* Input */}
             <div className="p-4 border-t border-secondary-200 bg-white rounded-b-xl">
-              <p className="text-xs text-text-secondary mb-2">
-                Please don't share passwords, Social Security numbers, or full bank card numbers in this chat.
-              </p>
               <div className="flex gap-2">
                 <Input
                   value={input}

@@ -9,6 +9,9 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Upload, FileText, X, CheckCircle, AlertCircle, Download } from "lucide-react";
 
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx"];
+
 interface Resource {
   id: string;
   title: string;
@@ -36,7 +39,7 @@ export default function AdminResourcesPage() {
     description: "",
     access_level: "free" as "free" | "members_only",
     category: "",
-    file: null as File | null,
+    files: [] as File[],
   });
 
   useEffect(() => {
@@ -63,15 +66,15 @@ export default function AdminResourcesPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, file: e.target.files[0] });
+    if (e.target.files) {
+      setFormData({ ...formData, files: Array.from(e.target.files) });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.file) {
-      setMessage({ type: "error", text: "Please select a file" });
+    if (!formData.files.length) {
+      setMessage({ type: "error", text: "Please select at least one file" });
       return;
     }
 
@@ -79,47 +82,73 @@ export default function AdminResourcesPage() {
     setMessage(null);
 
     try {
-      // Upload file to Supabase Storage
-      const fileExt = formData.file.name.split(".").pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `resources/${fileName}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("resources")
-        .upload(filePath, formData.file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage.from("resources").getPublicUrl(filePath);
-      const fileUrl = urlData.publicUrl;
-
-      // Insert resource record
-      const { error: insertError } = await supabase.from("resources").insert({
-        title: formData.title,
-        description: formData.description || null,
-        file_url: fileUrl,
-        file_name: formData.file.name,
-        file_size: formData.file.size,
-        file_type: fileExt,
-        access_level: formData.access_level,
-        category: formData.category || null,
-        created_by: user?.id,
-        is_active: true,
+      const invalidFile = formData.files.find((file) => {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) return true;
+        if (file.size > MAX_FILE_SIZE) return true;
+        return false;
       });
 
-      if (insertError) throw insertError;
+      if (invalidFile) {
+        const ext = invalidFile.name.split(".").pop()?.toLowerCase();
+        const reason =
+          !ext || !ALLOWED_EXTENSIONS.includes(ext)
+            ? `Unsupported file type: ${invalidFile.name}`
+            : `File too large (max ${(MAX_FILE_SIZE / (1024 * 1024)).toFixed(0)}MB): ${invalidFile.name}`;
+        setMessage({ type: "error", text: reason });
+        setIsUploading(false);
+        return;
+      }
 
-      setMessage({ type: "success", text: "Resource uploaded successfully!" });
+      const uploads: string[] = [];
+
+      for (const file of formData.files) {
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `resources/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("resources")
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("resources").getPublicUrl(filePath);
+        const fileUrl = urlData.publicUrl;
+
+        const { error: insertError } = await supabase.from("resources").insert({
+          title: formData.title || file.name,
+          description: formData.description || null,
+          file_url: fileUrl,
+          file_name: file.name,
+          file_size: file.size,
+          file_type: fileExt,
+          access_level: formData.access_level,
+          category: formData.category || null,
+          created_by: user?.id,
+          is_active: true,
+        });
+
+        if (insertError) throw insertError;
+        uploads.push(file.name);
+      }
+
+      setMessage({
+        type: "success",
+        text:
+          uploads.length === 1
+            ? "Resource uploaded successfully!"
+            : `Uploaded ${uploads.length} resources successfully!`,
+      });
       setFormData({
         title: "",
         description: "",
         access_level: "free",
         category: "",
-        file: null,
+        files: [],
       });
       setShowForm(false);
       fetchResources();
@@ -132,43 +161,122 @@ export default function AdminResourcesPage() {
   };
 
   const handleDelete = async (id: string, fileUrl: string) => {
-    if (!confirm("Are you sure you want to delete this resource?")) return;
+    if (!confirm("Are you sure you want to delete this resource? This action cannot be undone.")) return;
 
     try {
-      // Extract file path from URL
-      const urlParts = fileUrl.split("/");
-      const fileName = urlParts[urlParts.length - 1];
-      const filePath = `resources/${fileName}`;
+      setIsLoading(true);
+      setMessage(null);
 
-      // Delete from storage
-      await supabase.storage.from("resources").remove([filePath]);
+      // Extract file path from URL - handle different URL formats
+      let filePath = "";
+      
+      try {
+        // Try to extract from public URL format: https://...supabase.co/storage/v1/object/public/resources/resources/...
+        if (fileUrl.includes("/storage/v1/object/public/resources/")) {
+          const urlParts = fileUrl.split("/storage/v1/object/public/resources/");
+          if (urlParts.length > 1) {
+            filePath = urlParts[1].split("?")[0]; // Remove query params
+            filePath = decodeURIComponent(filePath);
+          }
+        } 
+        // Try signed URL format
+        else if (fileUrl.includes("/storage/v1/object/sign/resources/")) {
+          const urlParts = fileUrl.split("/storage/v1/object/sign/resources/");
+          if (urlParts.length > 1) {
+            filePath = urlParts[1].split("?")[0];
+            filePath = decodeURIComponent(filePath);
+          }
+        }
+        // Try direct path format
+        else if (fileUrl.includes("resources/")) {
+          const parts = fileUrl.split("resources/");
+          if (parts.length > 1) {
+            filePath = parts[parts.length - 1].split("?")[0];
+            filePath = decodeURIComponent(filePath);
+          }
+        }
+
+        // If we still don't have a path, try to get it from the database record
+        if (!filePath) {
+          const { data: resourceData } = await supabase
+            .from("resources")
+            .select("file_url")
+            .eq("id", id)
+            .single();
+          
+          if (resourceData?.file_url) {
+            // Try extracting from the stored URL
+            const storedUrl = resourceData.file_url;
+            if (storedUrl.includes("/storage/v1/object/public/resources/")) {
+              filePath = storedUrl.split("/storage/v1/object/public/resources/")[1]?.split("?")[0] || "";
+              filePath = decodeURIComponent(filePath);
+            }
+          }
+        }
+      } catch (pathError) {
+        console.warn("Error extracting file path:", pathError);
+      }
+
+      // Delete from storage if we have a valid path
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from("resources")
+          .remove([filePath]);
+
+        if (storageError) {
+          console.warn("Storage deletion error (continuing with DB deletion):", storageError);
+          // Continue with DB deletion even if storage deletion fails
+        }
+      } else {
+        console.warn("Could not extract file path from URL, skipping storage deletion");
+      }
 
       // Delete from database
-      const { error } = await supabase.from("resources").delete().eq("id", id);
+      const { error: dbError } = await supabase
+        .from("resources")
+        .delete()
+        .eq("id", id);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       setMessage({ type: "success", text: "Resource deleted successfully!" });
-      fetchResources();
+      await fetchResources();
     } catch (error: any) {
       console.error("Error deleting resource:", error);
-      setMessage({ type: "error", text: "Failed to delete resource" });
+      setMessage({ 
+        type: "error", 
+        text: error.message || "Failed to delete resource. Please try again." 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
+      setMessage(null);
+      const newStatus = !currentStatus;
+
       const { error } = await supabase
         .from("resources")
-        .update({ is_active: !currentStatus })
+        .update({ is_active: newStatus })
         .eq("id", id);
 
       if (error) throw error;
 
-      fetchResources();
+      setMessage({ 
+        type: "success", 
+        text: `Resource ${newStatus ? "activated" : "deactivated"} successfully!` 
+      });
+      
+      // Refresh the resources list
+      await fetchResources();
     } catch (error: any) {
       console.error("Error updating resource:", error);
-      setMessage({ type: "error", text: "Failed to update resource" });
+      setMessage({ 
+        type: "error", 
+        text: error.message || "Failed to update resource. Please try again." 
+      });
     }
   };
 
@@ -288,19 +396,24 @@ export default function AdminResourcesPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-text-primary mb-2">
-                  File (PDF, DOC, DOCX)
+                  Files (PDF, DOC, DOCX, PPT, XLS)
                 </label>
                 <input
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                  multiple
                   onChange={handleFileChange}
                   required
                   className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300"
                 />
-                {formData.file && (
-                  <p className="mt-2 text-sm text-text-secondary">
-                    Selected: {formData.file.name} ({(formData.file.size / 1024).toFixed(2)} KB)
-                  </p>
+                {formData.files.length > 0 && (
+                  <div className="mt-2 text-sm text-text-secondary space-y-1">
+                    {formData.files.map((file, idx) => (
+                      <p key={idx}>
+                        {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </p>
+                    ))}
+                  </div>
                 )}
               </div>
               <div className="flex gap-4">
@@ -322,7 +435,7 @@ export default function AdminResourcesPage() {
                       description: "",
                       access_level: "free",
                       category: "",
-                      file: null,
+                      files: [],
                     });
                   }}
                 >
@@ -382,26 +495,28 @@ export default function AdminResourcesPage() {
                         href={resource.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 text-primary-600 hover:bg-primary-50 rounded"
+                        className="p-2 text-primary-600 hover:bg-primary-50 rounded transition-colors"
                         title="Download"
                       >
                         <Download size={18} />
                       </a>
                       <button
                         onClick={() => toggleActive(resource.id, resource.is_active)}
-                        className={`p-2 rounded ${
+                        disabled={isLoading}
+                        className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                           resource.is_active
                             ? "text-yellow-600 hover:bg-yellow-50"
                             : "text-green-600 hover:bg-green-50"
                         }`}
-                        title={resource.is_active ? "Deactivate" : "Activate"}
+                        title={resource.is_active ? "Deactivate (Hide from users)" : "Activate (Show to users)"}
                       >
                         {resource.is_active ? "Hide" : "Show"}
                       </button>
                       <button
                         onClick={() => handleDelete(resource.id, resource.file_url)}
-                        className="p-2 text-error-600 hover:bg-error-50 rounded"
-                        title="Delete"
+                        disabled={isLoading}
+                        className="p-2 text-error-600 hover:bg-error-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete resource"
                       >
                         <X size={18} />
                       </button>

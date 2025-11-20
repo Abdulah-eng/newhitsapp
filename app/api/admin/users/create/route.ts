@@ -35,9 +35,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auth user first (email is auto-confirmed so we can send password reset)
+    const temporaryPassword = email;
+
+    // Create auth user with default password (email)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
+      password: temporaryPassword,
       email_confirm: true,
       user_metadata: {
         full_name,
@@ -81,22 +84,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send password reset email so the user can set their password
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${appUrl}/reset-password?email=${encodeURIComponent(email)}`,
-    });
-
-    if (resetError) {
-      console.error("Error sending password reset email:", resetError);
-      return NextResponse.json(
-        {
-          error: "User created, but failed to send password reset email. Please try resending from user detail.",
-        },
-        { status: 500 }
-      );
-    }
-
     // If role is specialist, create specialist profile placeholder
     if (role === "specialist") {
       await supabase.from("specialist_profiles").insert({
@@ -116,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "User created successfully. Password reset email sent.",
+      message: "User created successfully. Default password is their email address.",
       user: {
         id: authData.user.id,
         email,

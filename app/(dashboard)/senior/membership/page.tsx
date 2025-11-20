@@ -24,6 +24,7 @@ function MembershipPageContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<{
     planId: string;
     subscriptionId: string;
@@ -43,10 +44,13 @@ function MembershipPageContent() {
   useEffect(() => {
     const paymentSuccess = searchParams.get("payment");
     if (paymentSuccess === "success" && fetchMembership) {
-      // Payment was successful, refresh membership data
-      fetchMembership();
-      // Clean up URL
-      router.replace("/senior/membership");
+      // Payment was successful, force refresh membership data
+      // Wait a moment to ensure webhook has processed
+      setTimeout(async () => {
+        await fetchMembership();
+        // Clean up URL after refresh
+        router.replace("/senior/membership");
+      }, 2000);
     }
   }, [searchParams, fetchMembership, router]);
 
@@ -95,6 +99,7 @@ function MembershipPageContent() {
           body: JSON.stringify({
             subscriptionId: membership.stripe_subscription_id,
             cancelImmediately: false, // Cancel at period end
+            reason: cancelReason || undefined,
           }),
         });
 
@@ -105,10 +110,11 @@ function MembershipPageContent() {
         }
       } else {
         // Fallback to direct cancellation
-        await cancelMembership("User requested cancellation");
+        await cancelMembership(cancelReason || "User requested cancellation");
       }
 
       setShowCancelConfirm(false);
+      setCancelReason("");
       alert("Membership will be cancelled at the end of your billing period. You can reactivate anytime.");
       window.location.reload();
     } catch (err: any) {
@@ -145,6 +151,9 @@ function MembershipPageContent() {
           <h1 className="text-3xl font-bold text-text-primary">Membership</h1>
           <p className="text-text-secondary mt-2">
             Manage your HITS membership and enjoy exclusive benefits
+          </p>
+          <p className="mt-2 text-sm text-text-tertiary">
+            If you re-subscribe after cancelling, billing restarts immediately on the day you reactivate.
           </p>
         </div>
 
@@ -314,14 +323,19 @@ function MembershipPageContent() {
                   planName={plans.find((p) => p.id === selectedPlanForPayment.planId)?.name || "Membership"}
                   onSuccess={async () => {
                     setSelectedPlanForPayment(null);
-                    // Refresh membership data
+                    // Force refresh membership data immediately
                     if (fetchMembership) {
+                      // Clear the throttle to allow immediate fetch
                       await fetchMembership();
+                      // Wait a moment for data to load, then refresh
+                      setTimeout(() => {
+                        // Force a hard refresh to ensure UI updates
+                        window.location.href = "/senior/membership?payment=success";
+                      }, 1500);
+                    } else {
+                      // Fallback: just reload
+                      window.location.href = "/senior/membership?payment=success";
                     }
-                    // Small delay to ensure data is refreshed
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 500);
                   }}
                   onCancel={() => setSelectedPlanForPayment(null)}
                 />
@@ -339,14 +353,26 @@ function MembershipPageContent() {
               className="bg-white rounded-lg p-6 max-w-md w-full"
             >
               <h3 className="text-xl font-bold text-text-primary mb-4">Cancel Membership?</h3>
-              <p className="text-text-secondary mb-6">
-                Your membership will be cancelled at the end of your current billing period. You'll continue to have access until then, and you can reactivate anytime.
+              <p className="text-text-secondary mb-4">
+                Your membership will be cancelled at the end of your current billing period. You'll continue to have access until then, and you can reactivate anytime. Reactivating starts a fresh billing period right away.
               </p>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Optional cancellation reason
+              </label>
+              <textarea
+                className="input min-h-[100px] mb-6"
+                placeholder="Let us know why you're cancelling (optional)"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
               <div className="flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => setShowCancelConfirm(false)}
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setCancelReason("");
+                  }}
                 >
                   Keep Membership
                 </Button>

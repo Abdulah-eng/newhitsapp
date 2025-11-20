@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/utils/auth";
+import { logMembershipCancelled } from "@/lib/utils/activityLogger";
 
 /**
  * Cancel a Stripe subscription
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { subscriptionId, cancelImmediately } = body;
+    const { subscriptionId, cancelImmediately, reason } = body;
 
     if (!subscriptionId) {
       return NextResponse.json(
@@ -52,24 +53,45 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Update membership status in database
-    if (cancelImmediately || subscription.cancel_at_period_end) {
-      await supabase
-        .from("user_memberships")
-        .update({
-          status: cancelImmediately ? "cancelled" : "active",
-          cancelled_at: cancelImmediately ? new Date().toISOString() : null,
-          cancellation_reason: "User requested cancellation",
-        })
-        .eq("id", membership.id);
+    const cancellationReason =
+      reason ||
+      (cancelImmediately
+        ? "User requested immediate cancellation"
+        : "User requested cancellation at period end");
 
-      if (cancelImmediately) {
-        // Remove membership_id from senior profile
-        await supabase
-          .from("senior_profiles")
-          .update({ membership_id: null })
-          .eq("user_id", user.id);
-      }
+    const now = new Date();
+    const effectiveDate = cancelImmediately
+      ? now.toISOString().split("T")[0]
+      : subscription.cancel_at
+      ? new Date(subscription.cancel_at * 1000).toISOString().split("T")[0]
+      : null;
+
+    const updates: Record<string, any> = {
+      cancellation_reason: cancellationReason,
+      cancellation_requested_at: now.toISOString(),
+      cancellation_effective_date: effectiveDate,
+      updated_at: now.toISOString(),
+    };
+
+    if (cancelImmediately) {
+      updates.status = "cancelled";
+      updates.cancelled_at = now.toISOString();
+      updates.reactivated_at = null;
+      updates.reactivated_from_membership_id = null;
+    }
+
+    await supabase
+      .from("user_memberships")
+      .update(updates)
+      .eq("id", membership.id);
+
+    if (cancelImmediately) {
+      await supabase
+        .from("senior_profiles")
+        .update({ membership_id: null })
+        .eq("user_id", user.id);
+
+      await logMembershipCancelled(membership.id, user.id, cancellationReason);
     }
 
     return NextResponse.json({

@@ -26,16 +26,16 @@ export default function MarketingHeader() {
 
   return (
     <header className="z-40 bg-white">
-      <div className="w-full px-6 md:px-10">
-        <div className="flex items-center justify-between gap-8 py-6 md:py-8">
+      <div className="w-full px-4 sm:px-6 md:px-10">
+        <div className="flex items-center justify-between gap-4 sm:gap-6 md:gap-8 py-4 sm:py-6 md:py-8">
           {/* Brand */}
-          <Link href="/" className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
-              <span className="text-primary-600 font-extrabold text-xl">H</span>
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 md:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl border-2 sm:border-4 border-primary-500 flex items-center justify-center bg-white shadow-soft">
+              <span className="text-primary-600 font-extrabold text-sm sm:text-base md:text-xl">H</span>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
-              <p className="text-sm text-text-secondary">Hire IT Specialists</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-extrabold text-primary-600 tracking-tight">HITS</p>
+              <p className="text-xs sm:text-sm text-text-secondary hidden sm:block">Hire IT Specialists</p>
             </div>
           </Link>
 
@@ -63,6 +63,15 @@ export default function MarketingHeader() {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-3">
+            <Link href="/specialists">
+              <Button
+                size="lg"
+                variant="ghost"
+                className="px-6 h-12 text-[16px] text-primary-700 hover:text-primary-600"
+              >
+                Find Specialist
+              </Button>
+            </Link>
             {user ? (
               <Link href={getDashboardLink()}>
                 <Button
@@ -73,14 +82,25 @@ export default function MarketingHeader() {
                 </Button>
               </Link>
             ) : (
-              <Link href="/login">
-                <Button
-                  size="lg"
-                  className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
-                >
-                  Sign in
-                </Button>
-              </Link>
+              <>
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    variant="ghost"
+                    className="px-6 h-12 text-[16px] text-primary-700 hover:text-primary-600"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    className="px-6 h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
 
@@ -98,7 +118,7 @@ export default function MarketingHeader() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="lg:hidden bg-white">
-          <div className="max-w-6xl mx-auto px-6 md:px-10 py-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-4 sm:py-6">
             <nav className="grid gap-3 text-[18px] font-semibold text-primary-900">
               <Link onClick={() => setMobileOpen(false)} href="/about" className="py-2 hover:text-primary-600">
                 About
@@ -119,19 +139,31 @@ export default function MarketingHeader() {
                 Contact / Support
               </Link>
             </nav>
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-4 space-y-3">
+              <Link onClick={() => setMobileOpen(false)} href="/specialists" className="block">
+                <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
+                  Find Specialist
+                </Button>
+              </Link>
               {user ? (
-                <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="flex-1">
+                <Link onClick={() => setMobileOpen(false)} href={getDashboardLink()} className="block">
                   <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
                     Dashboard
                   </Button>
                 </Link>
               ) : (
-                <Link onClick={() => setMobileOpen(false)} href="/login" className="flex-1">
-                  <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
-                    Sign in
-                  </Button>
-                </Link>
+                <>
+                  <Link onClick={() => setMobileOpen(false)} href="/login" className="block">
+                    <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link onClick={() => setMobileOpen(false)} href="/register" className="block">
+                    <Button className="w-full h-12 text-[16px] bg-primary-600 text-white hover:bg-primary-700">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
           </div>

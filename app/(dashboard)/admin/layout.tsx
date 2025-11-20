@@ -18,8 +18,10 @@ import {
   Menu,
   X,
   MessageSquare,
-  FolderOpen
+  FolderOpen,
+  Crown
 } from "lucide-react";
+import AccountSettingsMenu from "@/components/account/AccountSettingsMenu";
 
 export default function AdminLayout({
   children,
@@ -72,6 +74,7 @@ export default function AdminLayout({
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/appointments", label: "Appointments", icon: Calendar },
     { href: "/admin/payments", label: "Payments", icon: DollarSign },
+  { href: "/admin/memberships", label: "Memberships", icon: Crown },
     { href: "/admin/disputes", label: "Disputes", icon: FileText },
     { href: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare },
     { href: "/admin/resources", label: "Resources", icon: FolderOpen },
@@ -146,30 +149,23 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar with Dashboard Header */}
         <div className="bg-white border-b border-secondary-200">
-          <div className="max-w-7xl mx-auto px-14 md:px-18">
-            <div className="flex items-center justify-between py-8 md:py-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-14">
+            <div className="flex items-center justify-between py-4 sm:py-6 md:py-8">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden inline-flex items-center justify-center w-12 h-12 rounded-md border border-secondary-300 text-text-primary"
+                className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-md border border-secondary-300 text-text-primary"
+                aria-label="Toggle sidebar"
               >
-                {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+                {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
               <div className="hidden lg:block flex-1" />
-              <div className="flex items-center gap-5 ml-auto">
+              <div className="flex items-center gap-2 sm:gap-3 ml-auto">
                 {user && (
                   <>
-                    <span className="text-[18px] font-semibold text-primary-900 hidden lg:block">
+                    <span className="text-sm sm:text-base md:text-lg font-semibold text-primary-900 hidden lg:block">
                       {user.user_metadata?.full_name || "Admin"}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      onClick={signOut}
-                      className="text-[18px] font-semibold text-primary-600 hover:text-primary-500 px-4"
-                    >
-                      <LogOut size={18} className="mr-2" />
-                      <span className="hidden sm:inline">Logout</span>
-                    </Button>
+                    <AccountSettingsMenu />
                   </>
                 )}
               </div>
@@ -179,7 +175,7 @@ export default function AdminLayout({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-secondary-100">
-          <div className="max-w-7xl mx-auto px-14 md:px-18 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-14 py-4 sm:py-6 md:py-8">
             {children}
           </div>
         </main>

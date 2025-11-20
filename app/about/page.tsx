@@ -172,48 +172,65 @@ export default function AboutPage() {
           <motion.h2 {...fadeUp(0)} className="text-[32px] md:text-[40px] font-bold text-center text-primary-700">
             The Heart Behind HITS
           </motion.h2>
-          <motion.p
-            {...fadeUp(0.1)}
-            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary mb-8"
-          >
-            HITS is built on three priorities:
-          </motion.p>
           <div className="mt-8 space-y-6 max-w-3xl mx-auto">
-            {[
-              {
-                title: "1. Care First",
-                description: "Every visit starts with listening. The pace is set by the client, not the clock. Breaks, questions, and \"can you show me that again?\" are always welcome.",
-              },
-              {
-                title: "2. Clear Communication",
-                description: "No tech jargon. No scary tactics. No hidden fees. Clients get calm, honest explanations in plain language they can repeat to their doctor, caregiver, or family if needed.",
-              },
-              {
-                title: "3. Strong Security",
-                description: "From passwords and online banking to telehealth portals and email, HITS is designed with safety and privacy in mind. Tools and methods are chosen to protect, not to overwhelm.",
-              },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                {...fadeUp(0.1 + idx * 0.1)}
-                className="p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
-              >
-                <h3 className="text-xl font-bold text-primary-700 mb-3">{item.title}</h3>
-                <p className="text-base leading-7 text-text-secondary">{item.description}</p>
-              </motion.div>
-            ))}
+            <motion.div
+              {...fadeUp(0.1)}
+              className="p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
+            >
+              <h3 className="text-xl font-bold text-primary-700 mb-3">1. Care First</h3>
+              <ul className="space-y-2 text-base leading-7 text-text-secondary">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>Every visit starts with listening.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>The pace is set by the client, not the clock.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>Breaks, questions, and "can you show me that again?" are always welcome.</span>
+                </li>
+              </ul>
+            </motion.div>
+            <motion.div
+              {...fadeUp(0.2)}
+              className="p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
+            >
+              <h3 className="text-xl font-bold text-primary-700 mb-3">2. Clear Communication</h3>
+              <ul className="space-y-2 text-base leading-7 text-text-secondary">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>No tech jargon. No scary tactics. No hidden fees.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>Clients get calm, honest explanations in plain language they can repeat to their doctor, caregiver, or family.</span>
+                </li>
+              </ul>
+            </motion.div>
+            <motion.div
+              {...fadeUp(0.3)}
+              className="p-6 rounded-2xl border border-secondary-200 bg-secondary-50"
+            >
+              <h3 className="text-xl font-bold text-primary-700 mb-3">3. Strong Security</h3>
+              <ul className="space-y-2 text-base leading-7 text-text-secondary">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>From passwords and online banking to telehealth portals and email, HITS is designed with safety and privacy in mind.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>Tools and methods are chosen to protect, not overwhelm.</span>
+                </li>
+              </ul>
+            </motion.div>
           </div>
           <motion.p
             {...fadeUp(0.4)}
             className="mt-10 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary"
           >
-            HITS understands what it feels like to rely on systems you can't fully control and how critical trust, discipline, and protection really are. That mindset is built into HITS from the ground up.
-          </motion.p>
-          <motion.p
-            {...fadeUp(0.5)}
-            className="mt-6 max-w-3xl mx-auto text-center text-lg leading-8 text-text-secondary"
-          >
-            HITS exists to give seniors, disabled adults, and their families calm, trustworthy, one-on-one tech support; whether that's at the kitchen table or over a secure video call.
+            HITS exists to give seniors, disabled adults, and their families calm, trustworthy, one-on-one tech support, whether that's at the kitchen table or over a secure video call.
           </motion.p>
         </div>
       </section>
@@ -292,8 +309,50 @@ export default function AboutPage() {
                 Shane Thompson is a disabled, retired U.S. Army veteran with 4 combat tours and a lifelong commitment to service.
               </p>
               <p>
-                After serving his country, Shane shifted his focus to serving his community. He earned a Bachelor of Arts in Organizational Management (2016) from the University of Arizona and a degree in Computer Information Technology (2025) with concentrations in Cybersecurity, Information Assurance, and Business Information Systems.
+                After serving his country, Shane shifted his focus to serving his community. He earned a Bachelor of Arts in Organizational Management from the University of Arizona and a Bachelor of Science in Computer Information Technology with concentrations in Cybersecurity, Information Assurance, and Business Information Systems from Methodist University. He is also a proud member of three honor societies: Omicron Delta Kappa (ODK), the National Society of Leadership and Success (NSLS), and SVA – Chi Delta Chi, recognizing his leadership, service, and academic excellence.
               </p>
+              
+              <div className="mt-8">
+                <h4 className="text-lg font-bold text-primary-700 mb-4">Professional Background – Cybersecurity Work</h4>
+                <p className="mb-4">
+                  Shane reinforces his real-world experience with practical, hands on cybersecurity work that now supports how he protects HITS clients and their families:
+                </p>
+                <ul className="space-y-3 ml-4">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has led digital forensics and malware analysis work, using tools like FTK Imager, USBDeview, and Wireshark to investigate suspicious activity, recover data, and understand how attackers hide inside everyday systems.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has worked on network monitoring and packet analysis, building test networks and using Wireshark to detect unusual traffic patterns; skills that translate directly into securing home Wi-Fi, routers, and connected devices.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has carried out mobile device security and mobile-device-management (MDM) work, focusing on practical ways to protect smartphones and tablets with safer settings, encryption, and remote-wipe options, the same devices many seniors depend on every day.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has developed cybersecurity policies and risk-management plans, aligning them with industry standards to support privacy, responsible data use, and clear safety guidelines; principles that show up in HITS safety, privacy, and no-pressure approach.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has helped design secure data and information-handling practices, emphasizing data integrity, access control, and behind-the-scenes protection so client visit notes and account details stay private and properly handled.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                    <span>He has participated in hands-on penetration testing and ethical hacking against real-world targets, identifying vulnerabilities and documenting how to fix them is experience that feeds directly into hardening home networks, smart devices, and online accounts before issues become emergencies.</span>
+                  </li>
+                </ul>
+                <p className="mt-6">
+                  All of this work centers on a simple idea:
+                </p>
+                <div className="bg-primary-50 rounded-2xl p-6 border border-primary-200 my-6">
+                  <p className="text-lg font-semibold text-primary-700 italic text-center">
+                    Use serious cybersecurity skill to quietly make life easier, safer, and less stressful for people who may not consider themselves "tech savvy."
+                  </p>
+                </div>
+              </div>
+
               <p>
                 He is currently expanding that foundation by attending North Carolina State University, pursuing the Master of Science in Cybersecurity (MCYS). In this graduate program, he is focused on:
               </p>
@@ -303,7 +362,10 @@ export default function AboutPage() {
                 <li>enhancing the security and privacy of end-user technologies like mobile, web, IoT, and emerging platforms</li>
               </ul>
               <p>
-                Shane has been "the tech person" for as long as he can remember—the one people call when:
+                Shane has been "the tech person" for as long as he can remember—
+              </p>
+              <p className="ml-4">
+                the one people call when:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>the laptop won't turn on,</li>
@@ -318,9 +380,9 @@ export default function AboutPage() {
                 After seeing too many seniors and disabled adults get:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>rushed through appointments,</li>
-                <li>talked down to,</li>
-                <li>or overcharged for things they didn't need,</li>
+                <li>rushed through appointments</li>
+                <li>talked down to</li>
+                <li>overcharged for things they didn't need</li>
               </ul>
               <p>
                 he started HITS – Hire I.T. Specialist with one simple promise:
