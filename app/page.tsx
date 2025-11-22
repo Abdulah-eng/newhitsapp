@@ -94,7 +94,7 @@ export default function HomePage() {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-3">
-              <Link href="/specialists">
+              <Link href="/specialists?search=true">
                 <Button
                   size="lg"
                   variant="ghost"
@@ -159,7 +159,7 @@ export default function HomePage() {
                 <Link onClick={() => setMobileOpen(false)} href="/contact" className="py-2 hover:text-primary-600">Contact / Support</Link>
               </nav>
               <div className="mt-4 space-y-3">
-                <Link onClick={() => setMobileOpen(false)} href="/specialists" className="block">
+                <Link onClick={() => setMobileOpen(false)} href="/specialists?search=true" className="block">
                   <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
                     Find Specialist
                   </Button>
@@ -371,11 +371,12 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 250, damping: 18 }}
                 className="flex flex-col rounded-2xl border border-secondary-200 bg-white shadow-soft overflow-hidden"
               >
-                <div className="relative w-full h-48 overflow-hidden">
+                <div className="relative w-full h-48 sm:h-56 md:h-64 overflow-hidden">
                   <img 
                     src={problem.img} 
                     alt={problem.title} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-900/60 to-transparent" />
                 </div>
@@ -441,15 +442,16 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 250, damping: 18 }}
                 className="flex flex-col rounded-2xl border border-secondary-200 bg-white shadow-soft overflow-hidden"
               >
-                <div className="relative w-full h-56 overflow-hidden">
+                <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden">
                   <img 
                     src={item.img} 
                     alt={item.title} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-900/70 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg">{item.title}</h3>
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-lg">{item.title}</h3>
                   </div>
                 </div>
                 <div className="p-6">
@@ -576,7 +578,7 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 250, damping: 18 }}
                 className="flex flex-col items-center text-center rounded-2xl border border-secondary-200 bg-secondary-50/40 p-6 shadow-soft"
               >
-                <img src={item.img} alt={item.alt} className="w-[320px] md:w-[360px] h-auto rounded-xl" />
+                <img src={item.img} alt={item.alt} className="w-full max-w-[320px] sm:max-w-[360px] md:max-w-[400px] h-auto rounded-xl object-cover" loading="lazy" />
                 <h3 className="mt-6 text-[22px] font-extrabold text-primary-700 leading-snug">{item.title}</h3>
               </motion.div>
             ))}
@@ -641,14 +643,15 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 220, damping: 20 }}
                 className="flex flex-col rounded-2xl overflow-hidden border border-secondary-200 shadow-soft bg-white"
               >
-                <div className="relative w-full h-64 md:h-80 overflow-hidden">
+                <div className="relative w-full h-56 sm:h-64 md:h-80 overflow-hidden">
                   <img 
                     src={card.img} 
                     alt={card.title} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-primary-900/40 flex items-center justify-center">
-                    <span className="text-white text-[28px] md:text-[32px] font-extrabold text-center drop-shadow-lg px-4">
+                    <span className="text-white text-xl sm:text-[28px] md:text-[32px] font-extrabold text-center drop-shadow-lg px-4">
                       {card.title}
                     </span>
                   </div>

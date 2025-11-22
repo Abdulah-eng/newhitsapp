@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import MarketingHeader from "@/components/MarketingHeader";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useMembership } from "@/lib/hooks/useMembership";
@@ -135,7 +134,6 @@ export default function ResourcesPage() {
 
   return (
     <main className="bg-secondary-50 text-text-primary">
-      <MarketingHeader />
 
       {/* Hero Section */}
       <section className="bg-white border-b border-secondary-200">

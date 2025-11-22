@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientChatbotWrapper from "@/components/ClientChatbotWrapper";
+import AccessibilityBar from "@/components/features/AccessibilityBar";
 
 export const metadata: Metadata = {
   title: "HITS – Hire I.T. Specialist | Tech Support for Seniors",
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body>
         {children}
+        <AccessibilityBar />
         <ClientChatbotWrapper />
       </body>
     </html>

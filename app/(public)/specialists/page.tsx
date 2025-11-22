@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
@@ -25,8 +26,10 @@ interface Specialist {
   };
 }
 
-export default function SpecialistsPage() {
+function SpecialistsPageContent() {
   const supabase = createSupabaseBrowserClient();
+  const searchParams = useSearchParams();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [filteredSpecialists, setFilteredSpecialists] = useState<Specialist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +45,15 @@ export default function SpecialistsPage() {
   useEffect(() => {
     fetchSpecialists();
   }, []);
+
+  useEffect(() => {
+    // Auto-focus search if coming from header
+    if (searchParams.get("search") === "true" && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 300);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     filterSpecialists();
@@ -159,6 +171,7 @@ export default function SpecialistsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
                 <Input
+                  ref={searchInputRef}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name, specialty, or expertise..."
@@ -376,6 +389,18 @@ export default function SpecialistsPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function SpecialistsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    }>
+      <SpecialistsPageContent />
+    </Suspense>
   );
 }
 

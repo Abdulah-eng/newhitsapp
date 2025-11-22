@@ -63,7 +63,7 @@ export default function MarketingHeader() {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link href="/specialists">
+            <Link href="/specialists?search=true">
               <Button
                 size="lg"
                 variant="ghost"
@@ -140,7 +140,7 @@ export default function MarketingHeader() {
               </Link>
             </nav>
             <div className="mt-4 space-y-3">
-              <Link onClick={() => setMobileOpen(false)} href="/specialists" className="block">
+              <Link onClick={() => setMobileOpen(false)} href="/specialists?search=true" className="block">
                 <Button variant="ghost" className="w-full h-12 text-[16px] text-primary-700 hover:text-primary-600">
                   Find Specialist
                 </Button>

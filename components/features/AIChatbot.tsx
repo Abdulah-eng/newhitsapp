@@ -104,10 +104,10 @@ export default function AIChatbot() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-primary-500 text-white rounded-full shadow-large flex items-center justify-center z-50 hover:bg-primary-600 transition-colors"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 bg-primary-500 text-white rounded-full shadow-large flex items-center justify-center z-50 hover:bg-primary-600 transition-colors"
           aria-label="Open HITS Assistant"
         >
-          <MessageSquare size={24} />
+          <MessageSquare size={20} className="sm:w-6 sm:h-6" />
         </motion.button>
       )}
 
@@ -118,26 +118,26 @@ export default function AIChatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-xl shadow-2xl flex flex-col z-50 border border-secondary-200"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 max-w-[calc(100vw-2rem)] sm:max-w-md h-[calc(100vh-8rem)] sm:h-[600px] max-h-[calc(100vh-8rem)] sm:max-h-[600px] bg-white rounded-xl shadow-2xl flex flex-col z-50 border border-secondary-200"
           >
             {/* Header */}
-            <div className="bg-primary-500 text-white p-4 rounded-t-xl flex items-center justify-between">
+            <div className="bg-primary-500 text-white p-3 sm:p-4 rounded-t-xl flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
-                <Bot size={20} />
-                <h3 className="text-2xl font-extrabold text-white tracking-tight">HITS</h3>
+                <Bot size={18} className="sm:w-5 sm:h-5" />
+                <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">HITS</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
                 className="hover:bg-primary-600 rounded p-1 transition-colors"
                 aria-label="Close chat"
               >
-                <X size={20} />
+                <X size={18} className="sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Simple Welcome Message - No Quick Links */}
             {messages.length === 1 && (
-              <div className="p-3 bg-secondary-50 border-b border-secondary-200">
+              <div className="p-2 sm:p-3 bg-secondary-50 border-b border-secondary-200 flex-shrink-0">
                 <p className="text-xs text-text-secondary leading-relaxed">
                   I'm a virtual assistant for HITS. I can answer questions about our services, pricing, and how visits work. I'm not a live human and cannot handle emergencies. For emergencies, contact 911 or your local law enforcement. For urgent support, contact us at support@hitsapp.com or (646) 758-6606.
                 </p>
@@ -145,7 +145,7 @@ export default function AIChatbot() {
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary-50">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-secondary-50 min-h-0">
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -200,7 +200,7 @@ export default function AIChatbot() {
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-secondary-200 bg-white rounded-b-xl">
+            <div className="p-3 sm:p-4 border-t border-secondary-200 bg-white rounded-b-xl flex-shrink-0">
               <div className="flex gap-2">
                 <Input
                   value={input}
@@ -208,15 +208,15 @@ export default function AIChatbot() {
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message..."
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 text-sm sm:text-base"
                 />
                 <Button
                   variant="primary"
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="px-4"
+                  className="px-3 sm:px-4"
                 >
-                  <Send size={18} />
+                  <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </Button>
               </div>
             </div>

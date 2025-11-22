@@ -129,5 +129,36 @@
   .grid-responsive {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
   }
+
+  /* High contrast mode */
+  .high-contrast {
+    --primary-500: #000000;
+    --primary-600: #000000;
+    --primary-700: #000000;
+    --text-primary: #000000;
+    --text-secondary: #000000;
+    --bg-secondary-100: #ffffff;
+    --bg-white: #ffffff;
+  }
+
+  .high-contrast body {
+    @apply bg-white text-black;
+  }
+
+  .high-contrast .bg-primary-500,
+  .high-contrast .bg-primary-600,
+  .high-contrast .bg-primary-700 {
+    @apply bg-black text-white;
+  }
+
+  /* Standardize bullet alignment */
+  ul li {
+    @apply flex items-start gap-2;
+  }
+
+  ul.list-disc li::before {
+    content: "•";
+    @apply text-primary-500 font-bold mr-2 mt-1 flex-shrink-0;
+  }
 }
 

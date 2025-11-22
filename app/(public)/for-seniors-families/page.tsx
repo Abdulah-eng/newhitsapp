@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import MarketingHeader from "@/components/MarketingHeader";
 
 const fade = {
   hidden: { opacity: 0, y: 28 },
@@ -64,7 +63,6 @@ const dashboardFeatures = [
 export default function ForSeniorsFamiliesPage() {
   return (
     <main className="bg-secondary-50 text-text-primary">
-      <MarketingHeader />
 
       {/* Hero Section */}
       <section className="bg-white border-b border-secondary-200">

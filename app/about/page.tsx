@@ -356,22 +356,43 @@ export default function AboutPage() {
               <p>
                 He is currently expanding that foundation by attending North Carolina State University, pursuing the Master of Science in Cybersecurity (MCYS). In this graduate program, he is focused on:
               </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>designing and analyzing secure, privacy aware systems</li>
-                <li>securing critical infrastructure such as networks, cloud services, and connected devices</li>
-                <li>enhancing the security and privacy of end-user technologies like mobile, web, IoT, and emerging platforms</li>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>designing and analyzing secure, privacy aware systems</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>securing critical infrastructure such as networks, cloud services, and connected devices</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>enhancing the security and privacy of end-user technologies like mobile, web, IoT, and emerging platforms</span>
+                </li>
               </ul>
               <p>
                 Shane has been "the tech person" for as long as he can remember—
               </p>
-              <p className="ml-4">
+              <p>
                 the one people call when:
               </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>the laptop won't turn on,</li>
-                <li>the Wi-Fi keeps dropping,</li>
-                <li>the TV says "no signal,"</li>
-                <li>or the email looks "a little funny."</li>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>the laptop won't turn on,</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>the Wi-Fi keeps dropping,</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>the TV says "no signal,"</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>or the email looks "a little funny."</span>
+                </li>
               </ul>
               <p>
                 He fixes laptops, cleans out viruses, recovers priceless photos, sets up new devices, and most importantly, explains technology in plain language.
@@ -379,10 +400,19 @@ export default function AboutPage() {
               <p>
                 After seeing too many seniors and disabled adults get:
               </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>rushed through appointments</li>
-                <li>talked down to</li>
-                <li>overcharged for things they didn't need</li>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>rushed through appointments</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>talked down to</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1.5 inline-block h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span>overcharged for things they didn't need</span>
+                </li>
               </ul>
               <p>
                 he started HITS – Hire I.T. Specialist with one simple promise:

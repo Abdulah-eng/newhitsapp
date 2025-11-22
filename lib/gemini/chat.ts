@@ -27,16 +27,27 @@ export async function chatWithAI(
     // Build conversation context
     const systemPrompt = `You are the HITS virtual assistant for HITS – Hire I.T. Specialist. You are NOT a live human and cannot provide emergency help, medical advice, legal advice, or financial advice.
 
-CRITICAL: Only answer questions about HITS services, pricing, memberships, travel area, and how visits work. If asked about topics unrelated to HITS (other companies, general tech advice beyond HITS scope, unrelated services), politely redirect: "I'm here to help with questions about HITS services. For that topic, please contact support@hitsapp.com or (646) 758-6606."
-
 Your role:
-- Answer questions ONLY about HITS services, pricing, memberships, and travel area
+- Answer questions about HITS services, pricing, memberships, and travel area
+- Provide basic tech help and step-by-step guidance for common issues (Bluetooth, phone setup, basic troubleshooting)
 - Explain how HITS visits work and how to get started
 - Use simple, friendly, and patient language - remember our users may be older adults or less tech-savvy
 - Avoid heavy jargon and technical terms - explain things in plain language
 - Offer clear, direct next steps
 - Reflect HITS core values: care, clarity, and security
 - Be encouraging and supportive
+
+Basic Tech Help You Can Provide:
+- How to turn Bluetooth on/off (iPhone, Android, Windows, Mac)
+- Basic phone setup guidance (new phone setup, transferring contacts, etc.)
+- Simple step-by-step troubleshooting (Wi-Fi connection, app issues, etc.)
+- Basic device settings and navigation
+- Simple explanations of common tech terms
+
+For complex issues or HITS-specific services, you can:
+- Provide basic guidance when possible
+- Suggest booking a HITS appointment for hands-on help
+- Direct to support@hitsapp.com or (646) 758-6606 for urgent matters
 
 What HITS does:
 - Connects seniors, disabled adults, and families with vetted IT specialists
@@ -100,6 +111,11 @@ export async function generateAutomatedResponse(
     "emergency": "HITS Assistant cannot handle emergencies. If you think you're a victim of fraud or in danger, contact your bank and local law enforcement immediately. After you're safe, our team can help secure your devices. Call support at (646) 758-6606.",
     "scam": "If you think you've been scammed, contact your bank and local law enforcement right away. After you're safe, HITS can help you secure your accounts and devices. We can also help you recognize and avoid scams in the future.",
     "faq": "You can find answers to common questions on our FAQ page. Topics include travel and service area, scope of services, data backups, and emergencies. Visit the FAQ page or contact support for more help.",
+    "bluetooth": "To turn Bluetooth on/off: On iPhone, go to Settings > Bluetooth and tap the switch. On Android, swipe down from the top and tap the Bluetooth icon, or go to Settings > Connections > Bluetooth. On Windows, go to Settings > Devices > Bluetooth. On Mac, click the Bluetooth icon in the menu bar or go to System Preferences > Bluetooth.",
+    "turn on bluetooth": "To turn Bluetooth on: On iPhone, go to Settings > Bluetooth and tap the switch to turn it on (green). On Android, swipe down from the top of your screen and tap the Bluetooth icon, or go to Settings > Connections > Bluetooth and toggle it on. On Windows, go to Settings > Devices > Bluetooth and toggle it on. On Mac, click the Bluetooth icon in the menu bar or go to System Preferences > Bluetooth and turn it on.",
+    "turn off bluetooth": "To turn Bluetooth off: On iPhone, go to Settings > Bluetooth and tap the switch to turn it off (gray). On Android, swipe down from the top of your screen and tap the Bluetooth icon, or go to Settings > Connections > Bluetooth and toggle it off. On Windows, go to Settings > Devices > Bluetooth and toggle it off. On Mac, click the Bluetooth icon in the menu bar or go to System Preferences > Bluetooth and turn it off.",
+    "phone setup": "Setting up a new phone: 1) Turn on your phone and follow the on-screen instructions. 2) Connect to Wi-Fi when prompted. 3) Sign in with your Apple ID (iPhone) or Google account (Android). 4) Choose whether to restore from a backup or set up as new. 5) Complete the setup steps. If you need help transferring contacts or data, HITS specialists can assist you during a visit.",
+    "new phone": "Setting up a new phone: 1) Turn on your phone and follow the on-screen instructions. 2) Connect to Wi-Fi when prompted. 3) Sign in with your Apple ID (iPhone) or Google account (Android). 4) Choose whether to restore from a backup or set up as new. 5) Complete the setup steps. If you need help transferring contacts or data, HITS specialists can assist you during a visit.",
   };
 
   const questionLower = question.toLowerCase();
