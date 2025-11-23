@@ -244,7 +244,7 @@ function AIMatchPageContent() {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock size={16} />
-                        ${specialist.hourly_rate}/hr
+                        $90/hr (Platform Rate)
                       </span>
                     </div>
                   </div>

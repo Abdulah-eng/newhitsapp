@@ -21,11 +21,21 @@ export async function POST(request: NextRequest) {
       .select("*, user:user_id(full_name)")
       .eq("verification_status", "verified");
 
-    if (error || !specialists) {
+    if (error) {
+      console.error("[AI Match] Error fetching specialists:", error);
       return NextResponse.json(
-        { error: "Failed to fetch specialists" },
+        { error: "Failed to fetch specialists", details: error.message },
         { status: 500 }
       );
+    }
+
+    if (!specialists || specialists.length === 0) {
+      console.log("[AI Match] No verified specialists found");
+      return NextResponse.json({
+        matches: [],
+        total: 0,
+        message: "No verified specialists available at this time",
+      });
     }
 
     // Apply basic filters if provided
@@ -37,30 +47,72 @@ export async function POST(request: NextRequest) {
     }
     if (preferences?.languages && preferences.languages.length > 0) {
       filteredSpecialists = filteredSpecialists.filter((s) =>
-        s.languages_spoken.some((lang: string) =>
+        s.languages_spoken?.some((lang: string) =>
           preferences.languages.includes(lang)
         )
       );
     }
 
+    if (filteredSpecialists.length === 0) {
+      console.log("[AI Match] No specialists match the provided filters");
+      return NextResponse.json({
+        matches: [],
+        total: 0,
+        message: "No specialists match your preferences",
+      });
+    }
+
+    console.log(`[AI Match] Matching against ${filteredSpecialists.length} specialists`);
+
     // Use AI to match specialists
-    const matches = await matchSpecialistWithAI(
-      issueDescription,
-      filteredSpecialists,
-      preferences
-    );
+    let matches;
+    try {
+      matches = await matchSpecialistWithAI(
+        issueDescription,
+        filteredSpecialists,
+        preferences
+      );
+      console.log(`[AI Match] AI returned ${matches.length} matches`);
+    } catch (aiError: any) {
+      console.error("[AI Match] Error in AI matching:", aiError);
+      return NextResponse.json(
+        { 
+          error: "Failed to generate matches", 
+          details: aiError.message || "AI matching service unavailable",
+          fallback: true
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!matches || matches.length === 0) {
+      console.log("[AI Match] No matches found by AI");
+      return NextResponse.json({
+        matches: [],
+        total: 0,
+        message: "No specialists matched your issue description. Try being more specific or browse all specialists.",
+      });
+    }
 
     // Fetch full specialist details for matched IDs
-    const matchedSpecialists = matches.map((match) => {
-      const specialist = filteredSpecialists.find(
-        (s) => s.id === match.specialistId
-      );
-      return {
-        ...specialist,
-        matchScore: match.matchScore,
-        matchReasoning: match.reasoning,
-      };
-    });
+    const matchedSpecialists = matches
+      .map((match) => {
+        const specialist = filteredSpecialists.find(
+          (s) => s.id === match.specialistId
+        );
+        if (!specialist) {
+          console.warn(`[AI Match] Specialist ${match.specialistId} not found in filtered list`);
+          return null;
+        }
+        return {
+          ...specialist,
+          matchScore: match.matchScore,
+          matchReasoning: match.reasoning,
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
+
+    console.log(`[AI Match] Returning ${matchedSpecialists.length} matched specialists`);
 
     return NextResponse.json({
       matches: matchedSpecialists,

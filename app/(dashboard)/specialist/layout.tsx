@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
+import Footer from "@/components/Footer";
 
 export default function SpecialistLayout({
   children,
@@ -89,6 +90,7 @@ export default function SpecialistLayout({
               {children}
             </div>
           </main>
+          <Footer />
         </>
       )}
     </div>

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import MarketingHeader from "@/components/MarketingHeader";
+import Footer from "@/components/Footer";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 24 },
@@ -290,6 +291,7 @@ export default function ResourcesPage() {
           </motion.div>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

@@ -5,7 +5,7 @@ import { ZoomIn, ZoomOut, Contrast, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AccessibilityBar() {
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [zoomLevel, setZoomLevel] = useState(90); // Default to 90% on first load
   const [highContrast, setHighContrast] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -26,12 +26,18 @@ export default function AccessibilityBar() {
   }, [zoomLevel, highContrast]);
 
   useEffect(() => {
-    // Load saved preferences
+    // Load saved preferences, or use 90% as default on first load
     const savedZoom = localStorage.getItem("accessibility-zoom");
     const savedContrast = localStorage.getItem("accessibility-contrast");
     
     if (savedZoom) {
       setZoomLevel(Number(savedZoom));
+    } else {
+      // First load - set to 90% and apply immediately
+      const initialZoom = 90;
+      setZoomLevel(initialZoom);
+      document.documentElement.style.fontSize = `${initialZoom}%`;
+      localStorage.setItem("accessibility-zoom", initialZoom.toString());
     }
     if (savedContrast === "true") {
       setHighContrast(true);
@@ -56,14 +62,14 @@ export default function AccessibilityBar() {
 
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button - Repositioned to bottom-left to avoid covering logo */}
       <motion.button
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 w-12 h-12 bg-primary-500 text-white rounded-full shadow-large flex items-center justify-center hover:bg-primary-600 transition-colors"
+        className="fixed bottom-4 left-4 z-50 w-12 h-12 bg-primary-500 text-white rounded-full shadow-large flex items-center justify-center hover:bg-primary-600 transition-colors"
         aria-label="Accessibility options"
       >
         <Contrast size={20} />
@@ -73,10 +79,10 @@ export default function AccessibilityBar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="fixed top-16 left-4 z-50 bg-white rounded-xl shadow-2xl border border-secondary-200 p-4 min-w-[280px]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-20 left-4 z-50 bg-white rounded-xl shadow-2xl border border-secondary-200 p-4 min-w-[280px]"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-primary-700">Accessibility</h3>

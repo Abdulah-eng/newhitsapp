@@ -23,7 +23,7 @@ interface Specialist {
   user: {
     full_name: string;
     avatar_url?: string;
-  };
+  } | null;
 }
 
 function SpecialistsPageContent() {
@@ -72,13 +72,15 @@ function SpecialistsPageContent() {
     }
 
     if (data) {
-      setSpecialists(data as Specialist[]);
-      setFilteredSpecialists(data as Specialist[]);
+      // Filter out specialists without user data
+      const validSpecialists = data.filter((spec: any) => spec.user !== null) as Specialist[];
+      setSpecialists(validSpecialists);
+      setFilteredSpecialists(validSpecialists);
 
       // Extract unique specialties and service areas
       const specialties = new Set<string>();
       const serviceAreas = new Set<string>();
-      data.forEach((spec: any) => {
+      validSpecialists.forEach((spec: any) => {
         spec.specialties?.forEach((s: string) => specialties.add(s));
         spec.service_areas?.forEach((a: string) => serviceAreas.add(a));
       });
@@ -97,7 +99,7 @@ function SpecialistsPageContent() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (spec) =>
-          spec.user.full_name.toLowerCase().includes(query) ||
+          spec.user?.full_name.toLowerCase().includes(query) ||
           spec.bio?.toLowerCase().includes(query) ||
           spec.specialties.some((s) => s.toLowerCase().includes(query))
       );
@@ -315,7 +317,7 @@ function SpecialistsPageContent() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="text-xl font-bold text-text-primary mb-1">
-                            {specialist.user.full_name}
+                            {specialist.user?.full_name || "Unknown Specialist"}
                           </h3>
                           {specialist.verification_status === "verified" && (
                             <span className="inline-block px-2 py-1 text-xs bg-success-50 text-success-600 rounded">
@@ -372,7 +374,7 @@ function SpecialistsPageContent() {
                       <div className="flex items-center justify-between pt-4 border-t border-secondary-200">
                         <div className="flex items-center gap-1 text-text-primary font-semibold">
                           <DollarSign size={18} />
-                          <span>${specialist.hourly_rate}/hr</span>
+                          <span>$90/hr</span>
                         </div>
                         {specialist.total_reviews > 0 && (
                           <span className="text-sm text-text-tertiary">

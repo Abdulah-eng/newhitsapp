@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import MarketingHeader from "@/components/MarketingHeader";
+import Footer from "@/components/Footer";
 
 const fadeVariants = {
   hidden: { opacity: 0, y: 32 },
@@ -251,7 +252,7 @@ export default function ConsumerServicesPage() {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  <Link href="/register">
+                  <Link href="/senior/membership-online">
                     <Button
                       className={`w-full h-12 ${tier.accent ? "bg-primary-500 hover:bg-primary-600" : "bg-secondary-200 text-primary-700 hover:bg-secondary-300"}`}
                     >
@@ -308,6 +309,7 @@ export default function ConsumerServicesPage() {
           </motion.div>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

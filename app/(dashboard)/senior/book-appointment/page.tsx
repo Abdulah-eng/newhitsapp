@@ -468,7 +468,7 @@ function BookAppointmentPageContent() {
                         <div className="flex items-center gap-4 text-sm text-text-secondary">
                           <span className="flex items-center gap-1">
                             <Clock size={16} />
-                            ${specialist.hourly_rate}/hr
+                            $90/hr (Platform Rate)
                           </span>
                           {specialist.rating_average > 0 && (
                             <span className="flex items-center gap-1">

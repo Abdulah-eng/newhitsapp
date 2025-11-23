@@ -21,7 +21,6 @@ export default function SpecialistProfilePage() {
   const [formData, setFormData] = useState({
     bio: "",
     specialties: [] as string[],
-    hourly_rate: "",
     service_areas: [] as string[],
     years_experience: "",
     languages_spoken: [] as string[],
@@ -55,7 +54,6 @@ export default function SpecialistProfilePage() {
       setFormData({
         bio: data.bio || "",
         specialties: data.specialties || [],
-        hourly_rate: data.hourly_rate?.toString() || "",
         service_areas: data.service_areas || [],
         years_experience: data.years_experience?.toString() || "",
         languages_spoken: data.languages_spoken || [],
@@ -75,10 +73,13 @@ export default function SpecialistProfilePage() {
     const updateData = {
       bio: formData.bio,
       specialties: formData.specialties,
-      hourly_rate: parseFloat(formData.hourly_rate) || 0,
+      // hourly_rate is NOT included - pricing is controlled by platform only
+      // Platform default rate is $90/hr, set automatically by system
       service_areas: formData.service_areas,
       years_experience: parseInt(formData.years_experience) || null,
       languages_spoken: formData.languages_spoken,
+      // Ensure hourly_rate is set to platform default (read-only, cannot be changed by specialist)
+      hourly_rate: 90.00, // Platform-controlled pricing
     };
 
     const { error } = await supabase
@@ -278,21 +279,7 @@ export default function SpecialistProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-base font-medium text-text-primary mb-2">
-                  Hourly Rate ($)
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.hourly_rate}
-                  onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
-                  placeholder="50.00"
-                  required
-                />
-              </div>
-
+              {/* Hourly Rate removed - pricing is controlled by platform only */}
               <div>
                 <label className="block text-base font-medium text-text-primary mb-2">
                   Years of Experience

@@ -16,7 +16,7 @@ async function logActivity(type: string, description: string, metadata: any) {
 
 export interface MembershipPlan {
   id: string;
-  plan_type: "connect" | "comfort" | "family_care_plus";
+  plan_type: "connect" | "comfort" | "family_care_plus" | "starter" | "essential" | "family";
   name: string;
   monthly_price: number;
   member_hourly_rate: number;
@@ -29,6 +29,7 @@ export interface MembershipPlan {
   max_covered_people: number;
   description: string;
   features: string[];
+  service_category: "online-only" | "in-person";
   is_active: boolean;
 }
 
@@ -51,7 +52,7 @@ export interface UserMembership {
   membership_plan?: MembershipPlan;
 }
 
-export function useMembership(userId: string | undefined) {
+export function useMembership(userId: string | undefined, category?: "online-only" | "in-person") {
   const [membership, setMembership] = useState<UserMembership | null>(null);
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,32 +62,28 @@ export function useMembership(userId: string | undefined) {
   const membershipIdRef = useRef<string | null>(null);
 
   // Fetch all available membership plans
-  useEffect(() => {
-    async function fetchPlans() {
-      try {
-        const { data, error: plansError } = await supabase
-          .from("membership_plans")
-          .select("*")
-          .eq("is_active", true)
-          .order("monthly_price", { ascending: true });
+  // Optionally filter by service_category (online-only or in-person)
+  const fetchPlans = useCallback(async (category?: "online-only" | "in-person") => {
+    try {
+      const categoryParam = category ? `?category=${category}` : "";
+      const response = await fetch(`/api/membership/plans${categoryParam}`);
+      const result = await response.json();
 
-        if (plansError) throw plansError;
-
-        // Parse features JSONB
-        const parsedPlans = (data || []).map((plan) => ({
-          ...plan,
-          features: Array.isArray(plan.features) ? plan.features : [],
-        }));
-
-        setPlans(parsedPlans);
-      } catch (err) {
-        console.error("Error fetching membership plans:", err);
-        setError("Failed to load membership plans");
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch plans");
       }
-    }
 
-    fetchPlans();
+      setPlans(result.plans || []);
+    } catch (err) {
+      console.error("Error fetching membership plans:", err);
+      setError("Failed to load membership plans");
+    }
   }, []);
+
+  // Fetch plans filtered by category if provided
+  useEffect(() => {
+    fetchPlans(category);
+  }, [fetchPlans, category]);
 
   // Fetch user's active membership function (memoized with useCallback)
   const fetchMembershipData = useCallback(async () => {
@@ -338,6 +335,7 @@ export function useMembership(userId: string | undefined) {
     createMembership,
     cancelMembership,
     fetchMembership,
+    fetchPlans,
     hasActiveMembership: !!membership && membership.status === "active",
   };
 }

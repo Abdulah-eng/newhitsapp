@@ -222,16 +222,21 @@ async function handlePaymentSuccess(
 
   if (existingPaymentByStripeId) {
     // Update existing payment record
-    const { error: updateError } = await supabase
+    console.log(`[Webhook] Updating existing payment ${existingPaymentByStripeId.id} to completed`);
+    const { data: updatedPayment, error: updateError } = await supabase
       .from("payments")
       .update({
         status: "completed",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", existingPaymentByStripeId.id);
+      .eq("id", existingPaymentByStripeId.id)
+      .select()
+      .single();
 
     if (updateError) {
-      console.error("Error updating payment:", updateError);
+      console.error("[Webhook] Error updating payment:", updateError);
+    } else {
+      console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status`);
     }
   } else {
     // Check if there's an existing payment for this appointment that needs to be updated
@@ -244,7 +249,8 @@ async function handlePaymentSuccess(
 
     if (existingPaymentByAppointment) {
       // Update existing payment record with Stripe payment ID
-      const { error: updateError } = await supabase
+      console.log(`[Webhook] Updating payment ${existingPaymentByAppointment.id} for appointment ${appointmentId} to completed`);
+      const { data: updatedPayment, error: updateError } = await supabase
         .from("payments")
         .update({
           status: "completed",
@@ -252,10 +258,14 @@ async function handlePaymentSuccess(
           stripe_customer_id: paymentIntent.customer as string,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", existingPaymentByAppointment.id);
+        .eq("id", existingPaymentByAppointment.id)
+        .select()
+        .single();
 
       if (updateError) {
-        console.error("Error updating payment:", updateError);
+        console.error("[Webhook] Error updating payment:", updateError);
+      } else {
+        console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status`);
       }
     } else {
       // Create new payment record

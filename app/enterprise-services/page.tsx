@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import MarketingHeader from "@/components/MarketingHeader";
+import Footer from "@/components/Footer";
 
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -215,6 +216,7 @@ export default function EnterpriseServicesPage() {
           </motion.div>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

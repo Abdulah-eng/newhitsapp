@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/utils/auth";
 import { redirect } from "next/navigation";
+import Footer from "@/components/Footer";
 
 export default async function AuthLayout({
   children,
@@ -22,6 +23,11 @@ export default async function AuthLayout({
     }
   }
   
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <Footer />
+    </>
+  );
 }
 

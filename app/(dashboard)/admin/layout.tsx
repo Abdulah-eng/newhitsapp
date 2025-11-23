@@ -22,6 +22,7 @@ import {
   Crown
 } from "lucide-react";
 import AccountSettingsMenu from "@/components/account/AccountSettingsMenu";
+import Footer from "@/components/Footer";
 
 export default function AdminLayout({
   children,
@@ -179,6 +180,7 @@ export default function AdminLayout({
             {children}
           </div>
         </main>
+        <Footer />
       </div>
 
       {/* Overlay for mobile */}

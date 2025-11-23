@@ -20,7 +20,8 @@ function MembershipPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { membership, plans, isLoading, hasActiveMembership, createMembership, cancelMembership, fetchMembership } = useMembership(user?.id);
+  // Fetch in-person membership plans (for pricing page)
+  const { membership, plans, isLoading, hasActiveMembership, createMembership, cancelMembership, fetchMembership } = useMembership(user?.id, "in-person");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);

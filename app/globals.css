@@ -151,14 +151,31 @@
     @apply bg-black text-white;
   }
 
-  /* Standardize bullet alignment */
-  ul li {
-    @apply flex items-start gap-2;
+  /* Standardize bullet alignment - center aligned with text */
+  ul.list-disc li,
+  ul.list-disc.list-inside li,
+  ul:not([class]) li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  ul.list-disc li::before {
+  ul.list-disc li::before,
+  ul.list-disc.list-inside li::before,
+  ul:not([class]) li::before {
     content: "•";
-    @apply text-primary-500 font-bold mr-2 mt-1 flex-shrink-0;
+    color: var(--color-primary-500);
+    font-size: 1em;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+
+  /* Remove default list-style for lists we're styling */
+  ul.list-disc,
+  ul.list-disc.list-inside {
+    list-style: none;
+    padding-left: 0;
   }
 }
 

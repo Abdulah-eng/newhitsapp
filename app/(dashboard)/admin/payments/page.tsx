@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { fadeIn, slideUp, staggerContainer, staggerItem } from "@/lib/animations/config";
-import { DollarSign, ArrowLeft, Search, Filter, X, TrendingUp, Download, XCircle } from "lucide-react";
+import { DollarSign, ArrowLeft, Search, Filter, X, TrendingUp, Download, XCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -51,6 +51,28 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
+    
+    // Set up real-time subscription for payment updates
+    const paymentsSubscription = supabase
+      .channel("payments_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "payments",
+        },
+        (payload) => {
+          console.log("Payment change detected:", payload);
+          // Refresh payments when any change occurs
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(paymentsSubscription);
+    };
   }, []);
 
   useEffect(() => {
@@ -89,10 +111,11 @@ export default function AdminPaymentsPage() {
   const fetchPayments = async () => {
     setIsLoading(true);
     try {
-      // Fetch all payments
+      // Fetch all payments with explicit status ordering to ensure completed payments are visible
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("payments")
         .select("*")
+        .order("updated_at", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (paymentsError) {
@@ -327,26 +350,37 @@ export default function AdminPaymentsPage() {
         </div>
 
         {/* Status Filters */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          {[
-            { label: "All", value: stats.total, status: "all" },
-            { label: "Completed", value: stats.completed, status: "completed" },
-            { label: "Pending", value: stats.pending, status: "pending" },
-            { label: "Refunded", value: stats.refunded, status: "refunded" },
-            { label: "Failed", value: stats.failed, status: "failed" },
-          ].map((stat) => (
-            <motion.div
-              key={stat.status}
-              variants={slideUp}
-              className={`card bg-white p-4 cursor-pointer transition-all ${
-                statusFilter === stat.status ? "ring-2 ring-primary-500" : ""
-              }`}
-              onClick={() => setStatusFilter(stat.status)}
-            >
-              <p className="text-sm text-text-secondary mb-1">{stat.label}</p>
-              <p className="text-2xl font-bold text-primary-500">{stat.value}</p>
-            </motion.div>
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1">
+            {[
+              { label: "All", value: stats.total, status: "all" },
+              { label: "Completed", value: stats.completed, status: "completed" },
+              { label: "Pending", value: stats.pending, status: "pending" },
+              { label: "Refunded", value: stats.refunded, status: "refunded" },
+              { label: "Failed", value: stats.failed, status: "failed" },
+            ].map((stat) => (
+              <motion.div
+                key={stat.status}
+                variants={slideUp}
+                className={`card bg-white p-4 cursor-pointer transition-all ${
+                  statusFilter === stat.status ? "ring-2 ring-primary-500" : ""
+                }`}
+                onClick={() => setStatusFilter(stat.status)}
+              >
+                <p className="text-sm text-text-secondary mb-1">{stat.label}</p>
+                <p className="text-2xl font-bold text-primary-500">{stat.value}</p>
+              </motion.div>
+            ))}
+          </div>
+          <Button
+            onClick={() => fetchPayments()}
+            variant="outline"
+            className="ml-4"
+            disabled={isLoading}
+          >
+            <RefreshCw size={18} className={`mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Filters */}

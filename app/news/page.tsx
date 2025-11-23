@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import MarketingHeader from "@/components/MarketingHeader";
 import Button from "@/components/ui/Button";
+import Footer from "@/components/Footer";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -64,6 +65,7 @@ export default function NewsPage() {
           </motion.div>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }
