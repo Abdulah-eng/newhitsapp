@@ -46,7 +46,7 @@ export default function Footer() {
               <li><Link href="/faq" className="hover:text-primary-500">FAQ</Link></li>
               <li><Link href="/safety" className="hover:text-primary-500">Safety &amp; Security</Link></li>
               <li><Link href="/privacy" className="hover:text-primary-500">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="hover:text-primary-500">Terms of Use</Link></li>
+              <li><Link href="/terms" className="hover:text-primary-500">Terms of Service</Link></li>
               <li><a href="mailto:support@hitsapp.com" className="hover:text-primary-500">support@hitsapp.com</a></li>
               <li className="font-extrabold text-primary-700">(646) 758-6606</li>
             </ul>
@@ -122,7 +122,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-4 sm:py-6">
           <div className="flex flex-col items-center justify-center gap-3 text-center">
             <p className="text-[14px] text-text-secondary">
-              © {new Date().getFullYear()} HITS – Hire I.T. Specialist, Inc.
+              © 2025 HITS – Hire I.T. Specialist, Inc.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 text-[14px]">
               <Link href="/privacy" className="text-text-secondary hover:text-primary-500">
@@ -130,7 +130,7 @@ export default function Footer() {
               </Link>
               <span className="text-text-secondary">|</span>
               <Link href="/terms" className="text-text-secondary hover:text-primary-500">
-                Terms & Conditions
+                Terms of Service
               </Link>
               <span className="text-text-secondary">|</span>
               <Link href="/safety" className="text-text-secondary hover:text-primary-500">

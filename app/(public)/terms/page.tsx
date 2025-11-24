@@ -1,8 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
-import MarketingHeader from "@/components/MarketingHeader";
 
 const fade = {
   hidden: { opacity: 0, y: 28 },
@@ -16,8 +14,6 @@ const fade = {
 export default function TermsOfServicePage() {
   return (
     <main className="bg-secondary-50 text-text-primary">
-      <MarketingHeader />
-      
       {/* Hero Section */}
       <section className="bg-white border-b border-secondary-200">
         <div className="max-w-5xl mx-auto px-8 md:px-12 py-20 text-center">
@@ -37,7 +33,34 @@ export default function TermsOfServicePage() {
             variants={fade}
             className="mt-6 text-lg leading-8 text-text-secondary max-w-3xl mx-auto"
           >
-            Last updated: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            Last updated: November 23, 2025
+          </motion.p>
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.15}
+            variants={fade}
+            className="mt-4 text-base leading-7 text-text-secondary max-w-3xl mx-auto"
+          >
+            These Terms of Service ("Terms") govern your access to and use of the website, platform, and services offered by HITS – Hire I.T. Specialist, Inc. ("HITS," "we," "us," or "our").
+          </motion.p>
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.2}
+            variants={fade}
+            className="mt-4 text-base leading-7 text-text-secondary max-w-3xl mx-auto"
+          >
+            By creating an account, booking a service, purchasing a membership, or otherwise using our services (collectively, the "Services"), you agree to be bound by these Terms and our Privacy Policy and Safety & Security Policy.
+          </motion.p>
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.25}
+            variants={fade}
+            className="mt-4 text-base leading-7 text-text-secondary max-w-3xl mx-auto font-semibold"
+          >
+            If you do not agree to these Terms, do not use the Services.
           </motion.p>
         </div>
       </section>
@@ -47,215 +70,320 @@ export default function TermsOfServicePage() {
         <div className="max-w-4xl mx-auto px-8 md:px-12 py-18">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
+            animate="visible"
             variants={fade}
             custom={0}
             className="bg-white rounded-3xl border border-secondary-200 p-8 md:p-12 shadow-soft space-y-8"
           >
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Agreement to Terms</h2>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">1. Overview of the HITS Platform</h2>
               <p className="text-text-secondary leading-7">
-                By accessing or using HITS – Hire I.T. Specialist ("HITS," "we," "our," or "us"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use our services.
+                HITS provides a platform that connects individuals, families, and organizations ("Members" or "you") with independent technology professionals ("Specialists") who offer:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2 mt-3">
+                <li>In-person technology support</li>
+                <li>Remote / online tech support and concierge services</li>
+                <li>Group workshops and educational sessions</li>
+                <li>Other technology-related assistance as described on our site</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 font-semibold">
+                HITS is not a 911 or emergency service and does not provide medical, legal, financial, or mental health advice.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Description of Services</h2>
-              <p className="text-text-secondary leading-7 mb-3">
-                HITS connects seniors, disabled adults, and families with vetted I.T. specialists for in-home and remote technology support. Our services include:
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">2. Eligibility</h2>
+              <p className="text-text-secondary leading-7 mb-3">To use the Services, you represent and warrant that:</p>
+              <ol className="list-decimal list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>You are at least 18 years old;</li>
+                <li>You are legally capable of entering into a binding contract; and</li>
+                <li>You will use the Services only in accordance with these Terms and applicable law.</li>
+              </ol>
+              <p className="text-text-secondary leading-7 mt-4">
+                If you are using the Services on behalf of another person (e.g., an elderly parent) or an organization, you represent that you are authorized to accept these Terms on their behalf.
               </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">3. Accounts & Security</h2>
+              <p className="text-text-secondary leading-7 mb-3">To access certain features (such as booking, memberships, or dashboards), you may need to create an account.</p>
+              <p className="text-text-secondary leading-7 mb-3">You agree to:</p>
               <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
-                <li>Device setup and troubleshooting (phones, tablets, computers, smart TVs)</li>
-                <li>Wi-Fi, router, and printer support</li>
-                <li>Email and online account assistance</li>
-                <li>Video call setup and training</li>
-                <li>Scam and fraud safety checks</li>
-                <li>Basic technology training</li>
+                <li>Provide accurate, current, and complete information;</li>
+                <li>Keep your login credentials confidential;</li>
+                <li>Notify us immediately at support@hitsapp.com if you suspect unauthorized access; and</li>
+                <li>Be responsible for all activity that occurs under your account.</li>
               </ul>
               <p className="text-text-secondary leading-7 mt-4">
-                <strong>HITS does not provide:</strong> Hardware repairs requiring device disassembly, medical advice, legal advice, or financial advice.
+                HITS is not liable for losses resulting from unauthorized use of your account if caused by your failure to safeguard your credentials.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">User Accounts</h2>
-              <div className="space-y-4 text-text-secondary leading-7">
-                <p>To use certain features of our platform, you must create an account. You agree to:</p>
-                <ul className="list-disc list-inside ml-4 space-y-2">
-                  <li>Provide accurate, current, and complete information</li>
-                  <li>Maintain and update your information as necessary</li>
-                  <li>Keep your account credentials secure and confidential</li>
-                  <li>Notify us immediately of any unauthorized access</li>
-                  <li>Be responsible for all activities under your account</li>
-                </ul>
-              </div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">4. Description of Services</h2>
+              <p className="text-text-secondary leading-7 mb-3">HITS may provide, facilitate, or enable access to:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Online concierge tech support (e.g., Starter, Essential, Family memberships)</li>
+                <li>In-person tech support visits in supported areas</li>
+                <li>Remote sessions via phone, video, or remote desktop tools</li>
+                <li>Specialist matching and appointment booking</li>
+                <li>Educational content, workshops, and resources</li>
+                <li>AI-powered tools, including the HITS Assistant chatbox</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                Features and availability may change over time and may differ by location.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Pricing and Payments</h2>
-              <div className="space-y-4 text-text-secondary leading-7">
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">Pay-As-You-Go Visits</h3>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>$95 for the first hour of service</li>
-                    <li>$45 for each additional 30 minutes</li>
-                    <li>1-hour minimum for in-home visits</li>
-                    <li>30-minute minimum for remote support</li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">Membership Plans</h3>
-                  <p>Membership plans are billed monthly and automatically renew unless cancelled. You may cancel your membership at any time, and it will remain active until the end of your current billing period.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">Travel Fees</h3>
-                  <p>For in-home visits beyond 20 miles from Hope Mills, NC 28348, a travel fee of $1.00 per mile (round-trip) applies. Travel fees are calculated and displayed before appointment confirmation.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">Payment Processing</h3>
-                  <p>All payments are processed securely through Stripe. We do not store your full payment card information on our servers.</p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Appointments and Cancellations</h2>
-              <div className="space-y-4 text-text-secondary leading-7">
-                <p>Appointments must be scheduled in advance through our platform. You may cancel appointments according to the following:</p>
-                <ul className="list-disc list-inside ml-4 space-y-2">
-                  <li>Cancellations made at least 24 hours in advance: Full refund</li>
-                  <li>Cancellations made less than 24 hours in advance: Refund minus a cancellation fee</li>
-                  <li>No-shows: No refund</li>
-                  <li>Specialist cancellations: Full refund or rescheduling option</li>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">5. Memberships & Pricing</h2>
+              <p className="text-text-secondary leading-7 mb-3">HITS currently offers two main categories of membership:</p>
+              <ol className="list-decimal list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Online-Only Tech Support Memberships (e.g., Starter, Essential, Family)</li>
+                <li>In-Person Tech Support Memberships, as listed on the Pricing & Plans page</li>
+              </ol>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">Key points:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Membership benefits, limits (e.g., number of sessions), and included services are described on the Pricing & Plans and Concierge/Consumer pages.</li>
+                <li>Memberships may auto-renew as described at checkout unless you cancel in accordance with these Terms.</li>
+                <li>HITS controls all default pricing. Specialists cannot set or override platform pricing.</li>
+              </ul>
+              <div className="mt-4 p-4 bg-secondary-50 rounded-lg">
+                <h3 className="font-semibold text-text-primary mb-2">Standard Service Rate (Non-Membership / Per-Visit)</h3>
+                <p className="text-text-secondary leading-7 mb-2">Unless otherwise stated in writing:</p>
+                <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-1">
+                  <li>The standard rate is $95 for the first hour, and</li>
+                  <li>$45 for each additional hour of service.</li>
                 </ul>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Service Limitations</h2>
-              <div className="space-y-4 text-text-secondary leading-7">
-                <p>While we strive to provide excellent service, we cannot guarantee:</p>
-                <ul className="list-disc list-inside ml-4 space-y-2">
-                  <li>That all technical issues can be resolved</li>
-                  <li>Data recovery from damaged or corrupted devices</li>
-                  <li>Compatibility with all devices or software</li>
-                  <li>Specific outcomes or results</li>
-                </ul>
-                <p className="mt-4">
-                  <strong>Data Backup:</strong> Clients are strongly encouraged to maintain their own backups. HITS is not responsible for data loss that occurs before, during, or after a service visit.
+                <p className="text-text-secondary leading-7 mt-3">
+                  Taxes, fees, or surcharges may apply depending on your location.
                 </p>
               </div>
+              <p className="text-text-secondary leading-7 mt-4">
+                All pricing and membership structures are subject to change, but changes will not be applied retroactively to services you have already booked or paid for.
+              </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">User Conduct</h2>
-              <p className="text-text-secondary leading-7 mb-3">You agree not to:</p>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">6. Booking, Rescheduling & Cancellations</h2>
+              <p className="text-text-secondary leading-7 mb-3">When you book:</p>
               <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
-                <li>Use our services for any illegal or unauthorized purpose</li>
-                <li>Interfere with or disrupt our platform or services</li>
-                <li>Attempt to gain unauthorized access to any part of our system</li>
-                <li>Harass, abuse, or harm our specialists or other users</li>
-                <li>Provide false or misleading information</li>
-                <li>Resell or redistribute our services without authorization</li>
+                <li>You agree to provide accurate details about the service needed, location (for in-person), and contact information.</li>
+                <li>You agree to be present or ensure an authorized adult is present at the appointment time.</li>
               </ul>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Intellectual Property</h2>
-              <p className="text-text-secondary leading-7">
-                All content, features, and functionality of our platform are owned by HITS and are protected by copyright, trademark, and other intellectual property laws. You may not copy, modify, or distribute any content without our express written permission.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">No Financial, Legal, or Medical Advice</h2>
-              <p className="text-text-secondary leading-7">
-                HITS specialists may help you use online banking, insurance portals, medical portals, and other websites. They do not provide financial, legal, tax, medical, or mental health advice. Any information provided during a visit is for technical and educational purposes only. You are responsible for contacting your own bank, attorney, tax professional, or healthcare provider for advice.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Passwords and Security Responsibility</h2>
-              <p className="text-text-secondary leading-7">
-                HITS staff and specialists will never ask you to send passwords, PINs, or full card numbers by email, text, or chat. When a password is needed, you should type it yourself on your own device. You agree not to share your passwords with HITS or any specialist, and you remain responsible for keeping your login credentials safe.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Third-Party Services Disclaimer</h2>
-              <p className="text-text-secondary leading-7">
-                HITS may help you access or use third-party websites, services, or devices (such as banks, email providers, or telehealth portals). Those services are not controlled by HITS. HITS is not responsible for the content, security, decisions, or policies of any third-party service. You agree to follow the terms and privacy policies of those companies.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Data and Backups Limitation</h2>
-              <p className="text-text-secondary leading-7">
-                Before any work begins, you are responsible for keeping copies or backups of important files, photos, and documents. HITS and its specialists will take reasonable care when working on your devices, but we cannot guarantee against data loss, hardware failure, or issues caused by existing viruses, device age, or third-party software.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Independent Contractors</h2>
-              <p className="text-text-secondary leading-7">
-                HITS – Hire I.T. Specialist connects clients with independent I.T. specialists. Specialists are not employees of HITS; they are independent contractors responsible for their own actions and professional judgment. While HITS performs screening and requires adherence to its code of conduct, HITS is not responsible for any specialist's actions outside the HITS platform or for services performed that are not booked and documented through the platform.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Limitation of Liability</h2>
-              <p className="text-text-secondary leading-7 mb-3">
-                To the fullest extent allowed by North Carolina law, HITS – Hire I.T. Specialist, its owners, and its staff are not responsible for:
-              </p>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">HITS may implement cancellation and rescheduling rules, including:</p>
               <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
-                <li>Any indirect, incidental, special, or consequential damages</li>
-                <li>Loss of data, loss of business, or loss of income</li>
-                <li>Problems caused by third-party services, devices, or software</li>
-                <li>Any actions of independent specialists outside the HITS platform</li>
+                <li>Minimum notice requirements for cancelling or changing an appointment;</li>
+                <li>Possible fees for late cancellations, no-shows, or repeated schedule changes.</li>
               </ul>
               <p className="text-text-secondary leading-7 mt-4">
-                If HITS is found responsible for any claim, the total liability will be limited to the amount you paid for the specific HITS service related to that claim.
+                These rules will be communicated on the site, at checkout, or in your confirmation emails. Repeated misuse (no-shows, frequent last-minute cancellations, abusive behavior) may lead to account suspension.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Governing Law and Venue</h2>
-              <p className="text-text-secondary leading-7">
-                These Terms and any services provided by HITS – Hire I.T. Specialist are governed by and construed in accordance with the laws of the State of North Carolina, without regard to conflict-of-law principles. Any dispute, claim, or lawsuit relating to HITS or these Terms will be brought exclusively in the state or federal courts located in North Carolina, and you consent to the personal jurisdiction of those courts.
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">7. Payments & Billing</h2>
+              <p className="text-text-secondary leading-7 mb-3">All payments are processed securely through approved third-party payment processors (such as Stripe).</p>
+              <p className="text-text-secondary leading-7 mb-3">You agree that:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>You will provide valid, authorized payment details;</li>
+                <li>HITS may charge your payment method for bookings, memberships, add-ons, and applicable taxes/fees;</li>
+                <li>If a payment is declined, we may suspend or cancel your access to Services or future bookings.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                HITS does not store your full credit card number. Payment processing is subject to the terms and policies of our payment providers.
+              </p>
+              <p className="text-text-secondary leading-7 mt-4 font-semibold">
+                Unless specified otherwise in writing: All fees are non-refundable, except where required by law or where HITS chooses, in its sole discretion, to issue a credit or refund.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Dispute Resolution</h2>
-              <p className="text-text-secondary leading-7">
-                If you have a concern about a service visit or specialist, please contact us at support@hitsapp.com. We will work with you to resolve disputes fairly and promptly. For disputes that cannot be resolved directly, you may submit a formal dispute through our platform.
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">8. Relationship Between HITS and Specialists</h2>
+              <p className="text-text-secondary leading-7 mb-3 font-semibold">Specialists are independent contractors, not employees, agents, or partners of HITS.</p>
+              <p className="text-text-secondary leading-7 mb-3">Accordingly:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>HITS does not control how Specialists perform their work, beyond our policies and standards.</li>
+                <li>Specialists are responsible for complying with applicable laws and regulations, including any licensing requirements in their area.</li>
+                <li>HITS is not responsible for a Specialist's acts or omissions, including any property damage, data loss, or personal injury that may occur during or after services.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                You acknowledge that your direct service relationship (install, troubleshooting, setup, etc.) is with the Specialist, and HITS functions as a platform to facilitate the connection and payment.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Termination</h2>
-              <p className="text-text-secondary leading-7">
-                We reserve the right to suspend or terminate your account and access to our services at any time, with or without cause or notice, for any reason, including violation of these Terms.
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">9. User Responsibilities</h2>
+              <p className="text-text-secondary leading-7 mb-3">You agree to:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Provide accurate, complete, and non-misleading information when requesting services;</li>
+                <li>Ensure a safe environment for Specialists during in-person visits (including safe access to the property, pets secured as needed, and a non-threatening environment);</li>
+                <li>Use the Services only for lawful purposes;</li>
+                <li>Not attempt to defraud, exploit, or harm a Specialist, HITS, or other users;</li>
+                <li>Follow instructions, safety guidelines, and reasonable requests from Specialists and HITS staff.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                If you are arranging services for a third party (for example, an older parent or relative), you are responsible for ensuring that they understand and consent to the services being provided.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Changes to Terms</h2>
-              <p className="text-text-secondary leading-7">
-                We may modify these Terms at any time. We will notify you of material changes by posting the updated Terms on this page and updating the "Last updated" date. Your continued use of our services after changes become effective constitutes acceptance of the new Terms.
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">10. Prohibited Conduct</h2>
+              <p className="text-text-secondary leading-7 mb-3">You may not:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Use the Services for any illegal, harmful, or abusive purpose;</li>
+                <li>Harass, threaten, or intimidate Specialists, staff, or other users;</li>
+                <li>Attempt to circumvent the platform (e.g., bypass HITS to avoid fees, solicit off-platform services that violate policies);</li>
+                <li>Interfere with or disrupt the operation of the Services (including hacking, attempting to bypass security, or introducing malware);</li>
+                <li>Misrepresent your identity or affiliation;</li>
+                <li>Collect or harvest data from the platform without written permission.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                HITS reserves the right to investigate, suspend, or terminate accounts suspected of violating this section.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Contact Information</h2>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">11. AI Tools & Automated Features</h2>
+              <p className="text-text-secondary leading-7 mb-3">HITS may provide AI-powered tools such as the HITS Assistant chatbox to:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Help answer questions;</li>
+                <li>Guide users in understanding services;</li>
+                <li>Offer suggestions or educational information;</li>
+                <li>Prompt users to book appointments after a certain number of messages.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">You understand and agree that:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>AI responses are generated automatically and may not always be accurate or complete;</li>
+                <li>AI tools are not a substitute for human specialists or professional advice;</li>
+                <li>You should not rely solely on AI for decisions involving safety, medical, legal, financial, or emergency matters.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 font-semibold">
+                For urgent issues, always contact a live specialist, 911, or other appropriate professionals.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">12. Intellectual Property</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                All content on the HITS platform—including logos, branding, text, graphics, icons, and software—is owned by or licensed to HITS and is protected by intellectual property laws.
+              </p>
+              <p className="text-text-secondary leading-7 mb-3">You may not:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Copy, reproduce, modify, distribute, or create derivative works from the platform content;</li>
+                <li>Use the HITS name, logo, or branding without prior written permission.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                You retain ownership of any content you submit (feedback, reviews, etc.), but grant HITS a non-exclusive, worldwide, royalty-free license to use, display, and reproduce that content in connection with operating and promoting the Services.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">13. Third-Party Links and Services</h2>
+              <p className="text-text-secondary leading-7 mb-3">The Services may include links to third-party websites, services, or tools. HITS is not responsible for:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>The content, policies, or practices of those third parties;</li>
+                <li>Any losses or issues arising from your use of third-party services.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                You should review each third party's own terms and policies before using their services.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">14. Disclaimer of Warranties</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                To the fullest extent permitted by law, the Services are provided on an "AS IS" and "AS AVAILABLE" basis, without warranties of any kind, whether express or implied, including but not limited to:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Warranties of merchantability;</li>
+                <li>Fitness for a particular purpose;</li>
+                <li>Non-infringement;</li>
+                <li>Accuracy, reliability, or completeness of any content or information.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">HITS does not warrant that:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>The Services will be uninterrupted, secure, or error-free;</li>
+                <li>All defects will be corrected;</li>
+                <li>Any specific outcome or result will be achieved from using a Specialist.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">15. Limitation of Liability</h2>
+              <p className="text-text-secondary leading-7 mb-3">To the maximum extent permitted by law:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>HITS and its officers, directors, employees, and agents are not liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, loss of profits, property damage, or personal injury arising out of or related to your use of the Services.</li>
+                <li>In no event will HITS's total liability for any claim arising out of or relating to the Services exceed the greater of:
+                  <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
+                    <li>The amount you paid to HITS for the service giving rise to the claim in the 12 months before the claim, or</li>
+                    <li>One hundred U.S. dollars ($100).</li>
+                  </ul>
+                </li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                Some jurisdictions do not allow certain limitations of liability, so some of the above may not apply to you. In such cases, HITS's liability will be limited to the extent permitted by applicable law.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">16. Indemnification</h2>
               <p className="text-text-secondary leading-7">
-                If you have questions about these Terms of Service, please contact us at:
+                You agree to indemnify, defend, and hold harmless HITS and its officers, directors, employees, agents, and affiliates from and against any claims, liabilities, damages, losses, and expenses (including reasonable attorneys' fees) arising out of or related to:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2 mt-3">
+                <li>Your use of the Services;</li>
+                <li>Your violation of these Terms or any applicable law;</li>
+                <li>Your interaction with a Specialist;</li>
+                <li>Your infringement of any third party's rights.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">17. Suspension and Termination</h2>
+              <p className="text-text-secondary leading-7 mb-3">HITS may, at its sole discretion and without liability, suspend or terminate your account or access to the Services if:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>You violate these Terms or any other posted policy;</li>
+                <li>We suspect fraudulent, abusive, or unsafe behavior;</li>
+                <li>We are required by law or a government authority.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                You may stop using the Services at any time. Certain provisions of these Terms (including Limitation of Liability, Indemnification, and Governing Law) will survive any termination.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">18. Governing Law & Dispute Resolution</h2>
+              <p className="text-text-secondary leading-7">
+                These Terms are governed by the laws of the State of North Carolina, without giving effect to its conflict-of-law rules.
+              </p>
+              <p className="text-text-secondary leading-7 mt-4">
+                You agree that any dispute, claim, or controversy arising out of or relating to these Terms or your use of the Services will be brought exclusively in the state or federal courts located in North Carolina, and you consent to the personal jurisdiction of those courts.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">19. Changes to These Terms</h2>
+              <p className="text-text-secondary leading-7 mb-3">We may update these Terms from time to time. When we make material changes, we will:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Update the "Last updated" date at the top of this page; and</li>
+                <li>Provide additional notice when required by law (for example, through the site or by email).</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                Your continued use of the Services after the effective date of any changes means you accept the revised Terms.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">20. Contact Us</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                If you have questions about these Terms or the Services, please contact:
               </p>
               <div className="mt-4 p-4 bg-secondary-50 rounded-lg">
-                <p className="text-text-primary font-medium">HITS – Hire I.T. Specialist</p>
+                <p className="text-text-primary font-medium">HITS – Hire I.T. Specialist, Inc.</p>
                 <p className="text-text-secondary">Email: support@hitsapp.com</p>
                 <p className="text-text-secondary">Phone: (646) 758-6606</p>
+                <p className="text-text-secondary mt-2">Mailing Address: (add your NC business mailing address here)</p>
               </div>
             </div>
           </motion.div>
@@ -264,4 +392,3 @@ export default function TermsOfServicePage() {
     </main>
   );
 }
-

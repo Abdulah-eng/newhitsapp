@@ -1,8 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
-import MarketingHeader from "@/components/MarketingHeader";
 
 const fade = {
   hidden: { opacity: 0, y: 28 },
@@ -16,8 +14,6 @@ const fade = {
 export default function SafetyPage() {
   return (
     <main className="bg-secondary-50 text-text-primary">
-      <MarketingHeader />
-      
       {/* Hero Section */}
       <section className="bg-white border-b border-secondary-200">
         <div className="max-w-5xl mx-auto px-8 md:px-12 py-20 text-center">
@@ -28,7 +24,7 @@ export default function SafetyPage() {
             variants={fade}
             className="text-[38px] md:text-[52px] font-extrabold leading-tight text-primary-900"
           >
-            Safety & Security
+            Safety & Security Policy
           </motion.h1>
           <motion.p
             initial="hidden"
@@ -37,7 +33,7 @@ export default function SafetyPage() {
             variants={fade}
             className="mt-6 text-lg leading-8 text-text-secondary max-w-3xl mx-auto"
           >
-            Your safety and security are our top priorities. Learn how we protect you and your information.
+            Last Updated: November 23, 2025
           </motion.p>
         </div>
       </section>
@@ -53,9 +49,21 @@ export default function SafetyPage() {
             custom={0}
             className="bg-white rounded-2xl border-2 border-error-300 p-8 shadow-soft"
           >
-            <h2 className="text-2xl font-bold text-error-700 mb-4">Emergency Disclaimer</h2>
-            <p className="text-base leading-7 text-text-secondary">
-              HITS – Hire I.T. Specialist is not a 911 or emergency service and does not provide medical, mental health, or crisis response. If you or someone near you is in immediate danger, experiencing a medical emergency, or facing active fraud, call 911, your local authorities, or your bank right away.
+            <h2 className="text-2xl font-bold text-error-700 mb-4">1. Emergency Disclaimer</h2>
+            <p className="text-base leading-7 text-text-secondary mb-3">
+              HITS is not an emergency, crisis, or first-responder service.
+            </p>
+            <p className="text-base leading-7 text-text-secondary mb-3">
+              For emergencies — including threats to personal safety, medical emergencies, active fraud, cybercrime in progress, fires, or hazardous situations — call 911 immediately or contact:
+            </p>
+            <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+              <li>Local law enforcement</li>
+              <li>Your bank or credit card company (for active fraud)</li>
+              <li>Your emergency contacts</li>
+              <li>Appropriate medical or crisis services</li>
+            </ul>
+            <p className="text-base leading-7 text-text-secondary mt-4 font-semibold">
+              HITS Specialists are not trained or authorized to respond to emergencies.
             </p>
           </motion.div>
         </div>
@@ -66,132 +74,234 @@ export default function SafetyPage() {
         <div className="max-w-4xl mx-auto px-8 md:px-12 py-18">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
+            animate="visible"
             variants={fade}
             custom={0}
             className="bg-white rounded-3xl border border-secondary-200 p-8 md:p-12 shadow-soft space-y-8"
           >
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Our Promise</h2>
-              <p className="text-text-secondary leading-7">
-                HITS exists to give seniors, disabled adults, and their families calm, trustworthy, one-on-one tech support. We promise to treat every client like family—with care, clear communication, and strong security. Our specialists are patient, respectful, and trained to work at your pace.
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">2. In-Person Appointment Safety</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                To protect both Members and Specialists, we implement the following safeguards:
               </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">How We Keep You Safe</h2>
               <div className="space-y-4 text-text-secondary leading-7">
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-2">1. Background Checks</h3>
-                  <p>All HITS specialists undergo comprehensive background checks before they can provide services. We verify identity, check criminal records, and confirm professional qualifications to ensure your safety and peace of mind.</p>
+                  <h3 className="font-semibold text-text-primary mb-2">A. Address Verification</h3>
+                  <p className="mb-2">Members must provide an accurate service address.</p>
+                  <p className="mb-2">Appointments may be denied or cancelled if:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>An address is incomplete or misleading</li>
+                    <li>A location appears unsafe</li>
+                    <li>A Specialist cannot gain safe entry</li>
+                  </ul>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-2">2. Secure Payment Processing</h3>
-                  <p>All payments are processed securely through Stripe, a trusted payment processor. We never store your full payment card information on our servers. Your financial data is encrypted and protected according to industry standards.</p>
+                  <h3 className="font-semibold text-text-primary mb-2">B. Safe Environment Requirements</h3>
+                  <p className="mb-2">Members agree to maintain a reasonably safe environment, including:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Securing pets if necessary</li>
+                    <li>Removing hazards from the workspace</li>
+                    <li>Providing adequate lighting</li>
+                    <li>Ensuring adult supervision for vulnerable individuals</li>
+                  </ul>
+                  <p className="mt-3">
+                    If a Specialist feels unsafe at any time, they may end the appointment.
+                  </p>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-2">3. Data Protection</h3>
-                  <p>We take data protection seriously. Your personal information is encrypted in transit and at rest, accessible only to authorized personnel and your assigned specialist, never sold to third parties, and protected by strong security measures.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">4. Safe Service Practices</h3>
-                  <p>Our specialists are trained to always ask permission before making changes to your devices, explain what they're doing in plain language, never pressure you into buying extra products or services, respect your pace and comfort level, and maintain professional boundaries at all times.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">5. Transparent Communication</h3>
-                  <p>You always see the cost of your visit upfront, including any travel fees. You receive a clear receipt after every session. All communication happens through our secure platform, and you can contact support anytime with questions or concerns.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text-primary mb-2">6. Dispute Resolution</h3>
-                  <p>If you have any concerns about a service visit or specialist, we have a clear dispute resolution process. Contact us immediately, and we will work with you to resolve issues fairly and promptly.</p>
+                  <h3 className="font-semibold text-text-primary mb-2">C. Specialist Identification</h3>
+                  <p className="mb-2">Specialists may provide identification upon request and will confirm:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Their name</li>
+                    <li>Their role</li>
+                    <li>Your booking details</li>
+                  </ul>
+                  <p className="mt-3">
+                    HITS discourages Specialists from entering homes where the environment appears unsafe.
+                  </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">What HITS Is Not</h2>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">3. Online Safety & Remote Support</h2>
               <p className="text-text-secondary leading-7 mb-3">
-                It's important to understand what HITS does and does not provide:
+                Remote support sessions may involve screen sharing or remote desktop tools. To maintain safety:
               </p>
               <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
-                <li>HITS is not a 911 or emergency service</li>
-                <li>HITS does not provide medical, mental health, or crisis response</li>
-                <li>HITS does not provide financial, legal, tax, or medical advice</li>
-                <li>HITS does not perform hardware repairs requiring device disassembly or soldering</li>
-                <li>HITS specialists are independent contractors, not employees</li>
-                <li>HITS cannot guarantee that all technical issues can be resolved</li>
-                <li>HITS is not responsible for data loss if backups are not maintained by the client</li>
+                <li>Specialists will never ask for your full Social Security number.</li>
+                <li>Specialists will never ask for your full banking passwords.</li>
+                <li>Members should never grant remote access to individuals outside the HITS platform.</li>
+                <li>Sensitive financial portals (banking, investments, etc.) should be closed before your session begins.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 font-semibold">
+                If you see anything suspicious during a session, disconnect immediately and notify HITS.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">4. Specialist Screening & Conduct Standards</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                HITS Specialists are independent professionals who must comply with HITS standards.
+              </p>
+              <div className="space-y-4 text-text-secondary leading-7">
+                <div>
+                  <h3 className="font-semibold text-text-primary mb-2">A. Screening and Verification</h3>
+                  <p className="mb-2">Where permitted by law, HITS may conduct:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Identity verification</li>
+                    <li>Background checks (when applicable)</li>
+                    <li>Skills and experience reviews</li>
+                    <li>Professional screening interviews</li>
+                  </ul>
+                  <p className="mt-3">
+                    We do not guarantee that a Specialist has passed a criminal background check in every state; some states and counties limit the type of information we can legally obtain.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-text-primary mb-2">B. Conduct Requirements</h3>
+                  <p className="mb-2">Specialists must:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Behave professionally and respectfully</li>
+                    <li>Maintain confidentiality of Member information</li>
+                    <li>Follow lawful and ethical practices</li>
+                    <li>Avoid unsafe or inappropriate activities</li>
+                    <li>Notify HITS of any safety or behavioral concerns</li>
+                  </ul>
+                  <p className="mt-3">
+                    Violation of these standards may result in suspension or removal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">5. Data & Cybersecurity Standards</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                HITS uses industry-standard security measures to protect your data, including:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>HTTPS encrypted connections</li>
+                <li>Secure authentication and credential hashing</li>
+                <li>PCI-compliant payment processing through Stripe</li>
+                <li>Limited access controls (only authorized personnel)</li>
+                <li>Routine system monitoring</li>
+                <li>Firewalls and intrusion detection systems</li>
+                <li>Secure handling of remote sessions</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">You are responsible for:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Protecting your device passwords</li>
+                <li>Not sharing sensitive personal information unnecessarily</li>
+                <li>Keeping all software (Windows, macOS, browsers) up to date</li>
+                <li>Alerting us to suspicious activity involving your account</li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Scam & Fraud Protection</h2>
-              <p className="text-text-secondary leading-7">
-                If you suspect you've been scammed or hacked, contact your bank and local law enforcement immediately. After you're safe, HITS can help secure your devices and accounts, update passwords, and add extra safety protections.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">No Financial, Legal, or Medical Advice</h2>
-              <p className="text-text-secondary leading-7">
-                HITS specialists may help you use online banking, insurance portals, medical portals, and other websites. They do not provide financial, legal, tax, medical, or mental health advice. Any information provided during a visit is for technical and educational purposes only. You are responsible for contacting your own bank, attorney, tax professional, or healthcare provider for advice.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Passwords and Security Responsibility</h2>
-              <p className="text-text-secondary leading-7">
-                HITS staff and specialists will never ask you to send passwords, PINs, or full card numbers by email, text, or chat. When a password is needed, you should type it yourself on your own device. You agree not to share your passwords with HITS or any specialist, and you remain responsible for keeping your login credentials safe.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Third-Party Services Disclaimer</h2>
-              <p className="text-text-secondary leading-7">
-                HITS may help you access or use third-party websites, services, or devices (such as banks, email providers, or telehealth portals). Those services are not controlled by HITS. HITS is not responsible for the content, security, decisions, or policies of any third-party service. You agree to follow the terms and privacy policies of those companies.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Data and Backups Limitation</h2>
-              <p className="text-text-secondary leading-7">
-                Before any work begins, you are responsible for keeping copies or backups of important files, photos, and documents. HITS and its specialists will take reasonable care when working on your devices, but we cannot guarantee against data loss, hardware failure, or issues caused by existing viruses, device age, or third-party software.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Independent Contractors</h2>
-              <p className="text-text-secondary leading-7">
-                HITS – Hire I.T. Specialist connects clients with independent I.T. specialists. Specialists are not employees of HITS; they are independent contractors responsible for their own actions and professional judgment. While HITS performs screening and requires adherence to its code of conduct, HITS is not responsible for any specialist's actions outside the HITS platform or for services performed that are not booked and documented through the platform.
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">How to Report a Concern</h2>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">6. Fraud Prevention & Scam Awareness</h2>
               <p className="text-text-secondary leading-7 mb-3">
-                If you have any safety concerns or need to report an issue, please contact us immediately:
+                HITS actively monitors for fraudulent or malicious behavior.
               </p>
+              <p className="text-text-secondary leading-7 mb-3">For your protection:</p>
               <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
-                <li>Email: <a href="mailto:support@hitsapp.com" className="text-primary-600 hover:text-primary-500">support@hitsapp.com</a></li>
-                <li>Phone: <strong>(646) 758-6606</strong></li>
-                <li>Through your dashboard: Use the "Contact Support / Report a Concern" button</li>
-                <li>For urgent safety issues: Contact local law enforcement first, then reach out to us</li>
+                <li>Specialists will never request payment outside the platform</li>
+                <li>You should never accept off-platform service arrangements</li>
+                <li>You should never send money directly to a Specialist</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 font-semibold">
+                If someone contacts you claiming to be from HITS and asks for money, codes, logins, or remote access, report it immediately to support@hitsapp.com.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">7. AI Safety Practices</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                HITS may provide AI-powered tools for support guidance or automated answers.
+              </p>
+              <p className="text-text-secondary leading-7 mb-3 font-semibold">
+                AI is not a replacement for a trained Specialist or professional tech support.
+              </p>
+              <p className="text-text-secondary leading-7 mb-3">You should not rely on AI for:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Safety-critical instructions</li>
+                <li>Legal advice</li>
+                <li>Medical information</li>
+                <li>Emergency troubleshooting (fire, flood, device overheating, smoke, etc.)</li>
               </ul>
               <p className="text-text-secondary leading-7 mt-4">
-                We take all reports seriously and will investigate promptly. Your safety and satisfaction are our top priorities.
+                Any automated instruction should be validated with a live Specialist.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-primary-700 mb-4">Contact Us</h2>
-              <p className="text-text-secondary leading-7">
-                If you have questions about our safety and security practices, please contact us:
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">8. Reporting Safety Concerns</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                We take all safety concerns seriously.
+              </p>
+              <p className="text-text-secondary leading-7 mb-3">Please report:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Unsafe or threatening behavior</li>
+                <li>Suspicious communications</li>
+                <li>Fraud attempts</li>
+                <li>Harassment</li>
+                <li>Privacy or data concerns</li>
+                <li>A Specialist acting unprofessionally</li>
+                <li>A Member behaving inappropriately toward a Specialist</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4 mb-3">Report directly to:</p>
+              <div className="p-4 bg-secondary-50 rounded-lg">
+                <p className="text-text-primary font-medium">support@hitsapp.com</p>
+                <p className="text-text-secondary mt-2">or call</p>
+                <p className="text-text-primary font-medium mt-2">(646) 758-6606</p>
+              </div>
+              <p className="text-text-secondary leading-7 mt-4">
+                You may request that a manager or supervisor follow up.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">9. Service Limitations</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                For safety and legal reasons, Specialists cannot assist with:
+              </p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>Illegal activities</li>
+                <li>Bypassing security or digital rights protections</li>
+                <li>Hacking or unauthorized access</li>
+                <li>Installing pirated software</li>
+                <li>Activities that violate manufacturer or carrier agreements</li>
+                <li>Climbing on roofs, attics, crawl spaces, or unstable structures</li>
+                <li>Physical repairs requiring professional certifications (e.g., electrical work)</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                The Specialist may decline or stop a service that violates safety guidelines.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">10. Policy Updates</h2>
+              <p className="text-text-secondary leading-7 mb-3">We may update this Safety & Security Policy periodically.</p>
+              <p className="text-text-secondary leading-7 mb-3">When we make material changes:</p>
+              <ul className="list-disc list-inside text-text-secondary leading-7 ml-4 space-y-2">
+                <li>We will update the "Last Updated" date, and</li>
+                <li>Provide additional notice if required by law.</li>
+              </ul>
+              <p className="text-text-secondary leading-7 mt-4">
+                Your continued use of the Services after changes become effective means you accept the updated policy.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-primary-700 mb-4">11. Contact Information</h2>
+              <p className="text-text-secondary leading-7 mb-3">
+                If you have questions or need assistance regarding safety:
               </p>
               <div className="mt-4 p-4 bg-secondary-50 rounded-lg">
-                <p className="text-text-primary font-medium">HITS – Hire I.T. Specialist</p>
+                <p className="text-text-primary font-medium">HITS – Hire I.T. Specialist, Inc.</p>
                 <p className="text-text-secondary">Email: support@hitsapp.com</p>
                 <p className="text-text-secondary">Phone: (646) 758-6606</p>
+                <p className="text-text-secondary mt-2">Mailing Address: (Add your NC business mailing address here once finalized)</p>
               </div>
             </div>
           </motion.div>
@@ -200,4 +310,3 @@ export default function SafetyPage() {
     </main>
   );
 }
-
