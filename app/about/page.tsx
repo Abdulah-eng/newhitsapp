@@ -310,7 +310,13 @@ export default function AboutPage() {
                 Shane Thompson is a disabled, retired U.S. Army veteran with 4 combat tours and a lifelong commitment to service.
               </p>
               <p>
-                After serving his country, Shane shifted his focus to serving his community. He earned a Bachelor of Arts in Organizational Management from the University of Arizona and a Bachelor of Science in Computer Information Technology with concentrations in Cybersecurity, Information Assurance, and Business Information Systems from Methodist University. He is also a proud member of three honor societies: Omicron Delta Kappa (ODK), the National Society of Leadership and Success (NSLS), and SVA – Chi Delta Chi, recognizing his leadership, service, and academic excellence.
+                After serving his country, Shane shifted his focus to serving his community.
+              </p>
+              <p>
+                He earned a Bachelor of Arts in Organizational Management from the University of Arizona and a Bachelor of Science in Computer Information Technology with concentrations in Cybersecurity, Information Assurance, and Business Information Systems from Methodist University.
+              </p>
+              <p>
+                He is also a proud member of three honor societies: Omicron Delta Kappa (ODK), the National Society of Leadership and Success (NSLS), and SVA – Chi Delta Chi, recognizing his leadership, service, and academic excellence.
               </p>
               
               <div className="mt-8">

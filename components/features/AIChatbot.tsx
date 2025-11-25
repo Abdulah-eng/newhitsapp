@@ -199,6 +199,24 @@ export default function AIChatbot() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Book Appointment Button */}
+            <div className="px-3 sm:px-4 pt-3 pb-2 border-t border-secondary-200 bg-white flex-shrink-0">
+              <a
+                href={user?.role === "senior" ? "/senior/book-appointment" : "/register?role=senior"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full"
+              >
+                <Button
+                  variant="primary"
+                  className="w-full flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <span>Book an Appointment</span>
+                  <ExternalLink size={16} className="sm:w-[18px] sm:h-[18px]" />
+                </Button>
+              </a>
+            </div>
+
             {/* Input */}
             <div className="p-3 sm:p-4 border-t border-secondary-200 bg-white rounded-b-xl flex-shrink-0">
               <div className="flex gap-2">
