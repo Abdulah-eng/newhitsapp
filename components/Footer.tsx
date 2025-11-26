@@ -34,7 +34,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-2 text-[16px]">
               <li>
                 <a 
-                  href="https://candoo.screenconnect.com" 
+                  href="https://sos.splashtop.com" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="hover:text-primary-500"
@@ -128,11 +128,9 @@ export default function Footer() {
               <Link href="/privacy" className="text-text-secondary hover:text-primary-500">
                 Privacy Policy
               </Link>
-              <span className="text-text-secondary flex items-center">|</span>
               <Link href="/terms" className="text-text-secondary hover:text-primary-500">
                 Terms of Service
               </Link>
-              <span className="text-text-secondary flex items-center">|</span>
               <Link href="/safety" className="text-text-secondary hover:text-primary-500">
                 Safety & Security
               </Link>
