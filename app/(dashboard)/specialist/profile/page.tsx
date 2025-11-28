@@ -74,12 +74,12 @@ export default function SpecialistProfilePage() {
       bio: formData.bio,
       specialties: formData.specialties,
       // hourly_rate is NOT included - pricing is controlled by platform only
-      // Platform default rate is $90/hr, set automatically by system
+      // Platform default rate is $95/hr for first hour, $45/hr for additional hours
       service_areas: formData.service_areas,
       years_experience: parseInt(formData.years_experience) || null,
       languages_spoken: formData.languages_spoken,
       // Ensure hourly_rate is set to platform default (read-only, cannot be changed by specialist)
-      hourly_rate: 90.00, // Platform-controlled pricing
+      hourly_rate: 95.00, // Platform-controlled pricing (first hour rate)
     };
 
     const { error } = await supabase

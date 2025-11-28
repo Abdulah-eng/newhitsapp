@@ -374,7 +374,7 @@ function SpecialistsPageContent() {
                       <div className="flex items-center justify-between pt-4 border-t border-secondary-200">
                         <div className="flex items-center gap-1 text-text-primary font-semibold">
                           <DollarSign size={18} />
-                          <span>$90/hr</span>
+                          <span>$95/hr</span>
                         </div>
                         {specialist.total_reviews > 0 && (
                           <span className="text-sm text-text-tertiary">

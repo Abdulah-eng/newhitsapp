@@ -39,7 +39,7 @@ export default function AdminSettingsPage() {
         platformName: settings.platform_name || "HITSapp",
         platformEmail: settings.support_email || "support@hitsapp.com",
         platformPhone: settings.support_phone || "+1 (555) 123-4567",
-        defaultHourlyRate: settings.base_hourly_rate || 90,
+        defaultHourlyRate: settings.base_hourly_rate || 95,
         minHourlyRate: 20,
         maxHourlyRate: 200,
         platformFee: 15,

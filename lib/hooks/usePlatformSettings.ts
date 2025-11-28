@@ -24,7 +24,7 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   support_email: "support@hitsapp.com",
   support_phone: "(646) 758-6606",
   support_hours: "Monday-Friday, 9am-5pm EST",
-  base_hourly_rate: 90,
+  base_hourly_rate: 95,
   additional_half_hour_rate: 45,
   travel_hq_location: "Hope Mills, NC 28348",
   travel_included_miles: 20,

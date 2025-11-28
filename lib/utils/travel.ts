@@ -80,6 +80,7 @@ export function getDirectionsUrl(
 
 /**
  * Calculate base price for appointment
+ * Pricing: $95 for first hour, $45 per hour for additional hours
  * @param durationMinutes - Duration in minutes
  * @param isMember - Whether user has active membership
  * @param memberHourlyRate - Member hourly rate if applicable
@@ -90,29 +91,27 @@ export function calculateBasePrice(
   isMember: boolean = false,
   memberHourlyRate?: number
 ): number {
-  const baseHourlyRate = 90.00;
-  const additional30MinRate = 45.00;
+  const firstHourRate = 95.00;
+  const additionalHourRate = 45.00;
   
-  const hourlyRate = isMember && memberHourlyRate ? memberHourlyRate : baseHourlyRate;
+  // For members, calculate based on member rate
+  if (isMember && memberHourlyRate) {
+    if (durationMinutes <= 60) {
+      return memberHourlyRate;
+    }
+    // First hour at member rate, additional hours at $45/hr
+    const additionalHours = (durationMinutes - 60) / 60;
+    return memberHourlyRate + (additionalHours * additionalHourRate);
+  }
   
+  // Non-member pricing: $95 for first hour, $45/hr for additional hours
   if (durationMinutes <= 60) {
-    return hourlyRate;
+    return firstHourRate;
   }
   
-  const hours = Math.floor(durationMinutes / 60);
-  const extraMinutes = durationMinutes % 60;
-  const basePrice = hours * hourlyRate;
-  
-  if (extraMinutes > 0) {
-    // Calculate additional 30-minute increments
-    const additional30MinIncrements = Math.ceil(extraMinutes / 30);
-    const additionalRate = isMember && memberHourlyRate 
-      ? (memberHourlyRate / 2) * additional30MinIncrements
-      : additional30MinRate * additional30MinIncrements;
-    return basePrice + additionalRate;
-  }
-  
-  return basePrice;
+  // First hour: $95, additional hours: $45/hr (prorated)
+  const additionalHours = (durationMinutes - 60) / 60;
+  return firstHourRate + (additionalHours * additionalHourRate);
 }
 
 /**

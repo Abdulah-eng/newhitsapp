@@ -100,7 +100,19 @@ The platform uses a color palette optimized for older adults:
 
 ## 📚 Documentation
 
-See `IMPLEMENTATION_PLAN.md` for detailed implementation plan and feature specifications.
+### Quick Start
+- **Maintenance Guide**: See `MAINTENANCE_GUIDE.md` for file structure, content updates, deployment, and maintenance instructions
+- **Complete Documentation**: See `DOCUMENTATION_INDEX.md` for comprehensive system documentation
+- **Implementation Plan**: See `IMPLEMENTATION_PLAN.md` for detailed implementation plan and feature specifications
+
+### Key Documentation Files
+- `MAINTENANCE_GUIDE.md` - **Start here** for content updates and deployment
+- `DOCUMENTATION_INDEX.md` - Complete documentation index
+- `DOCUMENTATION_PART_1_ARCHITECTURE_AND_DEPLOYMENT.md` - Architecture & deployment
+- `DOCUMENTATION_PART_2_DATABASE_AND_ROLES.md` - Database schema & user roles
+- `DOCUMENTATION_PART_3_PAYMENTS_AND_EMAIL.md` - Stripe & email system
+- `DOCUMENTATION_PART_4_MESSAGING_TRAVEL_ADMIN.md` - Messaging, travel, admin
+- `DOCUMENTATION_PART_5_FRONTEND_CHATBOT_TRANSFER.md` - Frontend, chatbot, resources
 
 ## 🤝 Contributing
 

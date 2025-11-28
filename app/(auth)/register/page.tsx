@@ -92,7 +92,38 @@ export default function RegisterPage() {
         return;
       }
 
-      await triggerWelcomeEmail(authData.user.id);
+      // Create user record in users table via API route
+      // This is critical - the users table must have a record for foreign key constraints
+      // Using API route to bypass RLS issues when email confirmation is required
+      try {
+        const createUserResponse = await fetch("/api/users/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: authData.user.id,
+            email: formData.email,
+            fullName: formData.fullName,
+            role: formData.role,
+            phone: formData.phone || null,
+          }),
+        });
+
+        if (!createUserResponse.ok) {
+          const errorData = await createUserResponse.json();
+          // If user already exists (from trigger), that's okay - continue
+          if (errorData.message?.includes("already exists") || errorData.details?.includes("duplicate")) {
+            console.log("User already exists in database (likely from trigger)");
+          } else {
+            console.error("Error creating user record:", errorData);
+            setError("Failed to create user profile. Please try again.");
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.error("Error calling create user API:", apiError);
+        // Don't block registration - user might be created by trigger or on next login
+      }
 
       // Check if email confirmation is required
       // If session is null, try to get it (might be a timing issue)

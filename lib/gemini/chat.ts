@@ -99,9 +99,9 @@ export async function generateAutomatedResponse(
 ): Promise<string | null> {
   const commonQuestions: Record<string, string> = {
     "how do i book": "To book a visit, click 'Book a Visit' on our website or go to the Book Appointment page. You'll describe what you need help with, choose a time, and see the cost upfront before confirming.",
-    "how much does it cost": "HITS pricing is simple and transparent: $90 for the first hour, $45 for each additional 30 minutes. We also offer membership plans starting at $25/month. Visit our Pricing & Plans page for details.",
+    "how much does it cost": "HITS pricing is simple and transparent: $95 for the first hour, $45 per hour for additional hours. We also offer membership plans starting at $25/month. Visit our Pricing & Plans page for details.",
     "what is hits": "HITS – Hire I.T. Specialist connects older adults, disabled adults, and caregivers with patient, vetted tech professionals for in-home and remote support. We focus on clear communication, fair pricing, and strong security.",
-    "pricing": "Our pay-as-you-go visits are $90/hour ($45 per additional 30 minutes). We also offer three membership plans: Connect ($25/month), Comfort ($59/month), and Family Care+ ($99/month). Visit our Pricing & Plans page for full details.",
+    "pricing": "Our pay-as-you-go visits are $95 for the first hour, then $45 per hour for additional hours. We also offer three membership plans: Connect ($25/month), Comfort ($59/month), and Family Care+ ($99/month). Visit our Pricing & Plans page for full details.",
     "travel": "HITS is based in Hope Mills, NC 28348. Up to 20 driving miles are included in the visit price. Beyond 20 miles, we add $1.00 per mile for travel. The travel fee is shown before you confirm your appointment.",
     "how do i cancel": "You can cancel appointments from your 'My Appointments' page. Click on the appointment and select 'Cancel'.",
     "how do i contact": "You can contact HITS support at support@hitsapp.com or call (646) 758-6606. Hours are Monday-Friday, 9am-5pm EST. You can also use the Contact page on our website.",

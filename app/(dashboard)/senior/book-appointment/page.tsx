@@ -73,7 +73,7 @@ function BookAppointmentPageContent() {
       const price = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
       setBasePrice(price);
       const memberDiscount = hasActiveMembership && membership?.membership_plan
-        ? (90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
+        ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
         : 0;
       setTotalPrice(price + travelFee - memberDiscount);
     }
@@ -141,12 +141,19 @@ function BookAppointmentPageContent() {
   const fetchSpecialists = async () => {
     const { data, error } = await supabase
       .from("specialist_profiles")
-      .select("*, user:user_id(full_name)")
+      .select("*, user:user_id(full_name, id)")
       .eq("verification_status", "verified")
       .order("rating_average", { ascending: false, nullsFirst: false });
 
-    if (!error && data) {
-      setSpecialists(data as Specialist[]);
+    if (error) {
+      console.error("Error fetching specialists:", error);
+      return;
+    }
+
+    if (data) {
+      // Filter out specialists without valid user data (user must exist)
+      const validSpecialists = data.filter((spec: any) => spec.user !== null && spec.user.id) as Specialist[];
+      setSpecialists(validSpecialists);
     }
   };
 
@@ -254,6 +261,56 @@ function BookAppointmentPageContent() {
     setIsBooking(true);
     setError("");
 
+    // Get the current authenticated user ID from Supabase Auth session
+    // This ensures we're using the correct auth.uid() that matches RLS policies
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session?.user?.id) {
+      setError("Your session has expired. Please log out and log back in.");
+      setIsBooking(false);
+      return;
+    }
+
+    const currentUserId = session.user.id;
+
+    // Verify the current user exists in the users table
+    const { data: currentUserData, error: userCheckError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", currentUserId)
+      .single();
+
+    if (userCheckError || !currentUserData) {
+      console.error("Current user not found in users table:", userCheckError);
+      setError("Your user account is not properly set up. Please contact support.");
+      setIsBooking(false);
+      return;
+    }
+
+    // Use the user ID from the joined user data if available (more reliable)
+    // This ensures we're using a user_id that actually exists in the users table
+    const specialistUserId = (selectedSpecialist as any).user?.id || selectedSpecialist.user_id;
+    
+    if (!specialistUserId) {
+      setError("The selected specialist is no longer available. Please select a different specialist.");
+      setIsBooking(false);
+      return;
+    }
+
+    // Verify the specialist user exists in the users table
+    const { data: specialistUserData, error: specialistCheckError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", specialistUserId)
+      .single();
+
+    if (specialistCheckError || !specialistUserData) {
+      console.error("Specialist user not found in users table:", specialistCheckError);
+      setError("The selected specialist is no longer available. Please select a different specialist.");
+      setIsBooking(false);
+      return;
+    }
+
     const scheduledAt = new Date(`${selectedDate}T${selectedTime}`);
     const scheduledAtISO = scheduledAt.toISOString();
 
@@ -264,7 +321,7 @@ function BookAppointmentPageContent() {
     const calculatedBasePrice = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
     const calculatedTravelFee = locationType === "in-person" ? travelFee : 0;
     const memberDiscount = hasActiveMembership && membership?.membership_plan
-      ? (90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
+      ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
       : 0;
     const calculatedTotalPrice = calculateTotalPrice(calculatedBasePrice, calculatedTravelFee, memberDiscount);
     const specialistReimbursement = locationType === "in-person" && travelDistance && travelDistance > 20
@@ -276,34 +333,61 @@ function BookAppointmentPageContent() {
       ? `${address}, ${city}, ${state} ${zipCode}`
       : null;
 
+    // Prepare appointment data
+    // Use the validated user IDs that we confirmed exist in the users table
+    const appointmentData: any = {
+      senior_id: currentUserId, // Use the verified auth user ID
+      specialist_id: specialistUserId, // Use the verified specialist user ID
+      scheduled_at: scheduledAtISO,
+      duration_minutes: parseInt(duration),
+      status: "pending",
+      issue_description: issueDescription,
+      location_type: locationType,
+      travel_fee: calculatedTravelFee,
+      base_price: calculatedBasePrice,
+      member_discount: memberDiscount,
+      total_price: calculatedTotalPrice,
+      specialist_pay_rate: 30.00,
+      specialist_travel_reimbursement: specialistReimbursement,
+    };
+
+    // Only include address fields for in-person appointments
+    // The CHECK constraint requires address IS NOT NULL for in-person
+    if (locationType === "in-person") {
+      appointmentData.address = address.trim();
+      appointmentData.city = city.trim();
+      appointmentData.state = state.trim();
+      appointmentData.zip_code = zipCode.trim();
+      if (fullAddress) {
+        appointmentData.full_address = fullAddress;
+      }
+      if (travelDistance !== null) {
+        appointmentData.travel_distance_miles = travelDistance;
+      }
+    } else {
+      // For remote appointments, explicitly set to null to satisfy CHECK constraint
+      appointmentData.address = null;
+      appointmentData.city = null;
+      appointmentData.state = null;
+      appointmentData.zip_code = null;
+    }
+
     const { data, error: bookingError } = await supabase
       .from("appointments")
-      .insert({
-        senior_id: user!.id,
-        specialist_id: selectedSpecialist.user_id,
-        scheduled_at: scheduledAtISO,
-        duration_minutes: parseInt(duration),
-        status: "pending",
-        issue_description: issueDescription,
-        location_type: locationType,
-        address: locationType === "in-person" ? address : null,
-        city: locationType === "in-person" ? city : null,
-        state: locationType === "in-person" ? state : null,
-        zip_code: locationType === "in-person" ? zipCode : null,
-        full_address: fullAddress,
-        travel_distance_miles: locationType === "in-person" ? travelDistance : null,
-        travel_fee: calculatedTravelFee,
-        base_price: calculatedBasePrice,
-        member_discount: memberDiscount,
-        total_price: calculatedTotalPrice,
-        specialist_pay_rate: 30.00,
-        specialist_travel_reimbursement: specialistReimbursement,
-      })
+      .insert(appointmentData)
       .select()
       .single();
 
     if (bookingError) {
-      setError("Failed to book appointment. Please try again.");
+      console.error("Booking error:", bookingError);
+      // Provide more specific error message
+      if (bookingError.code === "23514") {
+        setError("Invalid appointment data. Please ensure all required fields are filled correctly.");
+      } else if (bookingError.code === "23503") {
+        setError("Invalid user or specialist. Please try again.");
+      } else {
+        setError(`Failed to book appointment: ${bookingError.message || "Please try again."}`);
+      }
       setIsBooking(false);
       return;
     }
@@ -468,7 +552,7 @@ function BookAppointmentPageContent() {
                         <div className="flex items-center gap-4 text-sm text-text-secondary">
                           <span className="flex items-center gap-1">
                             <Clock size={16} />
-                            $90/hr (Platform Rate)
+                            $95/hr (Platform Rate)
                           </span>
                           {specialist.rating_average > 0 && (
                             <span className="flex items-center gap-1">
@@ -873,7 +957,7 @@ function BookAppointmentPageContent() {
                     <div className="flex justify-between items-center">
                       <span className="text-success-600 text-sm">Member Discount:</span>
                       <span className="text-success-600 text-sm font-semibold">
-                        -${((90 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)).toFixed(2)}
+                        -${((95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)).toFixed(2)}
                       </span>
                     </div>
                   )}
