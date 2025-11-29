@@ -201,10 +201,10 @@ async function handlePaymentSuccess(
     return;
   }
 
-  // Get appointment details first
+  // Get appointment details with all needed fields for payout calculation
   const { data: appointment } = await supabase
     .from("appointments")
-    .select("senior_id, specialist_id")
+    .select("senior_id, specialist_id, duration_minutes, base_price, travel_fee, location_type")
     .eq("id", appointmentId)
     .single();
 
@@ -212,6 +212,44 @@ async function handlePaymentSuccess(
     console.error("Appointment not found for payment intent:", appointmentId);
     return;
   }
+
+  // Calculate payout structure
+  // Specialist pay: $30/hr + $0.60/mile (after 20 miles)
+  const hoursWorked = (appointment.duration_minutes || 60) / 60;
+  const techPay = hoursWorked * 30.0; // $30 per hour
+
+  // Get travel distance from appointments table (travel_distance_miles field)
+  const { data: appointmentWithDistance } = await supabase
+    .from("appointments")
+    .select("travel_distance_miles")
+    .eq("id", appointmentId)
+    .single();
+
+  const travelMiles = appointmentWithDistance?.travel_distance_miles || 0;
+  const includedMiles = 20;
+  const mileagePay = travelMiles > includedMiles 
+    ? (travelMiles - includedMiles) * 0.60 // $0.60 per mile after 20 miles
+    : 0;
+
+  // Get tax amount from payment intent metadata
+  const taxAmount = paymentIntent.metadata.tax_amount 
+    ? parseFloat(paymentIntent.metadata.tax_amount) / 100 
+    : 0;
+
+  // Get base amount and travel fee from metadata or appointment
+  const baseServiceAmount = paymentIntent.metadata.base_amount 
+    ? parseFloat(paymentIntent.metadata.base_amount) / 100 
+    : appointment.base_price || 0;
+  
+  const travelFeeAmount = paymentIntent.metadata.travel_fee 
+    ? parseFloat(paymentIntent.metadata.travel_fee) / 100 
+    : appointment.travel_fee || 0;
+
+  // Calculate company revenue
+  // Total payment = base + travel + tax
+  // Company revenue = total - tech_pay - mileage_pay - tax
+  const totalAmount = paymentIntent.amount / 100;
+  const companyRevenue = totalAmount - techPay - mileagePay - taxAmount;
 
   // Check for existing payment by stripe_payment_id first
   const { data: existingPaymentByStripeId } = await supabase
@@ -221,12 +259,21 @@ async function handlePaymentSuccess(
     .maybeSingle();
 
   if (existingPaymentByStripeId) {
-    // Update existing payment record
+    // Update existing payment record with payout calculations
     console.log(`[Webhook] Updating existing payment ${existingPaymentByStripeId.id} to completed`);
     const { data: updatedPayment, error: updateError } = await supabase
       .from("payments")
       .update({
         status: "completed",
+        amount: totalAmount,
+        hours_worked: hoursWorked,
+        mileage: travelMiles,
+        tech_pay: techPay,
+        mileage_pay: mileagePay,
+        company_revenue: companyRevenue,
+        tax_amount: taxAmount,
+        base_service_amount: baseServiceAmount,
+        travel_fee_amount: travelFeeAmount,
         updated_at: new Date().toISOString(),
       })
       .eq("id", existingPaymentByStripeId.id)
@@ -236,7 +283,7 @@ async function handlePaymentSuccess(
     if (updateError) {
       console.error("[Webhook] Error updating payment:", updateError);
     } else {
-      console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status`);
+      console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status with payout calculations`);
     }
   } else {
     // Check if there's an existing payment for this appointment that needs to be updated
@@ -248,14 +295,23 @@ async function handlePaymentSuccess(
       .maybeSingle();
 
     if (existingPaymentByAppointment) {
-      // Update existing payment record with Stripe payment ID
+      // Update existing payment record with Stripe payment ID and payout calculations
       console.log(`[Webhook] Updating payment ${existingPaymentByAppointment.id} for appointment ${appointmentId} to completed`);
       const { data: updatedPayment, error: updateError } = await supabase
         .from("payments")
         .update({
           status: "completed",
+          amount: totalAmount,
           stripe_payment_id: paymentIntent.id,
           stripe_customer_id: paymentIntent.customer as string,
+          hours_worked: hoursWorked,
+          mileage: travelMiles,
+          tech_pay: techPay,
+          mileage_pay: mileagePay,
+          company_revenue: companyRevenue,
+          tax_amount: taxAmount,
+          base_service_amount: baseServiceAmount,
+          travel_fee_amount: travelFeeAmount,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingPaymentByAppointment.id)
@@ -265,23 +321,33 @@ async function handlePaymentSuccess(
       if (updateError) {
         console.error("[Webhook] Error updating payment:", updateError);
       } else {
-        console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status`);
+        console.log(`[Webhook] Successfully updated payment ${updatedPayment?.id} to completed status with payout calculations`);
       }
     } else {
-      // Create new payment record
+      // Create new payment record with payout calculations
       const paymentData = {
         appointment_id: appointmentId,
         senior_id: appointment.senior_id,
         specialist_id: appointment.specialist_id,
-        amount: paymentIntent.amount / 100,
+        amount: totalAmount,
         currency: "USD",
         status: "completed",
         payment_method: "card",
         stripe_payment_id: paymentIntent.id,
         stripe_customer_id: paymentIntent.customer as string,
+        // Payout structure fields
+        hours_worked: hoursWorked,
+        mileage: travelMiles,
+        tech_pay: techPay,
+        mileage_pay: mileagePay,
+        company_revenue: companyRevenue,
+        tax_amount: taxAmount,
+        base_service_amount: baseServiceAmount,
+        travel_fee_amount: travelFeeAmount,
       };
 
       console.log(`[Webhook] Creating new payment record for appointment ${appointmentId}:`, paymentData);
+      console.log(`[Webhook] Payout breakdown: Tech Pay: $${techPay.toFixed(2)}, Mileage Pay: $${mileagePay.toFixed(2)}, Company Revenue: $${companyRevenue.toFixed(2)}, Tax: $${taxAmount.toFixed(2)}`);
 
       const { data: newPayment, error: insertError } = await supabase
         .from("payments")

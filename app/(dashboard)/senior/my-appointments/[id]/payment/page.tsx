@@ -111,10 +111,9 @@ function PaymentPageContent() {
       hourly_rate: specialistProfile?.hourly_rate || 0
     });
 
-    // Calculate amount
-    const hourlyRate = specialistProfile?.hourly_rate || 0;
-    const durationHours = apt.duration_minutes / 60;
-    const calculatedAmount = hourlyRate * durationHours;
+    // Calculate amount from appointment total_price (includes base + travel + tax)
+    // The total_price should already include tax (7% NC tax)
+    const calculatedAmount = apt.total_price || 0;
     setAmount(calculatedAmount);
 
     // Check for existing payment

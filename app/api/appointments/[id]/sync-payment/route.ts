@@ -24,10 +24,10 @@ export async function POST(
 
     const supabase = await createSupabaseServerComponentClient();
 
-    // Fetch appointment to verify ownership
+    // Fetch appointment to verify ownership and get payout calculation data
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
-      .select("id, senior_id, specialist_id, status")
+      .select("id, senior_id, specialist_id, status, duration_minutes, base_price, travel_fee, travel_distance_miles")
       .eq("id", appointmentId)
       .single();
 
@@ -74,19 +74,56 @@ export async function POST(
         serviceRoleSupabase = supabase;
       }
 
-      // Create payment record
+      // Calculate payout structure
+      const hoursWorked = (appointment.duration_minutes || 60) / 60;
+      const techPay = hoursWorked * 30.0; // $30 per hour
+      
+      const travelMiles = appointment.travel_distance_miles || 0;
+      const includedMiles = 20;
+      const mileagePay = travelMiles > includedMiles 
+        ? (travelMiles - includedMiles) * 0.60 // $0.60 per mile after 20 miles
+        : 0;
+
+      // Get tax amount from payment intent metadata
+      const taxAmount = paymentIntent.metadata.tax_amount 
+        ? parseFloat(paymentIntent.metadata.tax_amount) / 100 
+        : 0;
+
+      // Get base amount and travel fee from metadata or appointment
+      const baseServiceAmount = paymentIntent.metadata.base_amount 
+        ? parseFloat(paymentIntent.metadata.base_amount) / 100 
+        : appointment.base_price || 0;
+      
+      const travelFeeAmount = paymentIntent.metadata.travel_fee 
+        ? parseFloat(paymentIntent.metadata.travel_fee) / 100 
+        : appointment.travel_fee || 0;
+
+      // Calculate company revenue
+      const totalAmount = paymentIntent.amount / 100;
+      const companyRevenue = totalAmount - techPay - mileagePay - taxAmount;
+
+      // Create payment record with payout calculations
       const { data: newPayment, error: insertError } = await serviceRoleSupabase
         .from("payments")
         .insert({
           appointment_id: appointmentId,
           senior_id: appointment.senior_id,
           specialist_id: appointment.specialist_id,
-          amount: paymentIntent.amount / 100,
+          amount: totalAmount,
           currency: "USD",
           status: "completed",
           payment_method: "card",
           stripe_payment_id: paymentIntent.id,
           stripe_customer_id: paymentIntent.customer as string,
+          // Payout structure fields
+          hours_worked: hoursWorked,
+          mileage: travelMiles,
+          tech_pay: techPay,
+          mileage_pay: mileagePay,
+          company_revenue: companyRevenue,
+          tax_amount: taxAmount,
+          base_service_amount: baseServiceAmount,
+          travel_fee_amount: travelFeeAmount,
         })
         .select()
         .single();

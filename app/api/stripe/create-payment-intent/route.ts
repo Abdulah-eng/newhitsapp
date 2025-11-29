@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseServerComponentClient();
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
-      .select("*, senior:senior_id(email, full_name)")
+      .select("*, senior:senior_id(email, full_name), base_price, travel_fee, location_type, address, city, state, zip_code")
       .eq("id", appointmentId)
       .single();
 
@@ -46,16 +46,33 @@ export async function POST(request: NextRequest) {
       user.id
     );
 
-    // Create payment intent
+    // Prepare shipping address for tax calculation (NC service tax)
+    const shippingAddress = appointment.location_type === "in-person" && appointment.address
+      ? {
+          line1: appointment.address,
+          city: appointment.city || "",
+          state: appointment.state || "NC",
+          postal_code: appointment.zip_code || "",
+          country: "US",
+        }
+      : undefined;
+
+    // Create payment intent with tax calculation
     const paymentIntent = await createPaymentIntent(
       amount,
       appointmentId,
-      customer.id
+      customer.id,
+      {
+        baseAmount: appointment.base_price || amount,
+        travelFee: appointment.travel_fee || 0,
+        shippingAddress,
+      }
     );
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      taxAmount: paymentIntent.calculatedTax || 0,
     });
   } catch (error: any) {
     console.error("Error creating payment intent:", error);

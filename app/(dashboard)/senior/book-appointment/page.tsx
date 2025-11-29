@@ -75,7 +75,10 @@ function BookAppointmentPageContent() {
       const memberDiscount = hasActiveMembership && membership?.membership_plan
         ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
         : 0;
-      setTotalPrice(price + travelFee - memberDiscount);
+      // Calculate subtotal and add 7% NC tax
+      const subtotal = price + travelFee - memberDiscount;
+      const estimatedTax = subtotal * 0.07;
+      setTotalPrice(subtotal + estimatedTax);
     }
   }, [duration, travelFee, hasActiveMembership, membership]);
 
@@ -323,7 +326,12 @@ function BookAppointmentPageContent() {
     const memberDiscount = hasActiveMembership && membership?.membership_plan
       ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
       : 0;
-    const calculatedTotalPrice = calculateTotalPrice(calculatedBasePrice, calculatedTravelFee, memberDiscount);
+    // Calculate subtotal (base + travel - discount)
+    const subtotal = calculatedBasePrice + calculatedTravelFee - memberDiscount;
+    // Calculate estimated tax (7% NC tax: 4.75% state + 2.25% Cumberland County)
+    const estimatedTax = subtotal * 0.07;
+    // Total includes tax
+    const calculatedTotalPrice = subtotal + estimatedTax;
     const specialistReimbursement = locationType === "in-person" && travelDistance && travelDistance > 20
       ? (travelDistance - 20) * 0.60
       : 0;
@@ -973,6 +981,25 @@ function BookAppointmentPageContent() {
                       <span className="text-success-600 text-sm font-semibold">Included (within 20 miles)</span>
                     </div>
                   )}
+                  {(() => {
+                    const memberDiscount = hasActiveMembership && membership?.membership_plan
+                      ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
+                      : 0;
+                    const subtotal = basePrice + travelFee - memberDiscount;
+                    const estimatedTax = subtotal * 0.07;
+                    return (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-text-secondary">Subtotal:</span>
+                          <span className="font-semibold text-text-primary">${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-text-secondary">Tax (7% NC):</span>
+                          <span className="font-semibold text-text-primary">${estimatedTax.toFixed(2)}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div className="flex justify-between items-center pt-2 border-t">
                     <span className="font-semibold text-text-primary">Total Estimated Cost:</span>
                     <span className="text-2xl font-bold text-primary-500">
