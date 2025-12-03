@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 
 /**
  * Supabase client for Server Components
@@ -27,6 +28,32 @@ export async function createSupabaseServerComponentClient() {
             // This can be ignored if you have middleware refreshing
             // user sessions.
           }
+        },
+      },
+    }
+  );
+}
+
+/**
+ * Supabase client for API Routes (Route Handlers)
+ * Handles cookie-based authentication from NextRequest
+ * Use this in API routes instead of createSupabaseServerComponentClient
+ */
+export function createSupabaseApiRouteClient(request: NextRequest) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // In API routes, we can't set cookies directly on the request
+          // The response needs to handle cookie setting
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
         },
       },
     }

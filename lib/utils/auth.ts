@@ -1,19 +1,35 @@
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
+import { createSupabaseServerComponentClient, createSupabaseApiRouteClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@/types";
+import type { NextRequest } from "next/server";
 
 /**
  * Get the current authenticated user on the server
+ * @param request - Optional NextRequest for API routes. If provided, uses request cookies instead of next/headers cookies
  */
-export async function getCurrentUser() {
+export async function getCurrentUser(request?: NextRequest) {
   try {
-    const supabase = await createSupabaseServerComponentClient();
+    // Use API route client if request is provided (for API routes)
+    // Otherwise use server component client (for Server Components)
+    const supabase = request 
+      ? createSupabaseApiRouteClient(request)
+      : await createSupabaseServerComponentClient();
+    
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      if (request) {
+        // Log additional info for API routes in deployment
+        const cookieNames = request.cookies.getAll().map(c => c.name);
+        console.error("[getCurrentUser] API route auth failed:", {
+          error: authError?.message,
+          hasCookies: cookieNames.length > 0,
+          cookieNames,
+        });
+      }
       return null;
     }
 

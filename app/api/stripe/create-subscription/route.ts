@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
-import { createSupabaseServerComponentClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseApiRouteClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/utils/auth";
 import Stripe from "stripe";
 
@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
       console.error("[Create Subscription] Unauthorized - no user");
+      console.error("[Create Subscription] Request cookies:", request.cookies.getAll().map(c => c.name));
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       console.error("[Create Subscription] Service role key not configured!");
       console.error("[Create Subscription] Service role error:", serviceRoleError?.message || serviceRoleError);
       console.error("[Create Subscription] Falling back to regular client (may fail due to RLS)");
-      supabase = await createSupabaseServerComponentClient();
+      supabase = createSupabaseApiRouteClient(request);
       serviceRoleSupabase = supabase;
       
       // Warn that this might fail
