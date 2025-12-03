@@ -9,19 +9,12 @@ export default async function AuthLayout({
 }) {
   // Only redirect if user is authenticated AND has a role
   // This prevents redirect loops for users without profiles
+  // NOTE: We don't redirect here if there's a redirect param - let the page component handle it
+  // This allows authenticated users to access login page with redirect param
   const user = await getCurrentUser();
   
-  if (user && user.role) {
-    // User is authenticated and has a role, redirect to dashboard
-    // Note: redirect() throws a NEXT_REDIRECT error internally, which is expected
-    if (user.role === "senior") {
-      redirect("/senior/dashboard");
-    } else if (user.role === "specialist") {
-      redirect("/specialist/dashboard");
-    } else if (user.role === "admin") {
-      redirect("/admin/dashboard");
-    }
-  }
+  // Don't redirect authenticated users - let the page components handle redirects
+  // This allows login page to check for redirect param and redirect accordingly
   
   return (
     <>

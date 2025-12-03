@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { fadeIn, slideUp } from "@/lib/animations/config";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -20,12 +21,42 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
+  const { user: authUser, loading: authLoading } = useAuth();
+
   useEffect(() => {
     const msg = searchParams.get("message");
     if (msg) {
       setMessage(decodeURIComponent(msg));
     }
   }, [searchParams]);
+
+  // If user is already logged in and there's a redirect param, redirect immediately
+  useEffect(() => {
+    if (!authLoading && authUser) {
+      const redirectUrl = searchParams.get("redirect");
+      if (redirectUrl) {
+        router.replace(redirectUrl);
+        return;
+      }
+      // No redirect param, go to dashboard
+      const role = authUser.role;
+      if (role === "senior") {
+        router.replace("/senior/dashboard");
+      } else if (role === "specialist") {
+        router.replace("/specialist/dashboard");
+      } else if (role === "admin") {
+        router.replace("/admin/dashboard");
+      }
+    }
+  }, [authUser, authLoading, searchParams, router]);
+
+  const getRedirectUrl = () => {
+    const redirect = searchParams.get("redirect");
+    if (redirect) {
+      return redirect;
+    }
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +92,13 @@ function LoginForm() {
         } catch (err) {
           // Don't block login if logging fails
           console.error("Error logging login:", err);
+        }
+
+        // Check for redirect URL first
+        const redirectUrl = getRedirectUrl();
+        if (redirectUrl) {
+          router.replace(redirectUrl);
+          return;
         }
 
         // Check for admin email specifically

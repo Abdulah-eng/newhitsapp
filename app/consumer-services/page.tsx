@@ -1,10 +1,13 @@
 "use client";
 
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import MarketingHeader from "@/components/MarketingHeader";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const fadeVariants = {
   hidden: { opacity: 0, y: 32 },
@@ -70,13 +73,32 @@ const membershipTiers = [
 ];
 
 export default function ConsumerServicesPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleChoosePlan = useCallback(
+    (planName: string) => {
+      const encodedPlan = encodeURIComponent(planName);
+      const membershipUrl = `/senior/membership-online?plan=${encodedPlan}`;
+      const redirectUrl = `/login?redirect=${encodeURIComponent(membershipUrl)}`;
+
+      if (!user || user.role !== "senior") {
+        router.push(redirectUrl);
+        return;
+      }
+
+      router.push(membershipUrl);
+    },
+    [router, user],
+  );
+
   return (
     <main className="bg-secondary-50 text-text-primary">
       <MarketingHeader />
       <section className="bg-white border-b border-secondary-200">
         <div className="max-w-6xl mx-auto px-8 md:px-12 lg:px-16 py-18 lg:py-24 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
           <motion.div initial="hidden" animate="visible" variants={fadeVariants} custom={0}>
-            <p className="text-sm uppercase tracking-[0.3em] text-primary-500 font-semibold">Consumers</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-primary-500 font-semibold">Virtual Services</p>
             <h1 className="mt-6 text-[38px] md:text-[52px] font-extrabold leading-tight text-primary-900">
               Your friendly tech specialist, whenever you need it.
             </h1>
@@ -252,13 +274,13 @@ export default function ConsumerServicesPage() {
                   ))}
                 </ul>
                 <div className="mt-8">
-                  <Link href="/senior/membership-online">
-                    <Button
-                      className={`w-full h-12 ${tier.accent ? "bg-primary-500 hover:bg-primary-600" : "bg-secondary-200 text-primary-700 hover:bg-secondary-300"}`}
-                    >
-                      Choose plan
-                    </Button>
-                  </Link>
+                  <Button
+                    className={`w-full h-12 ${tier.accent ? "bg-primary-500 hover:bg-primary-600" : "bg-secondary-200 text-primary-700 hover:bg-secondary-300"}`}
+                    onClick={() => handleChoosePlan(tier.name)}
+                    type="button"
+                  >
+                    Choose plan
+                  </Button>
                 </div>
               </motion.div>
             ))}

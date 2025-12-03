@@ -51,7 +51,7 @@ export default function MembershipPaymentForm({
         elements,
         clientSecret,
         confirmParams: {
-          return_url: `${window.location.origin}/senior/membership?payment=success`,
+          return_url: `${window.location.origin}/senior/membership-online?payment=success`,
         },
         redirect: "if_required",
       });

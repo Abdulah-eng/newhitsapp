@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useMembership } from "@/lib/hooks/useMembership";
@@ -12,7 +12,6 @@ import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import MembershipPaymentForm from "@/components/features/MembershipPaymentForm";
-import DashboardHeader from "@/components/DashboardHeader";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -41,22 +40,13 @@ function MembershipOnlinePageContent() {
     }
   }, [user, authLoading, router]);
 
-  // Check for payment success and refresh membership
-  useEffect(() => {
-    const paymentSuccess = searchParams.get("payment");
-    if (paymentSuccess === "success" && fetchMembership) {
-      setTimeout(async () => {
-        await fetchMembership();
-        router.replace("/senior/membership-online");
-      }, 2000);
-    }
-  }, [searchParams, fetchMembership, router]);
-
-  const handleSelectPlan = async (planId: string) => {
+  const handleSelectPlan = useCallback(async (planId: string) => {
     setIsProcessing(true);
     setError("");
 
     try {
+      console.log("[Membership Online] Creating subscription for plan:", planId);
+      
       const response = await fetch("/api/stripe/create-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,22 +54,69 @@ function MembershipOnlinePageContent() {
       });
 
       const data = await response.json();
+      console.log("[Membership Online] Subscription response:", { 
+        ok: response.ok, 
+        hasClientSecret: !!data.clientSecret,
+        subscriptionId: data.subscriptionId,
+        error: data.error 
+      });
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create subscription");
+        const errorMessage = data.error || data.details?.message || "Failed to create subscription";
+        console.error("[Membership Online] Subscription creation failed:", errorMessage);
+        throw new Error(errorMessage);
       }
 
       if (data.clientSecret) {
+        console.log("[Membership Online] Subscription created successfully, showing payment form");
         setSelectedPlanForPayment({ planId, subscriptionId: data.subscriptionId, clientSecret: data.clientSecret });
       } else {
+        console.error("[Membership Online] No client secret returned from subscription creation");
         throw new Error("Payment is required to activate membership. Please try again.");
       }
     } catch (err: any) {
+      console.error("[Membership Online] Error in handleSelectPlan:", err);
       setError(err.message || "Failed to activate membership. Please try again.");
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, []);
+
+  // Check if a plan was selected via URL parameter (from consumer services page)
+  useEffect(() => {
+    const planParam = searchParams.get("plan");
+    if (
+      planParam &&
+      plans.length > 0 &&
+      !selectedPlanForPayment &&
+      !isLoading &&
+      !isProcessing &&
+      !hasActiveMembership
+    ) {
+      // Find plan by name (Starter, Essentials, Family+)
+      const planMap: { [key: string]: string } = {
+        "starter": "starter",
+        "essentials": "essential",
+        "essential": "essential",
+        "family+": "family",
+        "family": "family",
+      };
+      
+      const normalizedPlan = planParam.toLowerCase().trim();
+      const planType = planMap[normalizedPlan];
+      
+      if (planType) {
+        const matchingPlan = plans.find(p => p.plan_type === planType);
+        if (matchingPlan) {
+          console.log("[Membership Online] Auto-selecting plan from URL:", matchingPlan.name);
+          handleSelectPlan(matchingPlan.id).catch(err => {
+            console.error("[Membership Online] Error auto-selecting plan:", err);
+            setError(err.message || "Failed to load payment form");
+          });
+        }
+      }
+    }
+  }, [plans, searchParams, isLoading, isProcessing, selectedPlanForPayment, handleSelectPlan, hasActiveMembership]);
 
   const handleCancel = async () => {
     setIsProcessing(true);
@@ -125,17 +162,37 @@ function MembershipOnlinePageContent() {
     );
   }
 
+  // Show error if plans failed to load
+  if (plans.length === 0 && !isLoading) {
+    return (
+      <div className="card bg-white p-8">
+        <AlertCircle className="text-error-500 mx-auto mb-4" size={48} />
+        <h2 className="text-2xl font-bold text-text-primary mb-4 text-center">
+          No Plans Available
+        </h2>
+        <p className="text-text-secondary text-center mb-6">
+          We're sorry, but no membership plans are currently available. Please check back later or contact support.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link href="/senior/dashboard">
+            <Button variant="outline">Back to Dashboard</Button>
+          </Link>
+          <Link href="/contact">
+            <Button>Contact Support</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const currentPlan = membership?.membership_plan;
 
   return (
-    <div className="min-h-screen bg-secondary-100">
-      <DashboardHeader />
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <motion.div
-          initial="initial"
-          animate="animate"
-          variants={fadeIn}
-        >
+    <motion.div
+      initial="initial"
+      animate="animate"
+      variants={fadeIn}
+    >
           <div className="mb-6">
             <Link
               href="/senior/dashboard"
@@ -263,32 +320,62 @@ function MembershipOnlinePageContent() {
           )}
 
           {/* Payment Form Modal */}
-          {selectedPlanForPayment && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                <div className="flex items-center justify-between mb-4">
+          {selectedPlanForPayment && selectedPlanForPayment.clientSecret && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full my-8 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-4 border-b">
                   <h3 className="text-xl font-bold text-text-primary">Complete Payment</h3>
                   <button
-                    onClick={() => setSelectedPlanForPayment(null)}
+                    onClick={() => {
+                      setSelectedPlanForPayment(null);
+                      // Remove plan parameter from URL if present
+                      const newSearchParams = new URLSearchParams(searchParams.toString());
+                      newSearchParams.delete("plan");
+                      router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
+                    }}
                     className="text-text-tertiary hover:text-text-primary"
                   >
                     <X size={20} />
                   </button>
                 </div>
-                <Elements stripe={stripePromise}>
-                  <MembershipPaymentForm
-                    subscriptionId={selectedPlanForPayment.subscriptionId}
-                    clientSecret={selectedPlanForPayment.clientSecret}
-                    planName={plans.find(p => p.id === selectedPlanForPayment.planId)?.name || "Membership"}
-                    onSuccess={() => {
-                      setSelectedPlanForPayment(null);
-                      router.push("/senior/membership-online?payment=success");
+                <div className="mt-4">
+                  <Elements 
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret: selectedPlanForPayment.clientSecret,
                     }}
-                    onCancel={() => {
-                      setSelectedPlanForPayment(null);
-                    }}
-                  />
-                </Elements>
+                  >
+                    <MembershipPaymentForm
+                      subscriptionId={selectedPlanForPayment.subscriptionId}
+                      clientSecret={selectedPlanForPayment.clientSecret}
+                      planName={plans.find(p => p.id === selectedPlanForPayment.planId)?.name || "Membership"}
+                      onSuccess={async () => {
+                        // Optimistically close the payment modal
+                        setSelectedPlanForPayment(null);
+                        setIsProcessing(true);
+
+                        try {
+                          // Immediately refresh membership so the active plan shows up
+                          if (fetchMembership) {
+                            await fetchMembership();
+                          }
+
+                          // Navigate to a clean URL without any query params
+                          router.replace("/senior/membership-online");
+                        } finally {
+                          setIsProcessing(false);
+                        }
+                      }}
+                      onCancel={() => {
+                        setSelectedPlanForPayment(null);
+                        // Remove plan parameter from URL if present
+                        const newSearchParams = new URLSearchParams(searchParams.toString());
+                        newSearchParams.delete("plan");
+                        router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
+                      }}
+                    />
+                  </Elements>
+                </div>
               </div>
             </div>
           )}
@@ -331,8 +418,6 @@ function MembershipOnlinePageContent() {
             </div>
           )}
         </motion.div>
-      </div>
-    </div>
   );
 }
 

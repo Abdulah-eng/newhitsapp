@@ -161,12 +161,31 @@ export async function POST(request: NextRequest) {
 
     let customerId = customerData.stripe_customer_id;
 
+    // Fetch user's address for tax calculation (NC service tax)
+    const { data: seniorProfile } = await supabase
+      .from("senior_profiles")
+      .select("address, city, state, zip_code")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    // Prepare customer address for tax calculation
+    const customerAddress = seniorProfile?.address && seniorProfile?.city && seniorProfile?.state && seniorProfile?.zip_code
+      ? {
+          line1: seniorProfile.address,
+          city: seniorProfile.city,
+          state: seniorProfile.state || "NC",
+          postal_code: seniorProfile.zip_code,
+          country: "US",
+        }
+      : undefined;
+
     if (!customerId) {
       console.log("[Create Subscription] Creating new Stripe customer...");
-      // Create Stripe customer
+      // Create Stripe customer with address for tax calculation
       const customer = await stripe.customers.create({
         email: user.email,
         name: user.full_name || user.email?.split("@")[0] || "HITS User",
+        address: customerAddress,
         metadata: {
           user_id: user.id,
         },
@@ -188,6 +207,18 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.log("[Create Subscription] Using existing Stripe customer:", customerId);
+      
+      // Update customer address if we have it and it's not already set
+      if (customerAddress) {
+        try {
+          await stripe.customers.update(customerId, {
+            address: customerAddress,
+          });
+          console.log("[Create Subscription] Updated customer address for tax calculation");
+        } catch (updateError: any) {
+          console.warn("[Create Subscription] Could not update customer address:", updateError.message);
+        }
+      }
     }
 
     // Create Stripe price for the membership plan
@@ -226,9 +257,10 @@ export async function POST(request: NextRequest) {
 
     // Create subscription - similar to appointment payment flow
     // For subscriptions, we need to handle the invoice payment intent
-    console.log("[Create Subscription] Creating Stripe subscription...");
+    // Enable automatic tax for NC service tax (7%) if customer has address
+    console.log("[Create Subscription] Creating Stripe subscription with automatic tax...");
     
-    const subscription = await stripe.subscriptions.create({
+    const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: customerId,
       items: [{ price: priceId }],
       payment_behavior: "default_incomplete",
@@ -240,7 +272,21 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         membership_plan_id: membershipPlanId,
       },
-    });
+    };
+
+    // Only enable automatic tax if we have a customer address
+    // Stripe Tax requires a valid address to calculate tax
+    if (customerAddress) {
+      subscriptionParams.automatic_tax = {
+        enabled: true, // Enable Stripe Tax for NC service tax calculation
+      };
+      console.log("[Create Subscription] Automatic tax enabled with customer address");
+    } else {
+      console.log("[Create Subscription] Customer address not available, automatic tax disabled");
+      console.log("[Create Subscription] Tax will be calculated manually or by Stripe based on customer location");
+    }
+    
+    const subscription = await stripe.subscriptions.create(subscriptionParams);
 
     console.log("[Create Subscription] Subscription created:", subscription.id, "Status:", subscription.status);
 
