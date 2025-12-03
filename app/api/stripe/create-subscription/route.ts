@@ -20,6 +20,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Validate Stripe key format
+    const stripeKey = process.env.STRIPE_SECRET_KEY.trim();
+    const keyPrefix = stripeKey.substring(0, 8); // First 8 chars (e.g., "sk_test_")
+    console.log("[Create Subscription] Using Stripe key prefix:", keyPrefix + "...");
+    
+    if (!stripeKey.startsWith("sk_test_") && !stripeKey.startsWith("sk_live_")) {
+      console.error("[Create Subscription] Invalid Stripe key format");
+      return NextResponse.json(
+        { error: "Invalid payment service configuration. Please contact support." },
+        { status: 500 }
+      );
+    }
+    
     const user = await getCurrentUser(request);
     if (!user) {
       console.error("[Create Subscription] Unauthorized - no user");
@@ -182,18 +195,26 @@ export async function POST(request: NextRequest) {
 
     if (!customerId) {
       console.log("[Create Subscription] Creating new Stripe customer...");
-      // Create Stripe customer with address for tax calculation
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.full_name || user.email?.split("@")[0] || "HITS User",
-        address: customerAddress,
-        metadata: {
-          user_id: user.id,
-        },
-      });
+      try {
+        // Create Stripe customer with address for tax calculation
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.full_name || user.email?.split("@")[0] || "HITS User",
+          address: customerAddress,
+          metadata: {
+            user_id: user.id,
+          },
+        });
 
-      customerId = customer.id;
-      console.log("[Create Subscription] Stripe customer created:", customerId);
+        customerId = customer.id;
+        console.log("[Create Subscription] Stripe customer created:", customerId);
+      } catch (customerError: any) {
+        console.error("[Create Subscription] Error creating Stripe customer:", customerError);
+        console.error("[Create Subscription] Error type:", customerError.type);
+        console.error("[Create Subscription] Error code:", customerError.code);
+        console.error("[Create Subscription] Error message:", customerError.message);
+        throw customerError;
+      }
 
       // Store customer ID in database using service role client
       const { error: updateError } = await serviceRoleSupabase
@@ -287,7 +308,31 @@ export async function POST(request: NextRequest) {
       console.log("[Create Subscription] Tax will be calculated manually or by Stripe based on customer location");
     }
     
-    const subscription = await stripe.subscriptions.create(subscriptionParams);
+    let subscription: Stripe.Subscription;
+    try {
+      subscription = await stripe.subscriptions.create(subscriptionParams);
+    } catch (subscriptionError: any) {
+      console.error("[Create Subscription] Error creating Stripe subscription:", subscriptionError);
+      console.error("[Create Subscription] Error type:", subscriptionError.type);
+      console.error("[Create Subscription] Error code:", subscriptionError.code);
+      console.error("[Create Subscription] Error message:", subscriptionError.message);
+      console.error("[Create Subscription] Error statusCode:", subscriptionError.statusCode);
+      
+      // Check if it's an API key error
+      if (subscriptionError.type === "StripeAuthenticationError" || subscriptionError.code === "api_key_expired" || subscriptionError.message?.includes("Invalid API Key")) {
+        console.error("[Create Subscription] STRIPE API KEY ERROR - Check environment variables in deployment");
+        console.error("[Create Subscription] Key prefix:", process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT SET");
+        return NextResponse.json(
+          { 
+            error: "Payment service configuration error. Please contact support.",
+            details: process.env.NODE_ENV === "development" ? subscriptionError.message : undefined,
+          },
+          { status: 500 }
+        );
+      }
+      
+      throw subscriptionError;
+    }
 
     console.log("[Create Subscription] Subscription created:", subscription.id, "Status:", subscription.status);
 

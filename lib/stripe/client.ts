@@ -4,7 +4,48 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY is not set in environment variables");
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+// Validate Stripe key format
+const stripeKey = process.env.STRIPE_SECRET_KEY.trim();
+
+// Check for placeholder/example keys
+const placeholderPatterns = [
+  "your-secret-key",
+  "your_secret_key",
+  "sk_test_your",
+  "sk_live_your",
+  "sk_test_here",
+  "sk_live_here",
+  "example",
+  "placeholder",
+];
+
+const isPlaceholder = placeholderPatterns.some(pattern => 
+  stripeKey.toLowerCase().includes(pattern.toLowerCase())
+);
+
+if (isPlaceholder) {
+  console.error("[Stripe] ERROR: Stripe secret key appears to be a placeholder/example value!");
+  console.error("[Stripe] Please set a valid Stripe secret key in your environment variables.");
+  throw new Error("Stripe secret key is a placeholder. Please set a valid key.");
+}
+
+const isTestKey = stripeKey.startsWith("sk_test_");
+const isLiveKey = stripeKey.startsWith("sk_live_");
+const isRestrictedKey = stripeKey.startsWith("sk_") && (stripeKey.includes("_rk_") || stripeKey.includes("_rk_test_") || stripeKey.includes("_rk_live_"));
+
+if (!isTestKey && !isLiveKey && !isRestrictedKey) {
+  console.error("[Stripe] Invalid Stripe secret key format. Key should start with sk_test_, sk_live_, or be a restricted key.");
+  console.error("[Stripe] Key prefix:", stripeKey.substring(0, Math.min(20, stripeKey.length)));
+  throw new Error("Invalid Stripe secret key format");
+}
+
+// Warn if using test key in production (but don't block - allow for testing)
+if (isTestKey && process.env.NODE_ENV === "production") {
+  console.warn("[Stripe] WARNING: Using test key (sk_test_) in production environment!");
+  console.warn("[Stripe] This should be a live key (sk_live_) for production deployments.");
+}
+
+export const stripe = new Stripe(stripeKey, {
   apiVersion: "2025-10-29.clover",
   typescript: true,
 });
