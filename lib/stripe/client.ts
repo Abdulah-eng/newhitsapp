@@ -7,6 +7,15 @@ if (!process.env.STRIPE_SECRET_KEY) {
 // Validate Stripe key format
 const stripeKey = process.env.STRIPE_SECRET_KEY.trim();
 
+// Check if we're in build phase (Next.js sets this during build)
+// During build, we want to warn but not throw errors to allow the build to complete
+// We detect build phase by checking for Vercel build environment or Next.js build phase
+const isBuildPhase = 
+  process.env.NEXT_PHASE === "phase-production-build" || 
+  process.env.NEXT_PHASE === "phase-development-build" ||
+  (process.env.VERCEL === "1" && process.env.CI === "1") ||
+  process.env.npm_lifecycle_event === "build";
+
 // Check for placeholder/example keys
 const placeholderPatterns = [
   "your-secret-key",
@@ -23,20 +32,36 @@ const isPlaceholder = placeholderPatterns.some(pattern =>
   stripeKey.toLowerCase().includes(pattern.toLowerCase())
 );
 
+// During build, only warn about placeholder keys (don't throw)
+// At runtime, throw an error
 if (isPlaceholder) {
-  console.error("[Stripe] ERROR: Stripe secret key appears to be a placeholder/example value!");
-  console.error("[Stripe] Please set a valid Stripe secret key in your environment variables.");
-  throw new Error("Stripe secret key is a placeholder. Please set a valid key.");
+  if (isBuildPhase) {
+    console.warn("[Stripe] WARNING: Stripe secret key appears to be a placeholder/example value!");
+    console.warn("[Stripe] Please set a valid Stripe secret key in your environment variables.");
+    console.warn("[Stripe] Build will continue, but Stripe operations will fail at runtime.");
+  } else {
+    console.error("[Stripe] ERROR: Stripe secret key appears to be a placeholder/example value!");
+    console.error("[Stripe] Please set a valid Stripe secret key in your environment variables.");
+    throw new Error("Stripe secret key is a placeholder. Please set a valid key.");
+  }
 }
 
 const isTestKey = stripeKey.startsWith("sk_test_");
 const isLiveKey = stripeKey.startsWith("sk_live_");
 const isRestrictedKey = stripeKey.startsWith("sk_") && (stripeKey.includes("_rk_") || stripeKey.includes("_rk_test_") || stripeKey.includes("_rk_live_"));
 
-if (!isTestKey && !isLiveKey && !isRestrictedKey) {
-  console.error("[Stripe] Invalid Stripe secret key format. Key should start with sk_test_, sk_live_, or be a restricted key.");
-  console.error("[Stripe] Key prefix:", stripeKey.substring(0, Math.min(20, stripeKey.length)));
-  throw new Error("Invalid Stripe secret key format");
+// Only validate format if not a placeholder (to avoid duplicate errors)
+if (!isPlaceholder && !isTestKey && !isLiveKey && !isRestrictedKey) {
+  const errorMsg = "Invalid Stripe secret key format. Key should start with sk_test_, sk_live_, or be a restricted key.";
+  if (isBuildPhase) {
+    console.warn("[Stripe] WARNING:", errorMsg);
+    console.warn("[Stripe] Key prefix:", stripeKey.substring(0, Math.min(20, stripeKey.length)));
+    console.warn("[Stripe] Build will continue, but Stripe operations will fail at runtime.");
+  } else {
+    console.error("[Stripe]", errorMsg);
+    console.error("[Stripe] Key prefix:", stripeKey.substring(0, Math.min(20, stripeKey.length)));
+    throw new Error("Invalid Stripe secret key format");
+  }
 }
 
 // Warn if using test key in production (but don't block - allow for testing)
