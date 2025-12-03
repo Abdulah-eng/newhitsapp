@@ -4,6 +4,10 @@ import { createSupabaseApiRouteClient, createSupabaseServiceRoleClient } from "@
 import { getCurrentUser } from "@/lib/utils/auth";
 import Stripe from "stripe";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * Create a Stripe subscription for a membership plan
  */

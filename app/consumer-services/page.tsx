@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
@@ -8,6 +8,13 @@ import Link from "next/link";
 import MarketingHeader from "@/components/MarketingHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useMembership } from "@/lib/hooks/useMembership";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import MembershipPaymentForm from "@/components/features/MembershipPaymentForm";
+import { X, AlertCircle } from "lucide-react";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
 
 const fadeVariants = {
   hidden: { opacity: 0, y: 32 },
@@ -73,23 +80,122 @@ const membershipTiers = [
 ];
 
 export default function ConsumerServicesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  // Fetch online-only membership plans
+  const { plans, isLoading: plansLoading, fetchMembership } = useMembership(user?.id, "online-only");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<{
+    planId: string;
+    subscriptionId: string;
+    clientSecret: string;
+    planName: string;
+  } | null>(null);
 
   const handleChoosePlan = useCallback(
-    (planName: string) => {
-      const encodedPlan = encodeURIComponent(planName);
-      const membershipUrl = `/senior/membership-online?plan=${encodedPlan}`;
-      const redirectUrl = `/login?redirect=${encodeURIComponent(membershipUrl)}`;
-
+    async (planName: string) => {
+      // If user is not logged in or not a senior, redirect to login
       if (!user || user.role !== "senior") {
+        const encodedPlan = encodeURIComponent(planName);
+        const membershipUrl = `/senior/membership-online?plan=${encodedPlan}`;
+        const redirectUrl = `/login?redirect=${encodeURIComponent(membershipUrl)}`;
         router.push(redirectUrl);
         return;
       }
 
-      router.push(membershipUrl);
+      // If plans are still loading, wait a bit
+      if (plansLoading || plans.length === 0) {
+        setError("Please wait while we load the plans...");
+        return;
+      }
+
+      // Find the matching plan
+      const planMap: { [key: string]: string } = {
+        "starter": "starter",
+        "essentials": "essential",
+        "essential": "essential",
+        "family+": "family",
+        "family": "family",
+      };
+
+      const normalizedPlan = planName.toLowerCase().trim();
+      const planType = planMap[normalizedPlan];
+      
+      if (!planType) {
+        setError("Plan not found. Please try again.");
+        return;
+      }
+
+      const matchingPlan = plans.find(p => p.plan_type === planType);
+      if (!matchingPlan) {
+        setError("Plan not available. Please try again.");
+        return;
+      }
+
+      setIsProcessing(true);
+      setError("");
+
+      try {
+        console.log("[Consumer Services] Creating subscription for plan:", matchingPlan.id);
+        
+        const response = await fetch("/api/stripe/create-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ membershipPlanId: matchingPlan.id }),
+        });
+
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+          // Try to parse error response
+          let errorMessage = "Failed to create subscription";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.details?.message || errorMessage;
+          } catch {
+            // If JSON parsing fails, use status text
+            errorMessage = response.statusText || `Server error (${response.status})`;
+          }
+          console.error("[Consumer Services] Subscription creation failed:", errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        // Parse successful response
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error("[Consumer Services] Failed to parse response:", parseError);
+          throw new Error("Invalid response from server. Please try again.");
+        }
+
+        console.log("[Consumer Services] Subscription response:", { 
+          ok: response.ok, 
+          hasClientSecret: !!data.clientSecret,
+          subscriptionId: data.subscriptionId,
+          error: data.error 
+        });
+
+        if (data.clientSecret) {
+          console.log("[Consumer Services] Subscription created successfully, showing payment form");
+          setSelectedPlanForPayment({ 
+            planId: matchingPlan.id, 
+            subscriptionId: data.subscriptionId, 
+            clientSecret: data.clientSecret,
+            planName: matchingPlan.name
+          });
+        } else {
+          console.error("[Consumer Services] No client secret returned from subscription creation");
+          throw new Error("Payment is required to activate membership. Please try again.");
+        }
+      } catch (err: any) {
+        console.error("[Consumer Services] Error in handleChoosePlan:", err);
+        setError(err.message || "Failed to activate membership. Please try again.");
+      } finally {
+        setIsProcessing(false);
+      }
     },
-    [router, user],
+    [router, user, plans, plansLoading],
   );
 
   return (
@@ -128,8 +234,8 @@ export default function ConsumerServicesPage() {
             <div className="rounded-3xl bg-gradient-to-br from-primary-500 via-primary-400 to-accent-400 p-[1px] shadow-large">
               <div className="rounded-[30px] bg-white px-8 py-10">
                 <p className="text-lg leading-8 text-primary-800">
-                  “My specialist never rushes me. She answers the same “silly” question ten times with the same smile.
-                  Now I stream concerts with my sisters every Sunday.”
+                  "My specialist never rushes me. She answers the same "silly" question ten times with the same smile.
+                  Now I stream concerts with my sisters every Sunday."
                 </p>
                 <p className="mt-6 text-sm uppercase tracking-[0.3em] text-accent-400">Lynette, HITS Member</p>
               </div>
@@ -278,8 +384,9 @@ export default function ConsumerServicesPage() {
                     className={`w-full h-12 ${tier.accent ? "bg-primary-500 hover:bg-primary-600" : "bg-secondary-200 text-primary-700 hover:bg-secondary-300"}`}
                     onClick={() => handleChoosePlan(tier.name)}
                     type="button"
+                    disabled={isProcessing || plansLoading}
                   >
-                    Choose plan
+                    {isProcessing ? "Processing..." : "Choose plan"}
                   </Button>
                 </div>
               </motion.div>
@@ -308,7 +415,7 @@ export default function ConsumerServicesPage() {
             custom={0.12}
             className="mt-4 text-lg leading-8 text-white/90"
           >
-            Schedule a discovery call or jump straight into your first concierge session. We’re here for every step.
+            Schedule a discovery call or jump straight into your first concierge session. We're here for every step.
           </motion.p>
           <motion.div
             initial="hidden"
@@ -332,7 +439,78 @@ export default function ConsumerServicesPage() {
         </div>
       </section>
       <Footer />
+
+      {/* Error Message */}
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-error-50 border border-error-200 rounded-lg p-4 shadow-lg z-50 max-w-md">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-error-500 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-error-700">{error}</p>
+              <button
+                onClick={() => setError("")}
+                className="mt-2 text-xs text-error-600 hover:text-error-800 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Form Modal */}
+      {selectedPlanForPayment && selectedPlanForPayment.clientSecret && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg p-6 max-w-2xl w-full my-8"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-text-primary">
+                Complete Payment - {selectedPlanForPayment.planName}
+              </h3>
+              <button
+                onClick={() => {
+                  setSelectedPlanForPayment(null);
+                  setError("");
+                }}
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret: selectedPlanForPayment.clientSecret,
+                appearance: {
+                  theme: "stripe",
+                },
+              }}
+            >
+              <MembershipPaymentForm
+                clientSecret={selectedPlanForPayment.clientSecret}
+                subscriptionId={selectedPlanForPayment.subscriptionId}
+                planName={selectedPlanForPayment.planName}
+                onSuccess={async () => {
+                  setSelectedPlanForPayment(null);
+                  // Refresh membership data if available
+                  if (fetchMembership) {
+                    await fetchMembership();
+                  }
+                  // Redirect to membership page to show active membership
+                  router.push("/senior/membership-online");
+                }}
+                onCancel={() => {
+                  setSelectedPlanForPayment(null);
+                  setError("");
+                }}
+              />
+            </Elements>
+          </motion.div>
+        </div>
+      )}
     </main>
   );
 }
-

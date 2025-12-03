@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useMembership } from "@/lib/hooks/useMembership";
@@ -20,7 +20,7 @@ function MembershipOnlinePageContent() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   // Fetch online-only membership plans
-  const { membership, plans, isLoading, hasActiveMembership, createMembership, cancelMembership, fetchMembership } = useMembership(user?.id, "online-only");
+  const { membership, plans, isLoading, hasActiveMembership, cancelMembership, fetchMembership } = useMembership(user?.id, "online-only");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -40,49 +40,21 @@ function MembershipOnlinePageContent() {
     }
   }, [user, authLoading, router]);
 
-  const handleSelectPlan = useCallback(async (planId: string) => {
-    setIsProcessing(true);
-    setError("");
-
-    try {
-      console.log("[Membership Online] Creating subscription for plan:", planId);
-      
-      const response = await fetch("/api/stripe/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipPlanId: planId }),
-      });
-
-      const data = await response.json();
-      console.log("[Membership Online] Subscription response:", { 
-        ok: response.ok, 
-        hasClientSecret: !!data.clientSecret,
-        subscriptionId: data.subscriptionId,
-        error: data.error 
-      });
-
-      if (!response.ok) {
-        const errorMessage = data.error || data.details?.message || "Failed to create subscription";
-        console.error("[Membership Online] Subscription creation failed:", errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      if (data.clientSecret) {
-        console.log("[Membership Online] Subscription created successfully, showing payment form");
-        setSelectedPlanForPayment({ planId, subscriptionId: data.subscriptionId, clientSecret: data.clientSecret });
-      } else {
-        console.error("[Membership Online] No client secret returned from subscription creation");
-        throw new Error("Payment is required to activate membership. Please try again.");
-      }
-    } catch (err: any) {
-      console.error("[Membership Online] Error in handleSelectPlan:", err);
-      setError(err.message || "Failed to activate membership. Please try again.");
-    } finally {
-      setIsProcessing(false);
+  // Check for payment success and refresh membership
+  useEffect(() => {
+    const paymentSuccess = searchParams.get("payment");
+    if (paymentSuccess === "success" && fetchMembership) {
+      // Payment was successful, force refresh membership data
+      // Wait a moment to ensure webhook has processed
+      setTimeout(async () => {
+        await fetchMembership();
+        // Clean up URL after refresh
+        router.replace("/senior/membership-online");
+      }, 2000);
     }
-  }, []);
+  }, [searchParams, fetchMembership, router]);
 
-  // Check if a plan was selected via URL parameter (from consumer services page)
+  // Handle auto-selection from URL parameter (from consumer services page)
   useEffect(() => {
     const planParam = searchParams.get("plan");
     if (
@@ -109,14 +81,80 @@ function MembershipOnlinePageContent() {
         const matchingPlan = plans.find(p => p.plan_type === planType);
         if (matchingPlan) {
           console.log("[Membership Online] Auto-selecting plan from URL:", matchingPlan.name);
-          handleSelectPlan(matchingPlan.id).catch(err => {
-            console.error("[Membership Online] Error auto-selecting plan:", err);
-            setError(err.message || "Failed to load payment form");
-          });
+          // Small delay to ensure UI is ready
+          setTimeout(() => {
+            handleSelectPlan(matchingPlan.id).catch(err => {
+              console.error("[Membership Online] Error auto-selecting plan:", err);
+              setError(err.message || "Failed to load payment form");
+            });
+          }, 500);
         }
       }
     }
-  }, [plans, searchParams, isLoading, isProcessing, selectedPlanForPayment, handleSelectPlan, hasActiveMembership]);
+  }, [plans, searchParams, isLoading, isProcessing, selectedPlanForPayment, hasActiveMembership]);
+
+  const handleSelectPlan = async (planId: string) => {
+    setIsProcessing(true);
+    setError("");
+
+    try {
+      console.log("[Membership Online] Creating subscription for plan:", planId);
+      
+      const response = await fetch("/api/stripe/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membershipPlanId: planId }),
+      });
+
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error response
+        let errorMessage = "Failed to create subscription";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details?.message || errorMessage;
+        } catch {
+          // If JSON parsing fails, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        console.error("[Membership Online] Subscription creation failed:", errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Parse successful response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error("[Membership Online] Failed to parse response:", parseError);
+        throw new Error("Invalid response from server. Please try again.");
+      }
+
+      console.log("[Membership Online] Subscription response:", { 
+        ok: response.ok, 
+        hasClientSecret: !!data.clientSecret,
+        subscriptionId: data.subscriptionId,
+        error: data.error 
+      });
+
+      if (data.clientSecret) {
+        console.log("[Membership Online] Subscription created successfully, showing payment form");
+        setSelectedPlanForPayment({ 
+          planId, 
+          subscriptionId: data.subscriptionId, 
+          clientSecret: data.clientSecret 
+        });
+      } else {
+        console.error("[Membership Online] No client secret returned from subscription creation");
+        throw new Error("Payment is required to activate membership. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("[Membership Online] Error in handleSelectPlan:", err);
+      setError(err.message || "Failed to activate membership. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleCancel = async () => {
     setIsProcessing(true);
@@ -124,12 +162,13 @@ function MembershipOnlinePageContent() {
 
     try {
       if (membership?.stripe_subscription_id) {
+        // Cancel Stripe subscription
         const response = await fetch("/api/stripe/cancel-subscription", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subscriptionId: membership.stripe_subscription_id,
-            cancelImmediately: false,
+            cancelImmediately: false, // Cancel at period end
             reason: cancelReason || undefined,
           }),
         });
@@ -140,6 +179,7 @@ function MembershipOnlinePageContent() {
           throw new Error(data.error || "Failed to cancel subscription");
         }
       } else {
+        // Fallback to direct cancellation
         await cancelMembership(cancelReason || "User requested cancellation");
       }
 
@@ -165,21 +205,23 @@ function MembershipOnlinePageContent() {
   // Show error if plans failed to load
   if (plans.length === 0 && !isLoading) {
     return (
-      <div className="card bg-white p-8">
-        <AlertCircle className="text-error-500 mx-auto mb-4" size={48} />
-        <h2 className="text-2xl font-bold text-text-primary mb-4 text-center">
-          No Plans Available
-        </h2>
-        <p className="text-text-secondary text-center mb-6">
-          We're sorry, but no membership plans are currently available. Please check back later or contact support.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link href="/senior/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
-          <Link href="/contact">
-            <Button>Contact Support</Button>
-          </Link>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="card bg-white p-8">
+          <AlertCircle className="text-error-500 mx-auto mb-4" size={48} />
+          <h2 className="text-2xl font-bold text-text-primary mb-4 text-center">
+            No Plans Available
+          </h2>
+          <p className="text-text-secondary text-center mb-6">
+            We're sorry, but no membership plans are currently available. Please check back later or contact support.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link href="/senior/dashboard">
+              <Button variant="outline">Back to Dashboard</Button>
+            </Link>
+            <Link href="/contact">
+              <Button>Contact Support</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -188,236 +230,259 @@ function MembershipOnlinePageContent() {
   const currentPlan = membership?.membership_plan;
 
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      variants={fadeIn}
-    >
-          <div className="mb-6">
-            <Link
-              href="/senior/dashboard"
-              className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-4 transition-colors"
-            >
-              ← Back to Dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-text-primary">Online-Only Membership</h1>
-            <p className="text-text-secondary mt-2">
-              Manage your online tech support membership and enjoy exclusive benefits
-            </p>
-          </div>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <motion.div
+        initial="initial"
+        animate="animate"
+        variants={fadeIn}
+      >
+        <div className="mb-6">
+          <Link
+            href="/senior/dashboard"
+            className="inline-flex items-center text-primary-500 hover:text-primary-600 mb-4 transition-colors"
+          >
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-bold text-text-primary">Online-Only Membership</h1>
+          <p className="text-text-secondary mt-2">
+            Manage your online tech support membership and enjoy exclusive benefits
+          </p>
+          <p className="mt-2 text-sm text-text-tertiary">
+            If you re-subscribe after cancelling, billing restarts immediately on the day you reactivate.
+          </p>
+        </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3"
-            >
-              <AlertCircle className="text-error-500 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-sm text-error-700">{error}</p>
-            </motion.div>
-          )}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3"
+          >
+            <AlertCircle className="text-error-500 flex-shrink-0 mt-0.5" size={20} />
+            <p className="text-sm text-error-700">{error}</p>
+          </motion.div>
+        )}
 
-          {/* Current Membership */}
-          {hasActiveMembership && currentPlan && (
-            <motion.div
-              variants={slideUp}
-              className="card bg-white p-8 mb-8"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-text-primary mb-2">
-                    Current Membership
-                  </h2>
-                  <p className="text-text-secondary">You're currently on the {currentPlan.name}</p>
+        {/* Current Membership */}
+        {hasActiveMembership && currentPlan && (
+          <motion.div
+            variants={slideUp}
+            className="card bg-white p-8 mb-8"
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-text-primary mb-2">
+                  Current Membership
+                </h2>
+                <p className="text-text-secondary">You're currently on the {currentPlan.name}</p>
+              </div>
+              <span className="px-4 py-2 bg-success-50 text-success-700 border border-success-200 rounded-lg font-medium">
+                Active
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-secondary-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 text-text-secondary mb-2">
+                  <CreditCard size={18} />
+                  <span className="text-sm font-medium">Monthly Cost</span>
                 </div>
-                <span className="px-4 py-2 bg-success-50 text-success-700 border border-success-200 rounded-lg font-medium">
-                  Active
-                </span>
+                <p className="text-2xl font-bold text-text-primary">
+                  ${currentPlan.monthly_price.toFixed(2)}/month
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {membership?.next_billing_date && (
                 <div className="bg-secondary-50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 text-text-secondary mb-2">
-                    <CreditCard size={18} />
-                    <span className="text-sm font-medium">Monthly Cost</span>
+                    <Calendar size={18} />
+                    <span className="text-sm font-medium">Next Billing Date</span>
                   </div>
-                  <p className="text-2xl font-bold text-text-primary">
-                    ${currentPlan.monthly_price.toFixed(2)}/month
+                  <p className="text-lg font-semibold text-text-primary">
+                    {new Date(membership.next_billing_date).toLocaleDateString()}
                   </p>
                 </div>
+              )}
+            </div>
 
-                {membership.next_billing_date && (
-                  <div className="bg-secondary-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-text-secondary mb-2">
-                      <Calendar size={18} />
-                      <span className="text-sm font-medium">Next Billing Date</span>
-                    </div>
-                    <p className="text-lg font-semibold text-text-primary">
-                      {new Date(membership.next_billing_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-text-primary mb-3">Your Benefits</h3>
+              <ul className="space-y-2">
+                {currentPlan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <CheckCircle className="text-success-500 flex-shrink-0 mt-0.5" size={18} />
+                    <span className="text-text-secondary">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-text-primary mb-3">Plan Features</h3>
-                <ul className="space-y-2">
-                  {currentPlan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle className="text-success-500 flex-shrink-0 mt-0.5" size={18} />
-                      <span className="text-text-secondary">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
+            <div className="pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => setShowCancelConfirm(true)}
-                className="w-full md:w-auto"
+                className="text-error-500 border-error-500 hover:bg-error-50"
               >
                 Cancel Membership
               </Button>
-            </motion.div>
-          )}
-
-          {/* Available Plans */}
-          {!hasActiveMembership && (
-            <motion.div variants={slideUp} className="mb-8">
-              <h2 className="text-2xl font-bold text-text-primary mb-6">Choose Your Plan</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                  <motion.div
-                    key={plan.id}
-                    variants={slideUp}
-                    className="card bg-white p-6"
-                  >
-                    <h3 className="text-xl font-bold text-text-primary mb-2">{plan.name}</h3>
-                    <p className="text-3xl font-extrabold text-primary-600 mb-4">
-                      ${plan.monthly_price.toFixed(2)}
-                      <span className="text-base font-normal text-text-secondary">/month</span>
-                    </p>
-                    <p className="text-text-secondary mb-4">{plan.description}</p>
-                    <ul className="space-y-2 mb-6">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-text-secondary">
-                          <CheckCircle className="text-primary-500 flex-shrink-0 mt-0.5" size={16} />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      onClick={() => handleSelectPlan(plan.id)}
-                      disabled={isProcessing}
-                      className="w-full"
-                    >
-                      {isProcessing ? "Processing..." : "Choose Plan"}
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Payment Form Modal */}
-          {selectedPlanForPayment && selectedPlanForPayment.clientSecret && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-              <div className="bg-white rounded-xl p-6 max-w-md w-full my-8 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-4 border-b">
-                  <h3 className="text-xl font-bold text-text-primary">Complete Payment</h3>
-                  <button
-                    onClick={() => {
-                      setSelectedPlanForPayment(null);
-                      // Remove plan parameter from URL if present
-                      const newSearchParams = new URLSearchParams(searchParams.toString());
-                      newSearchParams.delete("plan");
-                      router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
-                    }}
-                    className="text-text-tertiary hover:text-text-primary"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="mt-4">
-                  <Elements 
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret: selectedPlanForPayment.clientSecret,
-                    }}
-                  >
-                    <MembershipPaymentForm
-                      subscriptionId={selectedPlanForPayment.subscriptionId}
-                      clientSecret={selectedPlanForPayment.clientSecret}
-                      planName={plans.find(p => p.id === selectedPlanForPayment.planId)?.name || "Membership"}
-                      onSuccess={async () => {
-                        // Optimistically close the payment modal
-                        setSelectedPlanForPayment(null);
-                        setIsProcessing(true);
-
-                        try {
-                          // Immediately refresh membership so the active plan shows up
-                          if (fetchMembership) {
-                            await fetchMembership();
-                          }
-
-                          // Navigate to a clean URL without any query params
-                          router.replace("/senior/membership-online");
-                        } finally {
-                          setIsProcessing(false);
-                        }
-                      }}
-                      onCancel={() => {
-                        setSelectedPlanForPayment(null);
-                        // Remove plan parameter from URL if present
-                        const newSearchParams = new URLSearchParams(searchParams.toString());
-                        newSearchParams.delete("plan");
-                        router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
-                      }}
-                    />
-                  </Elements>
-                </div>
-              </div>
             </div>
-          )}
+          </motion.div>
+        )}
 
-          {/* Cancel Confirmation Modal */}
-          {showCancelConfirm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold text-text-primary mb-4">Cancel Membership</h3>
-                <p className="text-text-secondary mb-4">
-                  Your membership will remain active until the end of your billing period. You can reactivate anytime.
-                </p>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Reason for cancellation (optional)"
-                  className="w-full p-3 border border-secondary-300 rounded-lg mb-4"
-                  rows={3}
+        {/* Available Plans */}
+        {!hasActiveMembership && (
+          <motion.div variants={slideUp} className="mb-8">
+            <h2 className="text-2xl font-bold text-text-primary mb-6">Choose Your Plan</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan, idx) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="card bg-white p-6"
+                >
+                  <h3 className="text-xl font-bold text-text-primary mb-2">{plan.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-text-primary">${plan.monthly_price.toFixed(2)}</span>
+                    <span className="text-text-secondary">/month</span>
+                  </div>
+                  <p className="text-text-secondary text-sm mb-4">{plan.description}</p>
+                  <ul className="space-y-2 mb-6">
+                    {plan.features.slice(0, 3).map((feature, fIdx) => (
+                      <li key={fIdx} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="text-primary-500 flex-shrink-0 mt-0.5" size={16} />
+                        <span className="text-text-secondary">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    variant="primary"
+                    className="w-full"
+                    onClick={() => handleSelectPlan(plan.id)}
+                    isLoading={isProcessing}
+                  >
+                    Choose Plan
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Payment Form Modal */}
+        {selectedPlanForPayment && selectedPlanForPayment.clientSecret && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-lg p-6 max-w-2xl w-full my-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-text-primary">
+                  Complete Payment
+                </h3>
+                <button
+                  onClick={() => {
+                    setSelectedPlanForPayment(null);
+                    // Remove plan parameter from URL if present
+                    const newSearchParams = new URLSearchParams(searchParams.toString());
+                    newSearchParams.delete("plan");
+                    router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
+                  }}
+                  className="text-text-tertiary hover:text-text-primary"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: selectedPlanForPayment.clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                  },
+                }}
+              >
+                <MembershipPaymentForm
+                  clientSecret={selectedPlanForPayment.clientSecret}
+                  subscriptionId={selectedPlanForPayment.subscriptionId}
+                  planName={plans.find((p) => p.id === selectedPlanForPayment.planId)?.name || "Membership"}
+                  onSuccess={async () => {
+                    setSelectedPlanForPayment(null);
+                    // Force refresh membership data immediately
+                    if (fetchMembership) {
+                      // Clear the throttle to allow immediate fetch
+                      await fetchMembership();
+                      // Wait a moment for data to load, then refresh
+                      setTimeout(() => {
+                        // Force a hard refresh to ensure UI updates
+                        window.location.href = "/senior/membership-online?payment=success";
+                      }, 1500);
+                    } else {
+                      // Fallback: just reload
+                      window.location.href = "/senior/membership-online?payment=success";
+                    }
+                  }}
+                  onCancel={() => {
+                    setSelectedPlanForPayment(null);
+                    // Remove plan parameter from URL if present
+                    const newSearchParams = new URLSearchParams(searchParams.toString());
+                    newSearchParams.delete("plan");
+                    router.replace(`/senior/membership-online?${newSearchParams.toString()}`);
+                  }}
                 />
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleCancel}
-                    disabled={isProcessing}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {isProcessing ? "Cancelling..." : "Confirm Cancellation"}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowCancelConfirm(false);
-                      setCancelReason("");
-                    }}
-                    className="flex-1"
-                  >
-                    Keep Membership
-                  </Button>
-                </div>
+              </Elements>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Cancel Confirmation Modal */}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-lg p-6 max-w-md w-full"
+            >
+              <h3 className="text-xl font-bold text-text-primary mb-4">Cancel Membership?</h3>
+              <p className="text-text-secondary mb-4">
+                Your membership will be cancelled at the end of your current billing period. You'll continue to have access until then, and you can reactivate anytime. Reactivating starts a fresh billing period right away.
+              </p>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Optional cancellation reason
+              </label>
+              <textarea
+                className="input min-h-[100px] mb-6"
+                placeholder="Let us know why you're cancelling (optional)"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setCancelReason("");
+                  }}
+                >
+                  Keep Membership
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1 bg-error-500 hover:bg-error-600"
+                  onClick={handleCancel}
+                  isLoading={isProcessing}
+                >
+                  Cancel Membership
+                </Button>
               </div>
-            </div>
-          )}
-        </motion.div>
+            </motion.div>
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
 }
 
@@ -432,4 +497,3 @@ export default function MembershipOnlinePage() {
     </Suspense>
   );
 }
-
