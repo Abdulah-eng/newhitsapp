@@ -17,41 +17,40 @@ const fade = {
 
 const membershipPlans = [
   {
-    name: "Connect Plan",
+    name: "Connect",
     price: "$25",
     cadence: "/ month",
-    description: "For seniors and disabled adults who want a trusted tech helper on standby.",
+    description: "Member rate only, no free time included.",
     features: [
-      "Member rate: $85/hour",
+      "Member rate: $75/hour for visits",
       "Priority scheduling on busy days",
       "Access to the HITS resource library (large-print guides and checklists)",
-      "Email alerts with simple safety tips and scam warnings",
+      "Email alerts with safety tips and scam warnings",
     ],
   },
   {
-    name: "Comfort Plan",
+    name: "Comfort",
     price: "$59",
     cadence: "/ month",
-    description: "For seniors and disabled adults who expect regular help with their devices.",
+    description: "One 30-minute remote check-in included each month.",
     features: [
-      "One 30-minute remote check-in included each month",
-      "Member rate: $80/hour for additional in-home or remote visits",
+      "1 free 30-min remote check-in monthly",
+      "Member rate: $75/hour for additional visits",
       "Priority same-week scheduling",
       "Optional caregiver notifications for appointments and visit summaries",
     ],
     accent: true,
   },
   {
-    name: "Family Care+ Plan",
+    name: "Family Care+",
     price: "$99",
     cadence: "/ month",
-    description: "For families supporting one or more older adults or disabled adults.",
+    description: "One 60-minute visit (remote or in-home) included monthly.",
     features: [
-      "One 60-minute visit included each month (in-home or remote, where available)",
-      "Member rate: $75/hour for additional visits",
+      "1 free 60-min visit monthly (remote or in-home)",
+      "Member rate: $75/hour after included time",
       "Covers up to 3 people in the same household or immediate family",
       "Family view of upcoming appointments and visit summaries",
-      "Optional follow-up check-in after major tech changes (new phone, router, etc.)",
     ],
   },
 ];

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export function useUnreadMessageCount(pollInterval = 30000) {
+export function useUnreadMessageCount(pollInterval = 60000) {
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +38,40 @@ export function useUnreadMessageCount(pollInterval = 30000) {
 
   useEffect(() => {
     fetchCount();
-    const interval = setInterval(fetchCount, pollInterval);
-    return () => clearInterval(interval);
+
+    let interval = setInterval(fetchCount, pollInterval);
+
+    // Pause polling when tab hidden to reduce load
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        clearInterval(interval);
+      } else {
+        fetchCount();
+        interval = setInterval(fetchCount, pollInterval);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent;
+      if (typeof custom.detail === "number") {
+        setCount(custom.detail);
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("unread-messages-updated", handler);
+    }
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("unread-messages-updated", handler);
+      }
+    };
   }, [fetchCount, pollInterval]);
 
-  return { count, isLoading, error, refetch: fetchCount };
+  return { count, isLoading, error, refetch: fetchCount, setCount };
 }
 
 

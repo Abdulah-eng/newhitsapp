@@ -55,8 +55,6 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        console.log("Admin Dashboard: Fetching data...");
-
         // Fetch user counts and metrics
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -89,82 +87,13 @@ export default function AdminDashboard() {
           supabase.from("specialist_profiles").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
         ]);
 
-        // Log errors for debugging
-        if (usersRes.error) console.error("Error fetching users:", usersRes.error);
-        if (specialistsRes.error) console.error("Error fetching specialists:", specialistsRes.error);
-        if (seniorsRes.error) console.error("Error fetching seniors:", seniorsRes.error);
-        if (appointmentsRes.error) console.error("Error fetching appointments:", appointmentsRes.error);
-        if (paymentsRes.error) console.error("Error fetching payments:", paymentsRes.error);
-
-        // Fetch pending specialists separately with better error handling
-        // First, let's check all specialist profiles to see what we have
-        // Try with RLS bypass check
-        const { data: allProfiles, error: allProfilesError } = await supabase
-          .from("specialist_profiles")
-          .select("*")
-          .limit(10);
-        
-        console.log("All specialist profiles:", allProfiles);
-        console.log("All profiles error:", allProfilesError);
-        
-        // Also check if we can query by user_id directly
-        if (specialistsRes.count && specialistsRes.count > 0) {
-          // Get the specialist user IDs with full details
-          const { data: specialistUsers, error: specialistUsersError } = await supabase
-            .from("users")
-            .select("id, email, full_name, role")
-            .eq("role", "specialist");
-          
-          console.log("Specialist user IDs:", specialistUsers);
-          console.log("Specialist users error:", specialistUsersError);
-          
-          if (specialistUsers && specialistUsers.length > 0) {
-            const specialistIds = specialistUsers.map(u => u.id);
-            console.log("Querying profiles for user_ids:", specialistIds);
-            
-            // Try querying without any filters first
-            const { data: allProfilesTest, error: allProfilesTestError } = await supabase
-              .from("specialist_profiles")
-              .select("*");
-            
-            console.log("All profiles (no filter):", allProfilesTest);
-            console.log("All profiles error (no filter):", allProfilesTestError);
-            
-            // Then try with user_ids
-            const { data: profilesByUserId, error: profilesError } = await supabase
-              .from("specialist_profiles")
-              .select("*")
-              .in("user_id", specialistIds);
-            
-            console.log("Profiles by user_id:", profilesByUserId);
-            console.log("Profiles error:", profilesError);
-            
-            // Check if profiles exist for these users
-            specialistUsers.forEach((user) => {
-              const hasProfile = profilesByUserId?.some(p => p.user_id === user.id);
-              console.log(`User ${user.email} (${user.id}): has profile = ${hasProfile}`);
-            });
-          }
-        }
-        
-        if (allProfiles) {
-          console.log("Verification statuses:", allProfiles.map(p => ({
-            id: p.id,
-            user_id: p.user_id,
-            status: p.verification_status
-          })));
-        }
-
-        // Query specialist_profiles and join with users table
+        // Query specialist_profiles and join with users table (lightweight)
         const { data: pendingProfiles, error: pendingError } = await supabase
           .from("specialist_profiles")
           .select("*")
           .eq("verification_status", "pending")
           .order("created_at", { ascending: false })
           .limit(5);
-        
-        console.log("Pending profiles query result:", pendingProfiles);
-        console.log("Pending profiles error:", pendingError);
 
         // Fetch user details for each pending specialist
         let pendingData: any[] = [];
@@ -199,7 +128,7 @@ export default function AdminDashboard() {
           console.log("Pending specialists found:", pendingData?.length || 0, pendingData);
         }
 
-        // Fetch recent transactions
+        // Fetch recent transactions (limit to 5)
         const { data: transactions, error: transactionsError } = await supabase
           .from("payments")
           .select(`
@@ -230,20 +159,6 @@ export default function AdminDashboard() {
             netRevenue += parseFloat(payment.base_amount || payment.amount || 0);
           });
         }
-
-        console.log("Dashboard stats:", {
-          totalUsers,
-          totalSpecialists,
-          totalSeniors,
-          disabledAdults: disabledAdultsRes.count,
-          activeMemberships: membershipsRes.count,
-          pendingVerifications,
-          totalAppointments,
-          appointmentsToday: appointmentsTodayRes.count,
-          totalRevenue,
-          netRevenue,
-          openDisputes: disputesRes.count,
-        });
 
         setStats({
           totalUsers,

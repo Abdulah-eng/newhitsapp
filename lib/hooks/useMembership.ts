@@ -14,9 +14,11 @@ async function logActivity(type: string, description: string, metadata: any) {
   }
 }
 
+import { AllowedPlanType, CANONICAL_MEMBERSHIP_PLANS, MEMBER_HOURLY_RATE } from "@/lib/constants/memberships";
+
 export interface MembershipPlan {
   id: string;
-  plan_type: "connect" | "comfort" | "family_care_plus" | "starter" | "essential" | "family";
+  plan_type: AllowedPlanType;
   name: string;
   monthly_price: number;
   member_hourly_rate: number;
@@ -63,8 +65,17 @@ export function useMembership(userId: string | undefined, category?: "online-onl
 
   // Fetch all available membership plans
   // Optionally filter by service_category (online-only or in-person)
+  const lastPlansFetchRef = useRef<{ ts: number; category?: "online-only" | "in-person" }>({ ts: 0, category: undefined });
+
   const fetchPlans = useCallback(async (category?: "online-only" | "in-person") => {
     try {
+      const now = Date.now();
+      const last = lastPlansFetchRef.current;
+      // Throttle plan fetch to once every 5 minutes per category to avoid repeat loads
+      if (last.ts && now - last.ts < 5 * 60 * 1000 && last.category === category) {
+        return;
+      }
+
       const categoryParam = category ? `?category=${category}` : "";
       const response = await fetch(`/api/membership/plans${categoryParam}`);
       const result = await response.json();
@@ -73,7 +84,26 @@ export function useMembership(userId: string | undefined, category?: "online-onl
         throw new Error(result.error || "Failed to fetch plans");
       }
 
-      setPlans(result.plans || []);
+      // Enforce canonical pricing and filter unsupported plans
+      const filtered = (result.plans || [])
+        .filter((plan: any) => !!CANONICAL_MEMBERSHIP_PLANS[plan.plan_type as AllowedPlanType])
+        .map((plan: any) => {
+          const canonical = CANONICAL_MEMBERSHIP_PLANS[plan.plan_type as AllowedPlanType];
+          return {
+            ...plan,
+            name: canonical.name,
+            monthly_price: canonical.monthly_price,
+            member_hourly_rate: MEMBER_HOURLY_RATE,
+            included_visit_minutes: canonical.included_visit_minutes,
+            included_visit_type: canonical.included_visit_type,
+            description: canonical.description,
+            features: canonical.features,
+            service_category: "in-person",
+          } as MembershipPlan;
+        });
+
+      lastPlansFetchRef.current = { ts: now, category };
+      setPlans(filtered);
     } catch (err) {
       console.error("Error fetching membership plans:", err);
       setError("Failed to load membership plans");

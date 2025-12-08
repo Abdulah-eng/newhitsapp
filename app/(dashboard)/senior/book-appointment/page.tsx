@@ -12,7 +12,7 @@ import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, ArrowLeft, Spa
 import Link from "next/link";
 import IssueDescriptionHelper from "@/components/features/IssueDescriptionHelper";
 import SmartRecommendations from "@/components/features/SmartRecommendations";
-import { calculateBasePrice, calculateTotalPrice, getDirectionsUrl } from "@/lib/utils/travel";
+import { calculateAppointmentPricing, getDirectionsUrl } from "@/lib/utils/travel";
 import { useMembership } from "@/lib/hooks/useMembership";
 
 interface Specialist {
@@ -67,20 +67,16 @@ function BookAppointmentPageContent() {
   // Calculate base price when duration changes
   useEffect(() => {
     if (duration) {
-      const memberRate = hasActiveMembership && membership?.membership_plan
-        ? membership.membership_plan.member_hourly_rate
-        : undefined;
-      const price = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
-      setBasePrice(price);
-      const memberDiscount = hasActiveMembership && membership?.membership_plan
-        ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
-        : 0;
-      // Calculate subtotal and add 7% NC tax
-      const subtotal = price + travelFee - memberDiscount;
-      const estimatedTax = subtotal * 0.07;
-      setTotalPrice(subtotal + estimatedTax);
+      const pricing = calculateAppointmentPricing({
+        durationMinutes: parseInt(duration),
+        travelFee,
+        locationType,
+        membershipPlan: membership?.membership_plan || null,
+      });
+      setBasePrice(pricing.servicePrice);
+      setTotalPrice(pricing.total);
     }
-  }, [duration, travelFee, hasActiveMembership, membership]);
+  }, [duration, travelFee, locationType, membership]);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -318,20 +314,16 @@ function BookAppointmentPageContent() {
     const scheduledAtISO = scheduledAt.toISOString();
 
     // Calculate pricing
-    const memberRate = hasActiveMembership && membership?.membership_plan
-      ? membership.membership_plan.member_hourly_rate
-      : undefined;
-    const calculatedBasePrice = calculateBasePrice(parseInt(duration), hasActiveMembership, memberRate);
+    const pricing = calculateAppointmentPricing({
+      durationMinutes: parseInt(duration),
+      travelFee: locationType === "in-person" ? travelFee : 0,
+      locationType,
+      membershipPlan: membership?.membership_plan || null,
+    });
+    const calculatedBasePrice = pricing.servicePrice;
     const calculatedTravelFee = locationType === "in-person" ? travelFee : 0;
-    const memberDiscount = hasActiveMembership && membership?.membership_plan
-      ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
-      : 0;
-    // Calculate subtotal (base + travel - discount)
-    const subtotal = calculatedBasePrice + calculatedTravelFee - memberDiscount;
-    // Calculate estimated tax (7% NC tax: 4.75% state + 2.25% Cumberland County)
-    const estimatedTax = subtotal * 0.07;
-    // Total includes tax
-    const calculatedTotalPrice = subtotal + estimatedTax;
+    const memberDiscount = pricing.membershipDiscount;
+    const calculatedTotalPrice = pricing.total;
     const specialistReimbursement = locationType === "in-person" && travelDistance && travelDistance > 20
       ? (travelDistance - 20) * 0.60
       : 0;

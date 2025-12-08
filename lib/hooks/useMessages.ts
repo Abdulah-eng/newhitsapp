@@ -261,6 +261,17 @@ export function useMessages(options: UseMessagesOptions = {}) {
 
       if (updateError) {
         console.error("Error marking message as read:", updateError);
+      } else {
+        // Refresh unread badge immediately
+        try {
+          const res = await fetch("/api/messages/unread-count");
+          const data = await res.json().catch(() => ({}));
+          if (typeof data.count === "number" && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("unread-messages-updated", { detail: data.count }));
+          }
+        } catch (err) {
+          console.error("Error refreshing unread count:", err);
+        }
       }
     },
     [supabase]
