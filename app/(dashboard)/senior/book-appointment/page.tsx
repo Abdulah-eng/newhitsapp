@@ -12,7 +12,7 @@ import { Calendar, Clock, MapPin, User, AlertCircle, CheckCircle, ArrowLeft, Spa
 import Link from "next/link";
 import IssueDescriptionHelper from "@/components/features/IssueDescriptionHelper";
 import SmartRecommendations from "@/components/features/SmartRecommendations";
-import { calculateAppointmentPricing, getDirectionsUrl } from "@/lib/utils/travel";
+import { calculateAppointmentPricing, calculateStandardPrice, getDirectionsUrl } from "@/lib/utils/travel";
 import { useMembership } from "@/lib/hooks/useMembership";
 
 interface Specialist {
@@ -73,6 +73,7 @@ function BookAppointmentPageContent() {
         locationType,
         membershipPlan: membership?.membership_plan || null,
       });
+      // Store the price after discount for display
       setBasePrice(pricing.servicePrice);
       setTotalPrice(pricing.total);
     }
@@ -320,7 +321,8 @@ function BookAppointmentPageContent() {
       locationType,
       membershipPlan: membership?.membership_plan || null,
     });
-    const calculatedBasePrice = pricing.servicePrice;
+    // Store standard base price (before discount) for records
+    const standardBasePrice = calculateStandardPrice(parseInt(duration));
     const calculatedTravelFee = locationType === "in-person" ? travelFee : 0;
     const memberDiscount = pricing.membershipDiscount;
     const calculatedTotalPrice = pricing.total;
@@ -344,7 +346,7 @@ function BookAppointmentPageContent() {
       issue_description: issueDescription,
       location_type: locationType,
       travel_fee: calculatedTravelFee,
-      base_price: calculatedBasePrice,
+      base_price: standardBasePrice, // Standard price before discount
       member_discount: memberDiscount,
       total_price: calculatedTotalPrice,
       specialist_pay_rate: 30.00,
@@ -961,33 +963,49 @@ function BookAppointmentPageContent() {
                       </span>
                     </div>
                   )}
-                  {locationType === "in-person" && travelFee > 0 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-secondary">Travel Fee:</span>
-                      <span className="font-semibold text-text-primary">${travelFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {locationType === "in-person" && travelFee === 0 && travelDistance !== null && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-success-600 text-sm">Travel Fee:</span>
-                      <span className="text-success-600 text-sm font-semibold">Included (within 20 miles)</span>
-                    </div>
-                  )}
                   {(() => {
-                    const memberDiscount = hasActiveMembership && membership?.membership_plan
-                      ? (95 - membership.membership_plan.member_hourly_rate) * (parseInt(duration) / 60)
-                      : 0;
-                    const subtotal = basePrice + travelFee - memberDiscount;
-                    const estimatedTax = subtotal * 0.07;
+                    if (!duration) return null;
+                    
+                    const pricing = calculateAppointmentPricing({
+                      durationMinutes: parseInt(duration),
+                      travelFee,
+                      locationType,
+                      membershipPlan: membership?.membership_plan || null,
+                    });
+                    
+                    const standardBase = calculateStandardPrice(parseInt(duration));
+                    
                     return (
                       <>
                         <div className="flex justify-between items-center">
+                          <span className="text-text-secondary">Service Price:</span>
+                          <span className="font-semibold text-text-primary">${standardBase.toFixed(2)}</span>
+                        </div>
+                        {hasActiveMembership && pricing.membershipDiscount > 0 && (
+                          <div className="flex justify-between items-center text-success-600">
+                            <span className="text-sm">Membership Discount:</span>
+                            <span className="text-sm font-semibold">-${pricing.membershipDiscount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {locationType === "in-person" && travelFee > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-text-secondary">Travel Fee:</span>
+                            <span className="font-semibold text-text-primary">${travelFee.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {locationType === "in-person" && travelFee === 0 && travelDistance !== null && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-success-600 text-sm">Travel Fee:</span>
+                            <span className="text-success-600 text-sm font-semibold">Included (within 20 miles)</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
                           <span className="text-text-secondary">Subtotal:</span>
-                          <span className="font-semibold text-text-primary">${subtotal.toFixed(2)}</span>
+                          <span className="font-semibold text-text-primary">${pricing.subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-text-secondary">Tax (7% NC):</span>
-                          <span className="font-semibold text-text-primary">${estimatedTax.toFixed(2)}</span>
+                          <span className="font-semibold text-text-primary">${pricing.tax.toFixed(2)}</span>
                         </div>
                       </>
                     );
