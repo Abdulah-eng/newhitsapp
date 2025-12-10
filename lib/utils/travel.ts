@@ -130,6 +130,7 @@ interface PricingInput {
     plan_type?: AllowedPlanType | string | null;
     included_visit_minutes?: number | null;
   } | null;
+  freeMinutesAvailable?: number; // For Family Care+: available free minutes in current billing cycle
 }
 
 interface PricingResult {
@@ -167,45 +168,52 @@ function resolveIncludedMinutes(planType?: AllowedPlanType | string | null, loca
 /**
  * Calculates full pricing breakdown with membership rules:
  * - Standard: $95 first 60 min, $45 each additional 30 min (rounded up)
- * - Family Care+: First hour free → $95 discount
+ * - Family Care+: First 60 min FREE per billing cycle, then $75/hour prorated
  * - Comfort: 25% off entire service price
  * - Connect: 10% off entire service price
- * - Subtotal can never be negative
- * - Tax only applied to billable service time
+ * - Member discount is informational only (shows savings vs non-member)
+ * - Subtotal uses member pricing, discount does NOT reduce subtotal
+ * - Tax (7% NC) applied to member subtotal only
  */
 export function calculateAppointmentPricing({
   durationMinutes,
   travelFee = 0,
   locationType = "remote",
   membershipPlan,
-}: PricingInput): PricingResult {
-  // Calculate standard base price: $95 first 60 min, $45 per additional 30 min
-  const standardServicePrice = calculateStandardPrice(durationMinutes);
+  freeMinutesAvailable = 0, // First free 60 minutes for Family Care+ (per billing cycle)
+}: PricingInput & { freeMinutesAvailable?: number }): PricingResult {
+  // Calculate non-member standard price: $95 first 60 min, $45 per additional 30 min
+  const nonMemberPrice = calculateStandardPrice(durationMinutes);
   
   const planType = membershipPlan?.plan_type as AllowedPlanType | undefined;
-  let servicePrice = standardServicePrice;
-  let membershipDiscount = 0;
+  let servicePrice = nonMemberPrice; // Default to non-member pricing
+  let membershipDiscount = 0; // Informational only - shows savings
   let freeMinutesApplied = 0;
 
   if (planType === "family_care_plus") {
-    // Family Care+: First hour free → subtract $95 from base price
-    membershipDiscount = 95;
-    servicePrice = Math.max(standardServicePrice - membershipDiscount, 0);
-    freeMinutesApplied = Math.min(60, durationMinutes);
+    // Family Care+: First 60 min FREE, then $75/hour prorated for additional time
+    freeMinutesApplied = Math.min(freeMinutesAvailable, durationMinutes);
+    const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
+    
+    // Member pays $75/hour (prorated) for billable time
+    servicePrice = (billableMinutes / 60) * MEMBER_HOURLY_RATE;
+    
+    // Discount is informational: shows savings vs non-member (does NOT affect subtotal)
+    membershipDiscount = Math.max(nonMemberPrice - servicePrice, 0);
   } else if (planType === "comfort") {
     // Comfort: 25% off entire service price
-    membershipDiscount = standardServicePrice * 0.25;
-    servicePrice = Math.max(standardServicePrice - membershipDiscount, 0);
+    membershipDiscount = nonMemberPrice * 0.25;
+    servicePrice = Math.max(nonMemberPrice - membershipDiscount, 0);
   } else if (planType === "connect") {
     // Connect: 10% off entire service price
-    membershipDiscount = standardServicePrice * 0.10;
-    servicePrice = Math.max(standardServicePrice - membershipDiscount, 0);
+    membershipDiscount = nonMemberPrice * 0.10;
+    servicePrice = Math.max(nonMemberPrice - membershipDiscount, 0);
   }
 
-  // Ensure subtotal is never negative
+  // Subtotal = member service price + travel fee (discount does NOT reduce subtotal)
   const subtotal = Math.max(servicePrice + travelFee, 0);
   
-  // Tax (7% NC) only applied to billable service time (subtotal)
+  // Tax (7% NC) applied to member subtotal only
   const tax = subtotal * 0.07;
   
   // Total = subtotal + tax

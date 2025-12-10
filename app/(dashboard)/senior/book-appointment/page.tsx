@@ -67,13 +67,18 @@ function BookAppointmentPageContent() {
   // Calculate base price when duration changes
   useEffect(() => {
     if (duration) {
+      // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
+      // TODO: Track used free minutes per billing cycle
+      const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+      
       const pricing = calculateAppointmentPricing({
         durationMinutes: parseInt(duration),
         travelFee,
         locationType,
         membershipPlan: membership?.membership_plan || null,
+        freeMinutesAvailable,
       });
-      // Store the price after discount for display
+      // Store the member price (not the discounted price)
       setBasePrice(pricing.servicePrice);
       setTotalPrice(pricing.total);
     }
@@ -315,16 +320,21 @@ function BookAppointmentPageContent() {
     const scheduledAtISO = scheduledAt.toISOString();
 
     // Calculate pricing
+    // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
+    // TODO: Track used free minutes per billing cycle
+    const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+    
     const pricing = calculateAppointmentPricing({
       durationMinutes: parseInt(duration),
       travelFee: locationType === "in-person" ? travelFee : 0,
       locationType,
       membershipPlan: membership?.membership_plan || null,
+      freeMinutesAvailable,
     });
-    // Store standard base price (before discount) for records
+    // Store standard base price (non-member) for records
     const standardBasePrice = calculateStandardPrice(parseInt(duration));
     const calculatedTravelFee = locationType === "in-person" ? travelFee : 0;
-    const memberDiscount = pricing.membershipDiscount;
+    const memberDiscount = pricing.membershipDiscount; // Informational only
     const calculatedTotalPrice = pricing.total;
     const specialistReimbursement = locationType === "in-person" && travelDistance && travelDistance > 20
       ? (travelDistance - 20) * 0.60
@@ -966,25 +976,27 @@ function BookAppointmentPageContent() {
                   {(() => {
                     if (!duration) return null;
                     
+                    // For Family Care+, check if free 60 minutes are available
+                    const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+                    
                     const pricing = calculateAppointmentPricing({
                       durationMinutes: parseInt(duration),
                       travelFee,
                       locationType,
                       membershipPlan: membership?.membership_plan || null,
+                      freeMinutesAvailable,
                     });
-                    
-                    const standardBase = calculateStandardPrice(parseInt(duration));
                     
                     return (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-text-secondary">Service Price:</span>
-                          <span className="font-semibold text-text-primary">${standardBase.toFixed(2)}</span>
+                          <span className="text-text-secondary">Base Price ({duration} min):</span>
+                          <span className="font-semibold text-text-primary">${pricing.servicePrice.toFixed(2)}</span>
                         </div>
                         {hasActiveMembership && pricing.membershipDiscount > 0 && (
                           <div className="flex justify-between items-center text-success-600">
-                            <span className="text-sm">Membership Discount:</span>
-                            <span className="text-sm font-semibold">-${pricing.membershipDiscount.toFixed(2)}</span>
+                            <span className="text-sm">Member Discount:</span>
+                            <span className="text-sm font-semibold">${pricing.membershipDiscount.toFixed(2)} saved</span>
                           </div>
                         )}
                         {locationType === "in-person" && travelFee > 0 && (
