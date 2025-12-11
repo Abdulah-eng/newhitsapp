@@ -14,6 +14,7 @@ import IssueDescriptionHelper from "@/components/features/IssueDescriptionHelper
 import SmartRecommendations from "@/components/features/SmartRecommendations";
 import { calculateAppointmentPricing, calculateStandardPrice, getDirectionsUrl } from "@/lib/utils/travel";
 import { useMembership } from "@/lib/hooks/useMembership";
+import { CANONICAL_MEMBERSHIP_PLANS, type AllowedPlanType } from "@/lib/constants/memberships";
 
 interface Specialist {
   id: string;
@@ -61,15 +62,44 @@ function BookAppointmentPageContent() {
   const [isCalculatingTravel, setIsCalculatingTravel] = useState(false);
   const [basePrice, setBasePrice] = useState<number>(0);
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [isFirstVisitEver, setIsFirstVisitEver] = useState<boolean>(false);
+  const [completedAppointmentsCount, setCompletedAppointmentsCount] = useState<number>(0);
 
   const preselectedSpecialistId = searchParams.get("specialist");
+
+  // Check if this is user's first visit ever
+  useEffect(() => {
+    if (user?.id) {
+      const checkFirstVisit = async () => {
+        const { count, error } = await supabase
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("senior_id", user.id)
+          .eq("status", "completed");
+        
+        if (!error) {
+          const countValue = count || 0;
+          setCompletedAppointmentsCount(countValue);
+          setIsFirstVisitEver(countValue === 0);
+        }
+      };
+      checkFirstVisit();
+    }
+  }, [user?.id, supabase]);
 
   // Calculate base price when duration changes
   useEffect(() => {
     if (duration) {
+      const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
+      const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
+      
       // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
       // TODO: Track used free minutes per billing cycle
-      const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+      const freeMinutesAvailable = planType === "family_care_plus" ? 60 : 0;
+      
+      // Check if first use for online plans (simplified: assume true for now)
+      // TODO: Track first use status for online plans
+      const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? true : false;
       
       const pricing = calculateAppointmentPricing({
         durationMinutes: parseInt(duration),
@@ -77,12 +107,14 @@ function BookAppointmentPageContent() {
         locationType,
         membershipPlan: membership?.membership_plan || null,
         freeMinutesAvailable,
+        isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
+        isFirstUseOnline,
       });
       // Store the member price (not the discounted price)
       setBasePrice(pricing.servicePrice);
       setTotalPrice(pricing.total);
     }
-  }, [duration, travelFee, locationType, membership]);
+  }, [duration, travelFee, locationType, membership, isFirstVisitEver]);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -320,9 +352,16 @@ function BookAppointmentPageContent() {
     const scheduledAtISO = scheduledAt.toISOString();
 
     // Calculate pricing
+    const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
+    const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
+    
     // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
     // TODO: Track used free minutes per billing cycle
-    const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+    const freeMinutesAvailable = planType === "family_care_plus" ? 60 : 0;
+    
+    // Check if first use for online plans (simplified: assume true for now)
+    // TODO: Track first use status for online plans
+    const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? true : false;
     
     const pricing = calculateAppointmentPricing({
       durationMinutes: parseInt(duration),
@@ -330,6 +369,8 @@ function BookAppointmentPageContent() {
       locationType,
       membershipPlan: membership?.membership_plan || null,
       freeMinutesAvailable,
+      isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
+      isFirstUseOnline,
     });
     // Store standard base price (non-member) for records
     const standardBasePrice = calculateStandardPrice(parseInt(duration));
@@ -632,11 +673,19 @@ function BookAppointmentPageContent() {
                     }}
                     className="input"
                   >
-                    <option value="30">30 minutes</option>
+                    {/* Non-members cannot book 30-minute sessions */}
+                    {(hasActiveMembership || duration === "30") && (
+                      <option value="30">30 minutes</option>
+                    )}
                     <option value="60">1 hour</option>
                     <option value="90">1.5 hours</option>
                     <option value="120">2 hours</option>
                   </select>
+                  {!hasActiveMembership && duration === "30" && (
+                    <p className="text-sm text-error-600 mt-1">
+                      Non-members must book at least 60 minutes. Please select a longer duration.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -976,8 +1025,10 @@ function BookAppointmentPageContent() {
                   {(() => {
                     if (!duration) return null;
                     
-                    // For Family Care+, check if free 60 minutes are available
-                    const freeMinutesAvailable = membership?.membership_plan?.plan_type === "family_care_plus" ? 60 : 0;
+                    const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
+                    const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
+                    const freeMinutesAvailable = planType === "family_care_plus" ? 60 : 0;
+                    const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? true : false;
                     
                     const pricing = calculateAppointmentPricing({
                       durationMinutes: parseInt(duration),
@@ -985,18 +1036,34 @@ function BookAppointmentPageContent() {
                       locationType,
                       membershipPlan: membership?.membership_plan || null,
                       freeMinutesAvailable,
+                      isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
+                      isFirstUseOnline,
                     });
                     
                     return (
                       <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-text-secondary">Base Price ({duration} min):</span>
-                          <span className="font-semibold text-text-primary">${pricing.servicePrice.toFixed(2)}</span>
-                        </div>
-                        {hasActiveMembership && pricing.membershipDiscount > 0 && (
-                          <div className="flex justify-between items-center text-success-600">
-                            <span className="text-sm">Member Discount:</span>
-                            <span className="text-sm font-semibold">${pricing.membershipDiscount.toFixed(2)} saved</span>
+                        {hasActiveMembership && (
+                          <>
+                            <div className="flex justify-between items-center text-text-secondary">
+                              <span className="text-sm">Regular Price:</span>
+                              <span className="text-sm">${pricing.regularPrice.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-text-secondary">Member Price ({duration} min):</span>
+                              <span className="font-semibold text-text-primary">${pricing.servicePrice.toFixed(2)}</span>
+                            </div>
+                            {pricing.membershipDiscount > 0 && (
+                              <div className="flex justify-between items-center text-success-600">
+                                <span className="text-sm">Member Savings:</span>
+                                <span className="text-sm font-semibold">${pricing.membershipDiscount.toFixed(2)} saved</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {!hasActiveMembership && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-text-secondary">Base Price ({duration} min):</span>
+                            <span className="font-semibold text-text-primary">${pricing.servicePrice.toFixed(2)}</span>
                           </div>
                         )}
                         {locationType === "in-person" && travelFee > 0 && (

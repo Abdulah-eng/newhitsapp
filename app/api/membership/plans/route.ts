@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
-import { ALLOWED_PLAN_TYPES, CANONICAL_MEMBERSHIP_PLANS, MEMBER_HOURLY_RATE } from "@/lib/constants/memberships";
+import { ALLOWED_PLAN_TYPES, CANONICAL_MEMBERSHIP_PLANS } from "@/lib/constants/memberships";
 
 /**
  * GET /api/membership/plans
@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
           ...plan,
           name: canonical.name,
           monthly_price: canonical.monthly_price,
-          member_hourly_rate: MEMBER_HOURLY_RATE,
+          member_hourly_rate: canonical.member_hourly_rate,
           included_visit_minutes: canonical.included_visit_minutes,
           included_visit_type: canonical.included_visit_type,
           description: canonical.description,
           features: canonical.features,
-          service_category: "in-person",
+          service_category: canonical.service_category,
         };
       })
       .sort((a, b) => a.monthly_price - b.monthly_price);

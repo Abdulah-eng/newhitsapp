@@ -14,7 +14,7 @@ async function logActivity(type: string, description: string, metadata: any) {
   }
 }
 
-import { AllowedPlanType, CANONICAL_MEMBERSHIP_PLANS, MEMBER_HOURLY_RATE } from "@/lib/constants/memberships";
+import { AllowedPlanType, CANONICAL_MEMBERSHIP_PLANS } from "@/lib/constants/memberships";
 
 export interface MembershipPlan {
   id: string;
@@ -93,12 +93,12 @@ export function useMembership(userId: string | undefined, category?: "online-onl
             ...plan,
             name: canonical.name,
             monthly_price: canonical.monthly_price,
-            member_hourly_rate: MEMBER_HOURLY_RATE,
+            member_hourly_rate: canonical.member_hourly_rate,
             included_visit_minutes: canonical.included_visit_minutes,
             included_visit_type: canonical.included_visit_type,
             description: canonical.description,
             features: canonical.features,
-            service_category: "in-person",
+            service_category: canonical.service_category,
           } as MembershipPlan;
         });
 

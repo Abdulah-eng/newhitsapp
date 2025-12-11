@@ -3,7 +3,7 @@
  * HITS Headquarters: Hope Mills, NC 28348
  * Coordinates: Latitude: 34.892007, Longitude: -78.880128
  */
-import { AllowedPlanType, CANONICAL_MEMBERSHIP_PLANS, MEMBER_HOURLY_RATE } from "@/lib/constants/memberships";
+import { AllowedPlanType, CANONICAL_MEMBERSHIP_PLANS } from "@/lib/constants/memberships";
 
 export const HITS_HEADQUARTERS = {
   address: "Hope Mills, NC 28348",
@@ -131,11 +131,14 @@ interface PricingInput {
     included_visit_minutes?: number | null;
   } | null;
   freeMinutesAvailable?: number; // For Family Care+: available free minutes in current billing cycle
+  isFirstVisitEver?: boolean; // True if user has 0 completed appointments
+  isFirstUseOnline?: boolean; // True if first time using online plan benefit
 }
 
 interface PricingResult {
-  servicePrice: number;
-  membershipDiscount: number;
+  servicePrice: number; // Member price charged
+  regularPrice: number; // Non-member price (for display)
+  membershipDiscount: number; // Informational savings amount
   freeMinutesApplied: number;
   subtotal: number;
   tax: number;
@@ -166,48 +169,114 @@ function resolveIncludedMinutes(planType?: AllowedPlanType | string | null, loca
 }
 
 /**
- * Calculates full pricing breakdown with membership rules:
- * - Standard: $95 first 60 min, $45 each additional 30 min (rounded up)
- * - Family Care+: First 60 min FREE per billing cycle, then $75/hour prorated
- * - Comfort: 25% off entire service price
- * - Connect: 10% off entire service price
+ * Calculate member price based on plan and duration
+ * Rules: 
+ * - 30 min = hourlyRate / 2
+ * - First 60 min = hourlyRate
+ * - After 60 min → each additional 30 min = hourlyRate / 2
+ */
+function calculateMemberPrice(durationMinutes: number, hourlyRate: number): number {
+  if (durationMinutes <= 0) return 0;
+  if (durationMinutes === 30) {
+    return hourlyRate / 2; // 30 minutes = half hour rate
+  }
+  if (durationMinutes <= 60) {
+    return hourlyRate; // Full hour at hourly rate
+  }
+  // First hour + prorated additional time (each 30 min = hourlyRate / 2)
+  const additionalMinutes = durationMinutes - 60;
+  const additionalHalfHours = additionalMinutes / 30;
+  return hourlyRate + (additionalHalfHours * (hourlyRate / 2));
+}
+
+/**
+ * Calculates full pricing breakdown with ALL membership rules:
+ * - Non-member: $95 first 60 min, $45 per additional 30 min
+ * - Connect: $85/hour, no free first visit
+ * - Comfort: $80/hour, no free first visit
+ * - Family Care+: $75/hour, first 60 min free (first visit ever OR monthly)
+ * - Starter/Essentials: Online plans with first 30 min free
+ * - Family+ Online: Unlimited remote sessions
  * - Member discount is informational only (shows savings vs non-member)
  * - Subtotal uses member pricing, discount does NOT reduce subtotal
- * - Tax (7% NC) applied to member subtotal only
  */
 export function calculateAppointmentPricing({
   durationMinutes,
   travelFee = 0,
   locationType = "remote",
   membershipPlan,
-  freeMinutesAvailable = 0, // First free 60 minutes for Family Care+ (per billing cycle)
-}: PricingInput & { freeMinutesAvailable?: number }): PricingResult {
+  freeMinutesAvailable = 0,
+  isFirstVisitEver = false,
+  isFirstUseOnline = false,
+}: PricingInput): PricingResult {
   // Calculate non-member standard price: $95 first 60 min, $45 per additional 30 min
-  const nonMemberPrice = calculateStandardPrice(durationMinutes);
+  const regularPrice = calculateStandardPrice(durationMinutes);
   
   const planType = membershipPlan?.plan_type as AllowedPlanType | undefined;
-  let servicePrice = nonMemberPrice; // Default to non-member pricing
+  const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType as AllowedPlanType] : null;
+  
+  let servicePrice = regularPrice; // Default to non-member pricing
   let membershipDiscount = 0; // Informational only - shows savings
   let freeMinutesApplied = 0;
 
-  if (planType === "family_care_plus") {
-    // Family Care+: First 60 min FREE, then $75/hour prorated for additional time
-    freeMinutesApplied = Math.min(freeMinutesAvailable, durationMinutes);
-    const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
+  if (!canonical) {
+    // No membership - use regular pricing
+    const subtotal = Math.max(servicePrice + travelFee, 0);
+    const tax = subtotal * 0.07;
+    return {
+      servicePrice,
+      regularPrice,
+      membershipDiscount: 0,
+      freeMinutesApplied: 0,
+      subtotal,
+      tax,
+      total: subtotal + tax,
+    };
+  }
+
+  // Handle online-only plans
+  if (canonical.service_category === "online-only") {
+    if (planType === "family_plus_online" && locationType === "remote") {
+      // Unlimited remote sessions - FREE
+      servicePrice = 0;
+      freeMinutesApplied = durationMinutes;
+      membershipDiscount = regularPrice;
+    } else if ((planType === "starter" || planType === "essentials") && isFirstUseOnline) {
+      // First 30 min free for first use
+      freeMinutesApplied = Math.min(30, durationMinutes);
+      const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
+      servicePrice = calculateMemberPrice(billableMinutes, canonical.member_hourly_rate);
+      membershipDiscount = Math.max(regularPrice - servicePrice, 0);
+    } else {
+      // Regular member pricing for online plans
+      servicePrice = calculateMemberPrice(durationMinutes, canonical.member_hourly_rate);
+      membershipDiscount = Math.max(regularPrice - servicePrice, 0);
+    }
+  } 
+  // Handle in-person plans
+  else if (canonical.service_category === "in-person") {
+    const hourlyRate = canonical.member_hourly_rate;
     
-    // Member pays $75/hour (prorated) for billable time
-    servicePrice = (billableMinutes / 60) * MEMBER_HOURLY_RATE;
-    
-    // Discount is informational: shows savings vs non-member (does NOT affect subtotal)
-    membershipDiscount = Math.max(nonMemberPrice - servicePrice, 0);
-  } else if (planType === "comfort") {
-    // Comfort: 25% off entire service price
-    membershipDiscount = nonMemberPrice * 0.25;
-    servicePrice = Math.max(nonMemberPrice - membershipDiscount, 0);
-  } else if (planType === "connect") {
-    // Connect: 10% off entire service price
-    membershipDiscount = nonMemberPrice * 0.10;
-    servicePrice = Math.max(nonMemberPrice - membershipDiscount, 0);
+    // Check for first visit free (Family Care+ only, and only for first visit ever)
+    if (planType === "family_care_plus" && isFirstVisitEver && locationType === "in-person") {
+      // First 60 min FREE for first visit ever
+      freeMinutesApplied = Math.min(60, durationMinutes);
+      const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
+      servicePrice = calculateMemberPrice(billableMinutes, hourlyRate);
+      membershipDiscount = Math.max(regularPrice - servicePrice, 0);
+    } 
+    // Check for monthly free minutes (Family Care+)
+    else if (planType === "family_care_plus" && freeMinutesAvailable > 0) {
+      freeMinutesApplied = Math.min(freeMinutesAvailable, durationMinutes);
+      const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
+      servicePrice = calculateMemberPrice(billableMinutes, hourlyRate);
+      membershipDiscount = Math.max(regularPrice - servicePrice, 0);
+    }
+    // Regular member pricing
+    else {
+      servicePrice = calculateMemberPrice(durationMinutes, hourlyRate);
+      membershipDiscount = Math.max(regularPrice - servicePrice, 0);
+    }
   }
 
   // Subtotal = member service price + travel fee (discount does NOT reduce subtotal)
@@ -221,6 +290,7 @@ export function calculateAppointmentPricing({
 
   return {
     servicePrice,
+    regularPrice,
     membershipDiscount,
     freeMinutesApplied,
     subtotal,
