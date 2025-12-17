@@ -1,4 +1,4 @@
-export type AllowedPlanType = "connect" | "comfort" | "family_care_plus" | "starter" | "essentials" | "family_plus_online";
+export type AllowedPlanType = "connect" | "comfort" | "family_care_plus" | "starter" | "essential" | "family";
 
 export interface CanonicalPlan {
   plan_type: AllowedPlanType;
@@ -94,8 +94,8 @@ export const CANONICAL_MEMBERSHIP_PLANS: Record<AllowedPlanType, CanonicalPlan> 
       "Extra remote sessions: $85/hour",
     ],
   },
-  essentials: {
-    plan_type: "essentials",
+  essential: {
+    plan_type: "essential",
     name: "Essentials",
     monthly_price: 69,
     member_hourly_rate: COMFORT_HOURLY_RATE, // $80/hour (uses Comfort rate)
@@ -111,9 +111,9 @@ export const CANONICAL_MEMBERSHIP_PLANS: Record<AllowedPlanType, CanonicalPlan> 
       "Extra remote sessions: $80/hour",
     ],
   },
-  family_plus_online: {
-    plan_type: "family_plus_online",
-    name: "Family+ Online",
+  family: {
+    plan_type: "family",
+    name: "Family+",
     monthly_price: 119,
     member_hourly_rate: 0, // Unlimited - no per-session billing
     included_visit_minutes: 999999, // Effectively unlimited

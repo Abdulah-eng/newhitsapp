@@ -194,7 +194,8 @@ function calculateMemberPrice(durationMinutes: number, hourlyRate: number): numb
  * - Non-member: $95 first 60 min, $45 per additional 30 min
  * - Connect: $85/hour, no free first visit
  * - Comfort: $80/hour, no free first visit
- * - Family Care+: $75/hour, first 60 min free (first visit ever OR monthly)
+ * - Family Care+: $75/hour, first 60 min free (first visit ever) OR 60 min monthly included
+ * - Comfort: $80/hour, 30 min remote included monthly
  * - Starter/Essentials: Online plans with first 30 min free
  * - Family+ Online: Unlimited remote sessions
  * - Member discount is informational only (shows savings vs non-member)
@@ -236,12 +237,12 @@ export function calculateAppointmentPricing({
 
   // Handle online-only plans
   if (canonical.service_category === "online-only") {
-    if (planType === "family_plus_online" && locationType === "remote") {
+    if (planType === "family" && locationType === "remote") {
       // Unlimited remote sessions - FREE
       servicePrice = 0;
       freeMinutesApplied = durationMinutes;
       membershipDiscount = regularPrice;
-    } else if ((planType === "starter" || planType === "essentials") && isFirstUseOnline) {
+    } else if ((planType === "starter" || planType === "essential") && isFirstUseOnline) {
       // First 30 min free for first use
       freeMinutesApplied = Math.min(30, durationMinutes);
       const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
@@ -265,8 +266,8 @@ export function calculateAppointmentPricing({
       servicePrice = calculateMemberPrice(billableMinutes, hourlyRate);
       membershipDiscount = Math.max(regularPrice - servicePrice, 0);
     } 
-    // Check for monthly free minutes (Family Care+)
-    else if (planType === "family_care_plus" && freeMinutesAvailable > 0) {
+    // Check for monthly free minutes (Family Care+ or Comfort)
+    else if ((planType === "family_care_plus" || (planType === "comfort" && locationType === "remote")) && freeMinutesAvailable > 0) {
       freeMinutesApplied = Math.min(freeMinutesAvailable, durationMinutes);
       const billableMinutes = Math.max(durationMinutes - freeMinutesApplied, 0);
       servicePrice = calculateMemberPrice(billableMinutes, hourlyRate);

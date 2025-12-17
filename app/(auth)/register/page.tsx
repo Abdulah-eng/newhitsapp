@@ -105,6 +105,7 @@ export default function RegisterPage() {
             fullName: formData.fullName,
             role: formData.role,
             phone: formData.phone || null,
+            isDisabledAdult: formData.isDisabledAdult,
           }),
         });
 
@@ -143,67 +144,30 @@ export default function RegisterPage() {
         return;
       }
 
-      // Create role-specific profile
+      // Log registration
+      try {
+        await fetch("/api/activity/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "user_registered",
+            description: `User registered: ${formData.email} (${formData.role})`,
+            metadata: {
+              email: formData.email,
+              role: formData.role,
+              is_disabled_adult: formData.isDisabledAdult
+            },
+          }),
+        });
+      } catch (err) {
+        // Don't block registration if logging fails
+        console.error("Error logging registration:", err);
+      }
+
+      // Redirect based on role
       if (formData.role === "senior") {
-        // Create senior profile
-        const { error: profileError } = await supabase
-          .from("senior_profiles")
-          .insert({
-            user_id: authData.user.id,
-            is_disabled_adult: formData.isDisabledAdult,
-          });
-
-        if (profileError) {
-          console.error("Error creating senior profile:", profileError);
-          // Continue anyway - profile can be created later
-        }
-
-        // Log registration
-        try {
-          await fetch("/api/activity/log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "user_registered",
-              description: `User registered: ${formData.email} (senior)`,
-              metadata: { email: formData.email, role: "senior", is_disabled_adult: formData.isDisabledAdult },
-            }),
-          });
-        } catch (err) {
-          // Don't block registration if logging fails
-          console.error("Error logging registration:", err);
-        }
-
         router.replace("/senior/dashboard");
       } else if (formData.role === "specialist") {
-        // Create specialist profile
-        const { error: profileError } = await supabase
-          .from("specialist_profiles")
-          .insert({
-            user_id: authData.user.id,
-          });
-
-        if (profileError) {
-          console.error("Error creating specialist profile:", profileError);
-          // Continue anyway - profile can be created later
-        }
-
-        // Log registration
-        try {
-          await fetch("/api/activity/log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "user_registered",
-              description: `User registered: ${formData.email} (specialist)`,
-              metadata: { email: formData.email, role: "specialist" },
-            }),
-          });
-        } catch (err) {
-          // Don't block registration if logging fails
-          console.error("Error logging registration:", err);
-        }
-
         router.replace("/specialist/dashboard?welcome=true");
       }
     } catch (err) {

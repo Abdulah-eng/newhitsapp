@@ -9,7 +9,7 @@ import type { UserRole } from "@/types";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, email, fullName, role, phone } = body;
+    const { userId, email, fullName, role, phone, isDisabledAdult } = body;
 
     if (!userId || !email || !fullName || !role) {
       return NextResponse.json(
@@ -37,14 +37,68 @@ export async function POST(request: NextRequest) {
     if (error) {
       // If user already exists (from trigger), that's okay
       if (error.code === "23505") {
-        return NextResponse.json({ success: true, message: "User already exists" });
+        console.log("User already exists, continuing...");
+      } else {
+        console.error("Error creating user record:", error);
+        return NextResponse.json(
+          { error: "Failed to create user record", details: error.message },
+          { status: 500 }
+        );
       }
+    }
 
-      console.error("Error creating user record:", error);
-      return NextResponse.json(
-        { error: "Failed to create user record", details: error.message },
-        { status: 500 }
-      );
+    // Create role-specific profile for senior users
+    // Do this regardless of whether the user record was just created or already existed
+    if (role === "senior") {
+      // First check if senior profile already exists
+      const { data: existingProfile } = await supabase
+        .from("senior_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from("senior_profiles")
+          .insert({
+            user_id: userId,
+            is_disabled_adult: isDisabledAdult || false,
+          });
+
+        if (profileError) {
+          console.error("Error creating senior profile:", profileError);
+          // Don't fail the whole request if profile creation fails
+          // The user can still log in and create profile later
+        } else {
+          console.log("Senior profile created successfully");
+        }
+      } else {
+        console.log("Senior profile already exists");
+      }
+    } else if (role === "specialist") {
+      // First check if specialist profile already exists
+      const { data: existingProfile } = await supabase
+        .from("specialist_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from("specialist_profiles")
+          .insert({
+            user_id: userId,
+          });
+
+        if (profileError) {
+          console.error("Error creating specialist profile:", profileError);
+          // Don't fail the whole request if profile creation fails
+        } else {
+          console.log("Specialist profile created successfully");
+        }
+      } else {
+        console.log("Specialist profile already exists");
+      }
     }
 
     return NextResponse.json({ success: true, user: data });
@@ -56,4 +110,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

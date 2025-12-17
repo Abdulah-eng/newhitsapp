@@ -45,6 +45,7 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
+    console.log(`[Send Confirmation] Processing request for appointment ID: ${id}`);
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,8 +77,11 @@ export async function POST(
       .eq("id", id)
       .single();
 
+    console.log(`[Send Confirmation] Database query result:`, { data: !!data, error });
+
     if (error || !data) {
-      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      console.error(`[Send Confirmation] Appointment not found for ID ${id}:`, error);
+      return NextResponse.json({ error: "Appointment not found", details: error?.message }, { status: 404 });
     }
 
     const appointment = {

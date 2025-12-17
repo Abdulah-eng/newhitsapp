@@ -113,10 +113,11 @@ export default function ConsumerServicesPage() {
       // Find the matching plan
       const planMap: { [key: string]: string } = {
         "starter": "starter",
-        "essentials": "essential",
         "essential": "essential",
+        "essentials": "essential", // legacy mapping
         "family+": "family",
         "family": "family",
+        "family+ online": "family", // legacy mapping
       };
 
       const normalizedPlan = planName.toLowerCase().trim();

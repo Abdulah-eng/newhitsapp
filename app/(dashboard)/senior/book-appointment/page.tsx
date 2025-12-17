@@ -64,57 +64,109 @@ function BookAppointmentPageContent() {
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [isFirstVisitEver, setIsFirstVisitEver] = useState<boolean>(false);
   const [completedAppointmentsCount, setCompletedAppointmentsCount] = useState<number>(0);
+  const [hasUsedOnlineFirstFree, setHasUsedOnlineFirstFree] = useState<boolean>(false);
+  const [hasUsedFirstVisitFree, setHasUsedFirstVisitFree] = useState<boolean>(false);
 
   const preselectedSpecialistId = searchParams.get("specialist");
 
-  // Check if this is user's first visit ever
+  // Check user's appointment history and first visit free status
   useEffect(() => {
     if (user?.id) {
-      const checkFirstVisit = async () => {
-        const { count, error } = await supabase
+      const checkUserStatus = async () => {
+        // Get senior profile with first visit free tracking
+        const { data: profile, error: profileError } = await supabase
+          .from("senior_profiles")
+          .select("has_used_first_visit_free, has_used_online_first_free")
+          .eq("user_id", user.id)
+          .single();
+
+        // Check total completed appointments
+        const { count: totalCount, error: totalError } = await supabase
           .from("appointments")
           .select("id", { count: "exact", head: true })
           .eq("senior_id", user.id)
           .eq("status", "completed");
-        
-        if (!error) {
-          const countValue = count || 0;
-          setCompletedAppointmentsCount(countValue);
-          setIsFirstVisitEver(countValue === 0);
+
+        // Check completed remote appointments
+        const { count: remoteCount, error: remoteError } = await supabase
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("senior_id", user.id)
+          .eq("status", "completed")
+          .eq("location_type", "remote");
+
+        if (!profileError && !totalError && !remoteError) {
+          const totalCountValue = totalCount || 0;
+          const remoteCountValue = remoteCount || 0;
+
+          setCompletedAppointmentsCount(totalCountValue);
+          setHasUsedFirstVisitFree(profile?.has_used_first_visit_free || false);
+          setHasUsedOnlineFirstFree(profile?.has_used_online_first_free || false);
+
+          // First visit free is available if they haven't used it yet
+          setIsFirstVisitEver(!profile?.has_used_first_visit_free);
         }
       };
-      checkFirstVisit();
+      checkUserStatus();
     }
   }, [user?.id, supabase]);
 
   // Calculate base price when duration changes
   useEffect(() => {
-    if (duration) {
-      const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
-      const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
+    if (duration && user?.id) {
+      const calculatePricing = async () => {
+        // Get current profile state for accurate pricing
+        const { data: currentProfile } = await supabase
+          .from("senior_profiles")
+          .select("has_used_first_visit_free, has_used_online_first_free")
+          .eq("user_id", user.id)
+          .single();
+
+        const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
+        const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
+
+        // Check if user has any existing appointments
+        const { count: totalAppointments } = await supabase
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("senior_id", user.id);
+
+        // Monthly included minutes (simplified until proper billing cycle tracking is implemented)
+        // TODO: Track used free minutes per billing cycle
+        let freeMinutesAvailable = 0;
+        if (planType === "family_care_plus" && (totalAppointments || 0) === 0) {
+          freeMinutesAvailable = 60; // First monthly included visit
+        } else if (planType === "comfort" && locationType === "remote" && (totalAppointments || 0) === 0) {
+          freeMinutesAvailable = 30; // First monthly included remote check-in
+        }
+
+        // Check if first use for online plans (with current database state)
+        const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? !currentProfile?.has_used_online_first_free : false;
       
-      // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
-      // TODO: Track used free minutes per billing cycle
-      const freeMinutesAvailable = planType === "family_care_plus" ? 60 : 0;
-      
-      // Check if first use for online plans (simplified: assume true for now)
-      // TODO: Track first use status for online plans
-      const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? true : false;
-      
-      const pricing = calculateAppointmentPricing({
-        durationMinutes: parseInt(duration),
-        travelFee,
-        locationType,
-        membershipPlan: membership?.membership_plan || null,
-        freeMinutesAvailable,
-        isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
-        isFirstUseOnline,
-      });
-      // Store the member price (not the discounted price)
-      setBasePrice(pricing.servicePrice);
-      setTotalPrice(pricing.total);
+        const pricing = calculateAppointmentPricing({
+          durationMinutes: parseInt(duration),
+          travelFee,
+          locationType,
+          membershipPlan: membership?.membership_plan || null,
+          freeMinutesAvailable,
+          isFirstVisitEver: !currentProfile?.has_used_first_visit_free && locationType === "in-person",
+          isFirstUseOnline,
+        });
+        // Store the member price (not the discounted price)
+        setBasePrice(pricing.servicePrice);
+        setTotalPrice(pricing.total);
+      };
+
+      calculatePricing();
     }
-  }, [duration, travelFee, locationType, membership, isFirstVisitEver]);
+  }, [duration, travelFee, locationType, membership, user?.id, supabase]);
+
+  // Ensure non-members cannot have 30-minute duration selected
+  useEffect(() => {
+    if (!hasActiveMembership && duration === "30") {
+      setDuration("60");
+    }
+  }, [hasActiveMembership, duration]);
 
   useEffect(() => {
     // Wait for auth to finish loading
@@ -351,17 +403,69 @@ function BookAppointmentPageContent() {
     const scheduledAt = new Date(`${selectedDate}T${selectedTime}`);
     const scheduledAtISO = scheduledAt.toISOString();
 
-    // Calculate pricing
+    // Get real-time first visit free status from database (to prevent race conditions)
+    const { data: currentProfile, error: profileCheckError } = await supabase
+      .from("senior_profiles")
+      .select("has_used_first_visit_free, has_used_online_first_free")
+      .eq("user_id", currentUserId)
+      .single();
+
+    if (profileCheckError) {
+      console.error("Error checking current first visit free status:", profileCheckError);
+      setError("Unable to verify your account status. Please try again.");
+      setIsBooking(false);
+      return;
+    }
+
+    // Check if user has any existing appointments (for monthly included minutes logic)
+    const { count: totalAppointments } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("senior_id", currentUserId);
+
+    // Calculate pricing with current database state
     const planType = membership?.membership_plan?.plan_type as AllowedPlanType | undefined;
     const canonical = planType ? CANONICAL_MEMBERSHIP_PLANS[planType] : null;
-    
-    // For Family Care+, check if free 60 minutes are available (simplified: assume available for now)
+
+    // Monthly included minutes (simplified until proper billing cycle tracking is implemented)
     // TODO: Track used free minutes per billing cycle
-    const freeMinutesAvailable = planType === "family_care_plus" ? 60 : 0;
-    
-    // Check if first use for online plans (simplified: assume true for now)
-    // TODO: Track first use status for online plans
-    const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? true : false;
+    // For now, only give included minutes if user has no appointments at all
+    let freeMinutesAvailable = 0;
+    if (planType === "family_care_plus" && (totalAppointments || 0) === 0) {
+      freeMinutesAvailable = 60; // First monthly included visit
+    } else if (planType === "comfort" && locationType === "remote" && (totalAppointments || 0) === 0) {
+      freeMinutesAvailable = 30; // First monthly included remote check-in
+    }
+
+    console.log("Current booking state:", {
+      userId: currentUserId,
+      hasUsedFirstVisitFree: currentProfile?.has_used_first_visit_free,
+      hasUsedOnlineFirstFree: currentProfile?.has_used_online_first_free,
+      totalAppointments: totalAppointments || 0,
+      locationType,
+      planType,
+      freeMinutesAvailable
+    });
+
+    // Check if first use for online plans (real-time from database)
+    const isFirstUseOnline = (canonical?.service_category === "online-only" && canonical?.has_first_30min_free) ? !currentProfile?.has_used_online_first_free : false;
+
+    // Prevent booking if first visit free benefit was already used
+    // This handles race conditions where another appointment was booked
+    const isTryingFirstVisitFree = !currentProfile?.has_used_first_visit_free && locationType === "in-person";
+    const isTryingOnlineFirstFree = !currentProfile?.has_used_online_first_free && locationType === "remote" && canonical?.has_first_30min_free;
+
+    if (isTryingFirstVisitFree && currentProfile?.has_used_first_visit_free) {
+      setError("Your first visit free benefit has already been used. This appointment will be charged at regular member rates.");
+      setIsBooking(false);
+      return;
+    }
+
+    if (isTryingOnlineFirstFree && currentProfile?.has_used_online_first_free) {
+      setError("Your online first free benefit has already been used. This appointment will be charged at regular member rates.");
+      setIsBooking(false);
+      return;
+    }
     
     const pricing = calculateAppointmentPricing({
       durationMinutes: parseInt(duration),
@@ -369,8 +473,19 @@ function BookAppointmentPageContent() {
       locationType,
       membershipPlan: membership?.membership_plan || null,
       freeMinutesAvailable,
-      isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
+      isFirstVisitEver: !currentProfile?.has_used_first_visit_free && locationType === "in-person",
+      isFirstUseOnline: isFirstUseOnline,
+    });
+
+    console.log("Booking pricing calculation:", {
+      durationMinutes: parseInt(duration),
+      locationType,
+      planType,
+      isFirstVisitEver: !currentProfile?.has_used_first_visit_free && locationType === "in-person",
       isFirstUseOnline,
+      servicePrice: pricing.servicePrice,
+      regularPrice: pricing.regularPrice,
+      membershipDiscount: pricing.membershipDiscount
     });
     // Store standard base price (non-member) for records
     const standardBasePrice = calculateStandardPrice(parseInt(duration));
@@ -674,7 +789,7 @@ function BookAppointmentPageContent() {
                     className="input"
                   >
                     {/* Non-members cannot book 30-minute sessions */}
-                    {(hasActiveMembership || duration === "30") && (
+                    {hasActiveMembership && (
                       <option value="30">30 minutes</option>
                     )}
                     <option value="60">1 hour</option>
@@ -1036,8 +1151,8 @@ function BookAppointmentPageContent() {
                       locationType,
                       membershipPlan: membership?.membership_plan || null,
                       freeMinutesAvailable,
-                      isFirstVisitEver: isFirstVisitEver && locationType === "in-person",
-                      isFirstUseOnline,
+                      isFirstVisitEver: !hasUsedFirstVisitFree && locationType === "in-person",
+                      isFirstUseOnline: !hasUsedOnlineFirstFree,
                     });
                     
                     return (

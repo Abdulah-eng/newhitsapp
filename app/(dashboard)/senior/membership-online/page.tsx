@@ -68,10 +68,11 @@ function MembershipOnlinePageContent() {
       // Find plan by name (Starter, Essentials, Family+)
       const planMap: { [key: string]: string } = {
         "starter": "starter",
-        "essentials": "essential",
         "essential": "essential",
+        "essentials": "essential", // legacy mapping
         "family+": "family",
         "family": "family",
+        "family+ online": "family", // legacy mapping
       };
       
       const normalizedPlan = planParam.toLowerCase().trim();
